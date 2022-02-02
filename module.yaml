@@ -1,0 +1,26 @@
+kind: io.statefun.endpoints.v2/http
+spec:
+  functions: hesse.fns/*
+  urlPathTemplate: http://hesse:1108/
+  transport:
+    type: io.statefun.transports.v1/async
+---
+kind: io.statefun.kafka.v1/ingress
+spec:
+  id: hesse.io/example-temporal-graph
+  address: kafka:9092
+  consumerGroupId: hesse
+  startupPosition:
+    type: earliest
+  topics:
+    - topic: example-temporal-graph
+      valueType: hesse.types/io.github.spycsh.hesse.types.TemporalEdge
+      targets:
+        - greeter.fns/user
+---
+kind: io.statefun.kafka.v1/egress
+spec:
+  id: hesse.io/edge-count # TODO unknown egress, to be defined
+  address: kafka:9092
+  deliverySemantic:
+    type: at-least-once
