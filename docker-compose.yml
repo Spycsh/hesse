@@ -18,7 +18,7 @@ services:
   ###############################################################
 
   statefun-manager:
-    image: apache/flink-statefun:3.1.1-java11
+    image: apache/flink-statefun:3.2.0-java11
     expose:
       - "6123"
     ports:
@@ -30,7 +30,7 @@ services:
       - ./module.yaml:/opt/statefun/modules/hesse/module.yaml
 
   statefun-worker:
-    image: apache/flink-statefun:3.1.1-java11
+    image: apache/flink-statefun:3.2.0-java11
     expose:
       - "6121"
       - "6122"
@@ -85,7 +85,7 @@ services:
     links:
       - "kafka:kafka"
     environment:
-      APP_PATH: /mnt/user-logins.txt
+      APP_PATH: /mnt/example.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: example-temporal-graph
       APP_JSON_PATH: user_id

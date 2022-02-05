@@ -9,10 +9,10 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Maven: org.apache.flink:statefun-sdk-java:3.1.1" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.flink:statefun-protocol-shaded:3.1.1" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.flink:statefun-sdk-protos:3.1.1" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.flink:statefun-protobuf-shaded:3.1.1" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.flink:statefun-sdk-java:3.2.0" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.flink:statefun-protocol-shaded:3.2.0" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.flink:statefun-sdk-protos:3.2.0" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.flink:statefun-protobuf-shaded:3.2.0" level="project" />
     <orderEntry type="library" name="Maven: com.google.auto.service:auto-service-annotations:1.0-rc6" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.12.2" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.12.2" level="project" />
