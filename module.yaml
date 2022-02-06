@@ -16,7 +16,7 @@ spec:
     - topic: example-temporal-graph
       valueType: hesse.types/io.github.spycsh.hesse.types.TemporalEdge
       targets:
-        - greeter.fns/user
+        - hesse.fns/controller # type name of ControllerFn
 ---
 kind: io.statefun.kafka.v1/egress
 spec:

@@ -9,4 +9,4 @@ FROM openjdk:8
 WORKDIR /
 COPY --from=builder /usr/src/app/target/hesse*jar-with-dependencies.jar hesse.jar
 EXPOSE 1108
-CMD java -jar connected-components-functions-app.jar
+CMD java -jar hesse.jar

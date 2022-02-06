@@ -77,7 +77,7 @@ services:
   #    Simple Kafka JSON producer to simulate ingress events
   ###############################################################
 
-  user-logins-producer:
+  hesse-producer:
     image: ververica/statefun-playground-producer:latest
     depends_on:
       - kafka
@@ -88,6 +88,6 @@ services:
       APP_PATH: /mnt/example.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: example-temporal-graph
-      APP_JSON_PATH: user_id
+      APP_JSON_PATH: src_id
     volumes:
       - ./datasets/example.txt:/mnt/example.txt

@@ -72,7 +72,7 @@ under the License.
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>io/github/spycsh/hesse/hesseAppServer.java</mainClass>
+                            <mainClass>io.github.spycsh.hesse.hesseAppServer</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
