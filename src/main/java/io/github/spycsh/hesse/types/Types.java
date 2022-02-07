@@ -2,6 +2,7 @@ package io.github.spycsh.hesse.types;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.github.spycsh.hesse.PartitionManagerFn;
 import org.apache.flink.statefun.sdk.java.TypeName;
 import org.apache.flink.statefun.sdk.java.types.SimpleType;
 import org.apache.flink.statefun.sdk.java.types.Type;
@@ -14,6 +15,15 @@ public class Types {
 
     private static final ObjectMapper JSON_OBJ_MAPPER = new ObjectMapper();
     private static final String TYPES_NAMESPACE = "connected-components.types";
+
+    /**
+     * denote the partition id
+     */
+    public static final Type<PartitionConfig> PARTITION_CONFIG_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "partition_config"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PartitionConfig.class));
 
     /**
      * Type denoting a new edge coming from the input source.

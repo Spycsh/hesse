@@ -13,6 +13,7 @@ public class hesseAppServer {
         functions.withStatefulFunction(ControllerFn.SPEC);
 
         final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
+        // TODO how to set mapping of different request paths to different handler
         final Undertow httpServer =
                 Undertow.builder()
                     .addHttpListener(1108, "0.0.0.0")

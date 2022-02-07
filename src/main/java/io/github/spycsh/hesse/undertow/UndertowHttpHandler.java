@@ -10,7 +10,6 @@ import org.apache.flink.statefun.sdk.java.slice.Slices;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-
 public class UndertowHttpHandler implements HttpHandler{
     private final RequestReplyHandler handler;
 

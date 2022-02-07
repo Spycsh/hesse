@@ -1,8 +1,8 @@
 package io.github.spycsh.hesse;
 
+import io.github.spycsh.hesse.types.PartitionConfig;
 import io.github.spycsh.hesse.types.TemporalEdge;
 import io.github.spycsh.hesse.types.Types;
-import jdk.vm.ci.meta.Value;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 
@@ -14,7 +14,7 @@ public class PartitionManagerFn implements StatefulFunction {
 
 
     // every partition manager must hold a partition id
-    private static final ValueSpec<Integer> PARTITION_ID = ValueSpec.named("partitionId").withIntType();
+    private static final ValueSpec<String> PARTITION_ID = ValueSpec.named("partitionId").withUtf8StringType();
     // temporal edge
     private static final ValueSpec<TemporalEdge> TEMPORAL_EDGE = ValueSpec.named("temporalEdge").withCustomType(Types.TEMPORAL_EDGE_TYPE);
     // a set of temporal edges
@@ -30,6 +30,11 @@ public class PartitionManagerFn implements StatefulFunction {
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
+        if(message.is(Types.PARTITION_CONFIG_TYPE)){
+            PartitionConfig config = message.as(Types.PARTITION_CONFIG_TYPE);
+            context.storage().set(PARTITION_ID, config.getPartitionId());
+        }
+
         // TODO OPERATION ADD, DELETE, EDIT
         // if a partition receives the temporal edge route to it
         // it will store in the internal buffer
