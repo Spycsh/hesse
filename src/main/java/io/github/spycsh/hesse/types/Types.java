@@ -14,7 +14,7 @@ public class Types {
     private Types() {}
 
     private static final ObjectMapper JSON_OBJ_MAPPER = new ObjectMapper();
-    private static final String TYPES_NAMESPACE = "connected-components.types";
+    private static final String TYPES_NAMESPACE = "hesse.types";
 
     /**
      * denote the partition id

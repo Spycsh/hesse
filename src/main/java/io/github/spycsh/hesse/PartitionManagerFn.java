@@ -4,6 +4,7 @@ import io.github.spycsh.hesse.types.PartitionConfig;
 import io.github.spycsh.hesse.types.TemporalEdge;
 import io.github.spycsh.hesse.types.Types;
 import org.apache.flink.statefun.sdk.java.*;
+import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
 import org.apache.flink.statefun.sdk.java.message.Message;
 
 import java.util.HashSet;
@@ -28,11 +29,13 @@ public class PartitionManagerFn implements StatefulFunction {
             .withValueSpecs(PARTITION_ID, TEMPORAL_EDGE, TEMPORAL_EDGES)
             .build();
 
+    static final TypeName KAFKA_EGRESS = TypeName.typeNameOf("hesse.io", "partition-edges");
+
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
         if(message.is(Types.PARTITION_CONFIG_TYPE)){
             PartitionConfig config = message.as(Types.PARTITION_CONFIG_TYPE);
-            context.storage().set(PARTITION_ID, config.getPartitionId());
+            context.storage().set(PARTITION_ID, config.getPartitionId());   // TODO this should equals to context.self.id()
         }
 
         // TODO OPERATION ADD, DELETE, EDIT
@@ -43,10 +46,23 @@ public class PartitionManagerFn implements StatefulFunction {
             Set<TemporalEdge> temporalEdges = context.storage().get(TEMPORAL_EDGES).orElse(new HashSet<>());
             // get the temporal edge that needed to be added
             TemporalEdge temporalEdge = message.as(Types.TEMPORAL_EDGE_TYPE);
-
+            temporalEdges.add(temporalEdge);
             context.storage().set(TEMPORAL_EDGES, temporalEdges);
+
+            outputTemporalEdgeChange(context, temporalEdge);
         }
 
         return context.done();
+    }
+
+    private void outputTemporalEdgeChange(Context context, TemporalEdge temporalEdge){
+        String partitionId = context.self().id();
+        context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
+                .withTopic("partition-edges")
+                .withUtf8Key(String.valueOf(partitionId))
+                .withUtf8Value(String.format(
+                        "partition %s: Newly added edge %s -> %s at time %s",
+                        partitionId, temporalEdge.getSrcId(), temporalEdge.getDstId(), temporalEdge.getTimestamp()))
+                .build());
     }
 }

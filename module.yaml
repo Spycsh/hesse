@@ -14,13 +14,13 @@ spec:
     type: earliest
   topics:
     - topic: example-temporal-graph
-      valueType: hesse.types/io.github.spycsh.hesse.types.TemporalEdge
+      valueType: hesse.types/temporal_edge # ingress msg type name specified in Types
       targets:
-        - hesse.fns/controller # type name of ControllerFn
+        - hesse.fns/controller # type name specified in ControllerFn
 ---
 kind: io.statefun.kafka.v1/egress
 spec:
-  id: hesse.io/edge-count # TODO unknown egress, to be defined
+  id: hesse.io/partition-edges # output each partition edge that belong to each partition
   address: kafka:9092
   deliverySemantic:
     type: at-least-once

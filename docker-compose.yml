@@ -90,4 +90,4 @@ services:
       APP_KAFKA_TOPIC: example-temporal-graph
       APP_JSON_PATH: src_id
     volumes:
-      - ./datasets/example.txt:/mnt/example.txt
+      - ./example.txt:/mnt/example.txt
