@@ -11,8 +11,4 @@ public class PartitionConfig {
     public String getPartitionId() {
         return PartitionId;
     }
-
-    public void setPartitionId(String partitionId) {
-        PartitionId = partitionId;
-    }
 }

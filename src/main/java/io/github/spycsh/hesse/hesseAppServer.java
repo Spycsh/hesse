@@ -9,11 +9,11 @@ public class hesseAppServer {
 
     public static void main(String[] args) {
         final StatefulFunctions functions = new StatefulFunctions();
-        functions.withStatefulFunction(PartitionManagerFn.SPEC);
-        functions.withStatefulFunction(ControllerFn.SPEC);
+//        functions.withStatefulFunction(PartitionManagerFn.SPEC);
+//        functions.withStatefulFunction(ControllerFn.SPEC);
 
         final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
-        // TODO how to set mapping of different request paths to different handler
+
         final Undertow httpServer =
                 Undertow.builder()
                     .addHttpListener(1108, "0.0.0.0")

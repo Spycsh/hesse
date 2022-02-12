@@ -18,23 +18,11 @@ public class TemporalEdge {
         return srcId;
     }
 
-    public void setSrcId(String srcId) {
-        this.srcId = srcId;
-    }
-
     public String getDstId() {
         return dstId;
     }
 
-    public void setDstId(String dstId) {
-        this.dstId = dstId;
-    }
-
     public String getTimestamp() {
         return timestamp;
-    }
-
-    public void setTimestamp(String timestamp) {
-        this.timestamp = timestamp;
     }
 }

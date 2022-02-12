@@ -44,4 +44,15 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, Set.class));
 
+    @SuppressWarnings("unchecked")
+    public static final Type<Set<Integer>> NEIGHBOURS_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "neighbours"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, Set.class));
+
+    public static final Type<VertexComponentChange> VERTEX_COMPONENT_CHANGE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "vertexComponentChange"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, VertexComponentChange.class));
 }
