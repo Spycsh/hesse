@@ -1,6 +1,6 @@
 kind: io.statefun.endpoints.v2/http
 spec:
-  functions: hesse.fns/*
+  functions: hesse.fns/*  # The runtime will invoke all functions under this namespace with the endpoint URL template.
   urlPathTemplate: http://hesse:1108/
   transport:
     type: io.statefun.transports.v1/async
