@@ -18,5 +18,5 @@ $ docker-compose up
 inspect the egress
 
 ```
-$ docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic partition-edges --from-beginning
+$ docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic connected-component-changes --from-beginning
 ```
