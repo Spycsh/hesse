@@ -1,5 +1,6 @@
 package io.github.spycsh.hesse;
 
+import io.github.spycsh.hesse.storage.VertexStorageFn;
 import io.github.spycsh.hesse.undertow.UndertowHttpHandler;
 import io.undertow.Undertow;
 import org.apache.flink.statefun.sdk.java.StatefulFunctions;
@@ -11,6 +12,7 @@ public class hesseAppServer {
         final StatefulFunctions functions = new StatefulFunctions();
 //        functions.withStatefulFunction(PartitionManagerFn.SPEC);
 //        functions.withStatefulFunction(ControllerFn.SPEC);
+        functions.withStatefulFunction(VertexStorageFn.SPEC);
 
         final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
 

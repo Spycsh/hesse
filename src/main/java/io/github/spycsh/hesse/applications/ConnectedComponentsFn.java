@@ -1,6 +1,5 @@
 package io.github.spycsh.hesse.applications;
 
-import io.github.spycsh.hesse.types.TemporalEdge;
 import io.github.spycsh.hesse.types.Types;
 import io.github.spycsh.hesse.types.VertexComponentChange;
 import org.apache.flink.statefun.sdk.java.*;
@@ -15,8 +14,8 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * this class support strongly connected component computation
- * it should accept directed edges messages from other functions
- * or directly from Kafka ingress? TODO decide the ingress form
+ * each instance of it corresponding to a vertex
+ * it should accept neighbours messages from the storage layer
  */
 public class ConnectedComponentsFn implements StatefulFunction {
     // current component id of a vertex
@@ -27,7 +26,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
 
 
-    static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.fns", "connected-components");
+    static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "connected-components");
     static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(ConnectedComponentsFn::new)
             .withValueSpecs(COMPONENT_ID, NEIGHBOURS_VALUE)
@@ -37,22 +36,19 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
-        if(message.is(Types.TEMPORAL_EDGE_TYPE)){
-            final TemporalEdge edge = message.as(Types.TEMPORAL_EDGE_TYPE);
-            int srcId = Integer.parseInt(edge.getSrcId());
-            int dstId = Integer.parseInt(edge.getDstId());
+        String vertexId = context.self().id();
 
-            // TODO add timestamp
+        if(message.is(Types.BUFFERED_NEIGHBOURS_VALUE)){
+            final Set<Integer> newAddedNeighbours = message.as(Types.BUFFERED_NEIGHBOURS_VALUE);
 
-            int currentComponentId = srcId;
+            int currentComponentId = Integer.parseInt(vertexId);
             final Set<Integer> currentNeighbours = getCurrentNeighbours(context);
 
-            final HashSet<Integer> neighbourDiff = new HashSet<>();
-            neighbourDiff.add(dstId);
+            final HashSet<Integer> neighbourDiff = new HashSet<>(newAddedNeighbours);
             neighbourDiff.removeAll(currentNeighbours);
 
-            // only broadcast to newly added neighbours
-            broadcastVertexConnectedComponentChange(context, srcId, neighbourDiff, currentComponentId);
+            // only broadcast to newly added different neighbours
+            broadcastVertexConnectedComponentChange(context, Integer.parseInt(vertexId), neighbourDiff, currentComponentId);
 
             neighbourDiff.addAll(currentNeighbours);
             context.storage().set(NEIGHBOURS_VALUE, neighbourDiff);

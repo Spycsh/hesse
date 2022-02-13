@@ -1,7 +1,14 @@
 kind: io.statefun.endpoints.v2/http
 spec:
-  functions: hesse.fns/*  # The runtime will invoke all functions under this namespace with the endpoint URL template.
+  functions: hesse.storage/*  # The runtime will invoke all functions under this namespace with the endpoint URL template.
   urlPathTemplate: http://hesse:1108/
+  transport:
+    type: io.statefun.transports.v1/async
+---
+kind: io.statefun.endpoints.v2/http
+spec:
+  functions: hesse.applications/*  # The runtime will invoke all functions under this namespace with the endpoint URL template.
+  urlPathTemplate: http://hesse:1109/
   transport:
     type: io.statefun.transports.v1/async
 ---
@@ -16,11 +23,11 @@ spec:
     - topic: example-temporal-graph
       valueType: hesse.types/temporal_edge # ingress msg type name specified in Types
       targets:
-        - hesse.fns/controller # type name specified in ControllerFn
+        - hesse.storage/vertex-storage # type name specified in VertexStorageFn
 ---
 kind: io.statefun.kafka.v1/egress
 spec:
-  id: hesse.io/partition-edges # output each partition edge that belong to each partition
+  id: hesse.io/connected-component-changes # output each connected-component change
   address: kafka:9092
   deliverySemantic:
     type: at-least-once

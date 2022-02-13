@@ -10,7 +10,6 @@ import org.apache.flink.statefun.sdk.java.types.Type;
 import java.util.Set;
 
 public class Types {
-
     private Types() {}
 
     private static final ObjectMapper JSON_OBJ_MAPPER = new ObjectMapper();
@@ -55,4 +54,10 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "vertexComponentChange"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, VertexComponentChange.class));
+
+    @SuppressWarnings("unchecked")
+    public static final Type<Set<Integer>> BUFFERED_NEIGHBOURS_VALUE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "buffered_neighbours"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, Set.class));
 }
