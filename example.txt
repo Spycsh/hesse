@@ -3,3 +3,5 @@
 {"src_id": "69", "dst_id": "60", "timestamp": "4249"}
 {"src_id": "33", "dst_id": "84", "timestamp": "16943"}
 {"src_id": "33", "dst_id": "84", "timestamp": "17283"}
+{"src_id": "2", "dst_id": "1", "timestamp": "17283"}
+{"src_id": "1", "dst_id": "2", "timestamp": "17283"}

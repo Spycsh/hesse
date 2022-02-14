@@ -22,12 +22,12 @@ public class ConnectedComponentsFn implements StatefulFunction {
     private static final ValueSpec<Integer> COMPONENT_ID = ValueSpec.named("componentId").withIntType();
 
     // set of known neighbours of a vertex
-    private static final ValueSpec<Set<Integer>> NEIGHBOURS_VALUE = ValueSpec.named("neighbours").withCustomType(Types.NEIGHBOURS_TYPE);
+    private static final ValueSpec<HashSet<Integer>> NEIGHBOURS_VALUE = ValueSpec.named("neighbours").withCustomType(Types.NEIGHBOURS_TYPE);
 
 
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "connected-components");
-    static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
+    public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(ConnectedComponentsFn::new)
             .withValueSpecs(COMPONENT_ID, NEIGHBOURS_VALUE)
             .build();
@@ -37,11 +37,18 @@ public class ConnectedComponentsFn implements StatefulFunction {
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
         String vertexId = context.self().id();
+        int vertexIdVal = Integer.parseInt(vertexId);
 
         if(message.is(Types.BUFFERED_NEIGHBOURS_VALUE)){
             final Set<Integer> newAddedNeighbours = message.as(Types.BUFFERED_NEIGHBOURS_VALUE);
 
-            int currentComponentId = Integer.parseInt(vertexId);
+            int currentComponentId = context.storage().get(COMPONENT_ID).orElse(Integer.MAX_VALUE);
+            // current component id only can be less than or equals to self id
+            // except when it is firstly initialized
+            if(currentComponentId > vertexIdVal){
+                updateComponentId(context, vertexIdVal, vertexIdVal);
+                currentComponentId = vertexIdVal;
+            }
             final Set<Integer> currentNeighbours = getCurrentNeighbours(context);
 
             final HashSet<Integer> neighbourDiff = new HashSet<>(newAddedNeighbours);
@@ -97,7 +104,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
     }
 
     private Set<Integer> getCurrentNeighbours(Context context){
-        return context.storage().get(NEIGHBOURS_VALUE).orElse(Collections.emptySet());
+        return context.storage().get(NEIGHBOURS_VALUE).orElse(new HashSet<>());
     }
 
     private void outputConnectedComponentChange(Context context, int vertexId, int componentId) {

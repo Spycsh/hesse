@@ -7,6 +7,7 @@ import org.apache.flink.statefun.sdk.java.TypeName;
 import org.apache.flink.statefun.sdk.java.types.SimpleType;
 import org.apache.flink.statefun.sdk.java.types.Type;
 
+import java.util.HashSet;
 import java.util.Set;
 
 public class Types {
@@ -41,13 +42,13 @@ public class Types {
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "temporal_edges"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, Set.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
 
     @SuppressWarnings("unchecked")
-    public static final Type<Set<Integer>> NEIGHBOURS_TYPE = SimpleType.simpleImmutableTypeFrom(
+    public static final Type<HashSet<Integer>> NEIGHBOURS_TYPE = SimpleType.simpleImmutableTypeFrom(
             TypeName.typeNameOf(TYPES_NAMESPACE, "neighbours"),
             JSON_OBJ_MAPPER::writeValueAsBytes,
-            bytes -> JSON_OBJ_MAPPER.readValue(bytes, Set.class));
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
 
     public static final Type<VertexComponentChange> VERTEX_COMPONENT_CHANGE_TYPE =
             SimpleType.simpleImmutableTypeFrom(
@@ -56,8 +57,8 @@ public class Types {
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, VertexComponentChange.class));
 
     @SuppressWarnings("unchecked")
-    public static final Type<Set<Integer>> BUFFERED_NEIGHBOURS_VALUE = SimpleType.simpleImmutableTypeFrom(
+    public static final Type<HashSet<Integer>> BUFFERED_NEIGHBOURS_VALUE = SimpleType.simpleImmutableTypeFrom(
             TypeName.typeNameOf(TYPES_NAMESPACE, "buffered_neighbours"),
             JSON_OBJ_MAPPER::writeValueAsBytes,
-            bytes -> JSON_OBJ_MAPPER.readValue(bytes, Set.class));
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
 }
