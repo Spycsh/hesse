@@ -1,5 +1,6 @@
 package io.github.spycsh.hesse.types;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.spycsh.hesse.PartitionManagerFn;
@@ -9,6 +10,7 @@ import org.apache.flink.statefun.sdk.java.types.Type;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Types {
     private Types() {}
@@ -50,6 +52,12 @@ public class Types {
             JSON_OBJ_MAPPER::writeValueAsBytes,
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
 
+    @SuppressWarnings("unchecked")
+    public static final Type<ConcurrentHashMap<Integer, Double>> NEIGHBOURS_WEIGHTED_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "neighbours_weighted"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, ConcurrentHashMap.class));
+
     public static final Type<VertexComponentChange> VERTEX_COMPONENT_CHANGE_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "vertexComponentChange"),
@@ -61,4 +69,23 @@ public class Types {
             TypeName.typeNameOf(TYPES_NAMESPACE, "buffered_neighbours"),
             JSON_OBJ_MAPPER::writeValueAsBytes,
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
+
+
+    @SuppressWarnings("unchecked")
+    public static final Type<ConcurrentHashMap<Integer, Double>> BUFFERED_NEIGHBOURS_WEIGHTED_VALUE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "buffered_neighbours_weighted"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, ConcurrentHashMap.class));
+
+    @SuppressWarnings("unchecked")
+    public static final Type<ConcurrentHashMap<Integer, Double>> SHORTEST_PATH_DISTANCES_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "shortest_path_distances"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, ConcurrentHashMap.class));
+
+    public static final Type<VertexShortestPathChange> VERTEX_SHORTEST_PATH_CHANGE_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "shortest_path_distances"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, VertexShortestPathChange.class));
+
 }
