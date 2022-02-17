@@ -1,0 +1,8 @@
+{"src_id": "11", "dst_id": "39", "weight": "10", "timestamp": "0"}
+{"src_id": "39", "dst_id": "54", "weight": "10", "timestamp": "2635"}
+{"src_id": "54", "dst_id": "60", "weight": "10", "timestamp": "4249"}
+{"src_id": "11", "dst_id": "60", "weight": "25", "timestamp": "16943"}
+{"src_id": "33", "dst_id": "82", "weight": "20", "timestamp": "17283"}
+{"src_id": "2", "dst_id": "1", "weight": "20", "timestamp": "17283"}
+{"src_id": "1", "dst_id": "2", "weight": "20", "timestamp": "17283"}
+{"src_id": "37", "dst_id": "60", "weight": "20", "timestamp": "17283"}

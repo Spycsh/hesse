@@ -1,6 +1,7 @@
 package io.github.spycsh.hesse;
 
 import io.github.spycsh.hesse.applications.ConnectedComponentsFn;
+import io.github.spycsh.hesse.applications.SingleSourceShortestPathFn;
 import io.github.spycsh.hesse.storage.VertexStorageFn;
 import io.github.spycsh.hesse.undertow.UndertowHttpHandler;
 import io.undertow.Undertow;
@@ -15,6 +16,7 @@ public class hesseAppServer {
 //        functions.withStatefulFunction(ControllerFn.SPEC);
         functions.withStatefulFunction(VertexStorageFn.SPEC);
         functions.withStatefulFunction(ConnectedComponentsFn.SPEC);
+        functions.withStatefulFunction(SingleSourceShortestPathFn.SPEC);
 
         final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
 
