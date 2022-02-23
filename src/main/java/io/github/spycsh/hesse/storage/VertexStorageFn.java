@@ -1,6 +1,5 @@
 package io.github.spycsh.hesse.storage;
 
-import io.github.spycsh.hesse.applications.ConnectedComponentsFn;
 import io.github.spycsh.hesse.types.TemporalEdge;
 import io.github.spycsh.hesse.types.TemporalWeightedEdge;
 import io.github.spycsh.hesse.types.Types;
@@ -12,8 +11,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * storage for one vertex
- * contains basic adjacent neighbours for the vertex
+ * partition by vertexId
  */
 public class VertexStorageFn implements StatefulFunction {
 

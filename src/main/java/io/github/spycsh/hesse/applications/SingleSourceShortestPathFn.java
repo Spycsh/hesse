@@ -3,12 +3,12 @@ package io.github.spycsh.hesse.applications;
 import io.github.spycsh.hesse.types.Types;
 import io.github.spycsh.hesse.types.VertexShortestPathChange;
 import org.apache.flink.statefun.sdk.java.*;
+import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class SingleSourceShortestPathFn implements StatefulFunction {
@@ -29,8 +29,7 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
             .withValueSpecs(SHORTEST_PATH_DISTANCES_VALUE, NEIGHBOURS_WEIGHTED_VALUE, VERTEX_SHORTEST_PATH_CHANGE_VALUE)
             .build();
 
-//    static final TypeName KAFKA_EGRESS = TypeName.typeNameOf("hesse.io", "single-shortest-path");
-
+    static final TypeName KAFKA_EGRESS = TypeName.typeNameOf("hesse.io", "single-source-shortest-path-changes");
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
@@ -46,9 +45,9 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
                         put(context.self().id(), "0.0");
                     }});
 
-            for(Map.Entry<String, String> e:shortestPathDistances.entrySet()){
-                System.out.println("id: "+ context.self().id()+" from source: " + e.getKey() + " weight: "+e.getValue());
-            }
+//            for(Map.Entry<String, String> e:shortestPathDistances.entrySet()){
+//                System.out.println("id: "+ context.self().id()+" from source: " + e.getKey() + " weight: "+e.getValue());
+//            }
 
             context.storage().set(SHORTEST_PATH_DISTANCES_VALUE, shortestPathDistances);
 
@@ -83,9 +82,7 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
                 }
             }
 
-            for(Map.Entry<String, String> e:shortestPathDistances.entrySet()){
-                System.out.println("id: "+ context.self().id()+" from source: " + e.getKey() + " weight: "+e.getValue());
-            }
+            outputSingleSourceShortestPathChanges(context, shortestPathDistances);
         }
 
         return context.done();
@@ -101,15 +98,7 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
     private void broadcastShortestPathChange(Context context,
                                              HashMap<Integer, Double> newAddedNeighboursWithWeights,
                                              HashMap<String, String> shortestPathDistances) {
-//        Set<String> neighbourIds = newAddedNeighboursWithWeights.keySet();
-
-//        for(String neighbourId : neighbourIds) {
         for(Map.Entry<Integer, Double> entry: newAddedNeighboursWithWeights.entrySet()){
-
-//            for(Map.Entry<String, String> e:shortestPathDistances.entrySet()){
-//                System.out.println(e.getKey() + " " + e.getValue());
-//            }
-
             context.send(MessageBuilder.forAddress(TYPE_NAME, String.valueOf(entry.getKey()))
                     .withCustomType(
                             Types.VERTEX_SHORTEST_PATH_CHANGE_TYPE,
@@ -120,5 +109,15 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
 
     private HashMap<Integer, Double> getCurrentNeighboursWithWeights(Context context){
         return context.storage().get(NEIGHBOURS_WEIGHTED_VALUE).orElse(new HashMap<>());
+    }
+
+    private void outputSingleSourceShortestPathChanges(Context context, HashMap<String, String> shortestPathDistances) {
+        for(Map.Entry<String, String> e:shortestPathDistances.entrySet()){
+            context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
+                    .withTopic("single-source-shortest-path-changes")
+                    .withUtf8Key(context.self().id())
+                    .withUtf8Value("id: "+ context.self().id()+" from source: " + e.getKey() + " weight: "+e.getValue())
+                    .build());
+        }
     }
 }

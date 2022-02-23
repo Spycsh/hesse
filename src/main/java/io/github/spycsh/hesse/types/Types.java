@@ -1,10 +1,8 @@
 package io.github.spycsh.hesse.types;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.github.spycsh.hesse.PartitionManagerFn;
 import org.apache.flink.statefun.sdk.java.TypeName;
 import org.apache.flink.statefun.sdk.java.types.SimpleType;
 import org.apache.flink.statefun.sdk.java.types.Type;
@@ -48,11 +46,19 @@ public class Types {
      * denote a list of edges hold by one partition
      */
     @SuppressWarnings("unchecked")
-    public static final Type<Set<TemporalEdge>> TEMPORAL_EDGES_TYPE =
+    public static final Type<HashSet<TemporalEdge>> TEMPORAL_EDGES_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "temporal_edges"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
+
+    @SuppressWarnings("unchecked")
+    public static final Type<HashSet<TemporalWeightedEdge>> TEMPORAL_EDGES_WEIGHTED_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "temporal_weighted_edges"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
+
 
     @SuppressWarnings("unchecked")
     public static final Type<HashSet<Integer>> NEIGHBOURS_TYPE = SimpleType.simpleImmutableTypeFrom(

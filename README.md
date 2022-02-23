@@ -17,13 +17,36 @@ $ docker-compose up
 
 inspect the egress
 
+Currently, we build two scenarios:
+
+1) Find Connected Components (unweighted graph)
 ```
 $ docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic connected-component-changes --from-beginning
 ```
 
+2) Find single source shortest path (weighted graph)
+```
+$ docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic single-source-shortest-path-
+changes --from-beginning
+```
+
 change applications:
 
-just change the ingress path, edge type and the Kafka topic in `docker-compose.yaml` and `modules.yaml`
+just change the ingress file (or stream) path, edge type (weighted or unweighted) and the Kafka topic in `docker-compose.yaml` and `modules.yaml`
+The comments in those two yaml files will help you with the config
+
+use partition manager:
+
+Hesse allow two ways of storage of the graph: 
+1) partition by vertex id (VertexStorageFn -> Applications)
+2) partition by partition id (ControllerFn -> PartitionManagerFn -> Applications)
+
+The former will create context for each vertex and rely on Flink internal partitioning scheme
+
+The latter will offer a coarse granularity, where several nodes are classified to one partition,
+and they share one context
+
+This can also be configured in module.yaml with the ingress targets field
 
 ## issues
 

@@ -2,6 +2,8 @@ package io.github.spycsh.hesse;
 
 import io.github.spycsh.hesse.applications.ConnectedComponentsFn;
 import io.github.spycsh.hesse.applications.SingleSourceShortestPathFn;
+import io.github.spycsh.hesse.storage.ControllerFn;
+import io.github.spycsh.hesse.storage.PartitionManagerFn;
 import io.github.spycsh.hesse.storage.VertexStorageFn;
 import io.github.spycsh.hesse.undertow.UndertowHttpHandler;
 import io.undertow.Undertow;
@@ -12,8 +14,12 @@ public class hesseAppServer {
 
     public static void main(String[] args) {
         final StatefulFunctions functions = new StatefulFunctions();
-//        functions.withStatefulFunction(PartitionManagerFn.SPEC);
-//        functions.withStatefulFunction(ControllerFn.SPEC);
+        // options 1: partition by partitionId
+        // use controller -> partitionManager -> applications
+        functions.withStatefulFunction(ControllerFn.SPEC);
+        functions.withStatefulFunction(PartitionManagerFn.SPEC);
+        // options 2: partition by vertexId
+        // use vertexStorage -> applications
         functions.withStatefulFunction(VertexStorageFn.SPEC);
         functions.withStatefulFunction(ConnectedComponentsFn.SPEC);
         functions.withStatefulFunction(SingleSourceShortestPathFn.SPEC);

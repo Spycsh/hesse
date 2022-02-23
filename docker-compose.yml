@@ -85,9 +85,12 @@ services:
     links:
       - "kafka:kafka"
     environment:
-      APP_PATH: /mnt/example.txt
+      APP_PATH: /mnt/example1.txt
+#      APP_PATH: /mnt/example2.txt
       APP_KAFKA_HOST: kafka:9092
-      APP_KAFKA_TOPIC: example-temporal-graph4
+      APP_KAFKA_TOPIC: example-temporal-graph1
+#      APP_KAFKA_TOPIC: example-temporal-graph2
       APP_JSON_PATH: src_id
     volumes:
-      - ./example.txt:/mnt/example.txt
+      - ./example1.txt:/mnt/example1.txt
+#      - ./example2.txt:/mnt/example2.txt
