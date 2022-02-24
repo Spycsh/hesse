@@ -31,18 +31,6 @@ public class VertexStorageFn implements StatefulFunction {
             .withValueSpecs(NEIGHBOURS_VALUE, NEIGHBOURS_WEIGHTED_VALUE, BUFFERED_NEIGHBOURS_VALUE, BUFFERED_NEIGHBOURS_WEIGHTED_VALUE, LAST_MESSAGE_TIME_VALUE)
             .build();
 
-    Properties prop;
-
-    {
-        try {
-            prop = PropertyFileReader.readPropertyFile();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        setBufferThresholdSize(Integer.parseInt(prop.getProperty("BUFFER_THRESHOLD_SIZE")));
-        setBufferThresholdTime(Integer.parseInt(prop.getProperty("BUFFER_THRESHOLD_TIME")));
-    }
-
     int BUFFER_THRESHOLD_SIZE;
     int BUFFER_THRESHOLD_TIME;
 
@@ -54,14 +42,31 @@ public class VertexStorageFn implements StatefulFunction {
         this.BUFFER_THRESHOLD_TIME = time;
     }
 
+    List<String> unweightedAppNames = new ArrayList<>();
+    List<String> weightedAppNames = new ArrayList<>();
 
-    List<String> unweightedAppNames = new ArrayList<String>(){{
-        add("connected-components");
-    }};
+    Properties prop;
 
-    List<String> weightedAppNames = new ArrayList<String>(){{
-        add("single-source-shortest-path");
-    }};
+    {
+        try {
+            prop = PropertyFileReader.readPropertyFile();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        setBufferThresholdSize(Integer.parseInt(prop.getProperty("BUFFER_THRESHOLD_SIZE")));
+        setBufferThresholdTime(Integer.parseInt(prop.getProperty("BUFFER_THRESHOLD_TIME")));
+
+        setUnWeightedAppNames(prop.getProperty("UNWEIGHTED_APP_NAMES"));
+        setWeightedAppNames(prop.getProperty("WEIGHTED_APP_NAMES"));
+    }
+
+    public void setUnWeightedAppNames(String appNames) {
+        this.unweightedAppNames.addAll(Arrays.asList(appNames.split(",")));
+    }
+
+    public void setWeightedAppNames(String appNames) {
+        this.weightedAppNames.addAll(Arrays.asList(appNames.split(",")));
+    }
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {

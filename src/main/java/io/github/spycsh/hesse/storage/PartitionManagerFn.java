@@ -4,6 +4,7 @@ import io.github.spycsh.hesse.types.PartitionConfig;
 import io.github.spycsh.hesse.types.TemporalEdge;
 import io.github.spycsh.hesse.types.TemporalWeightedEdge;
 import io.github.spycsh.hesse.types.Types;
+import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
 import org.apache.flink.statefun.sdk.java.message.Message;
@@ -26,13 +27,29 @@ public class PartitionManagerFn implements StatefulFunction {
     private static final ValueSpec<HashSet<TemporalWeightedEdge>> TEMPORAL_WEIGHTED_EDGES =
             ValueSpec.named("temporalWeightedEdges").withCustomType(Types.TEMPORAL_EDGES_WEIGHTED_TYPE);
 
-    List<String> unweightedAppNames = new ArrayList<String>(){{
-        add("connected-components");
-    }};
+    List<String> unweightedAppNames = new ArrayList<>();
+    List<String> weightedAppNames = new ArrayList<>();
 
-    List<String> weightedAppNames = new ArrayList<String>(){{
-        add("single-source-shortest-path");
-    }};
+    public void setUnWeightedAppNames(String appNames) {
+        this.unweightedAppNames.addAll(Arrays.asList(appNames.split(",")));
+    }
+
+    public void setWeightedAppNames(String appNames) {
+        this.weightedAppNames.addAll(Arrays.asList(appNames.split(",")));
+    }
+
+    Properties prop;
+
+    {
+        try {
+            prop = PropertyFileReader.readPropertyFile();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        setUnWeightedAppNames(prop.getProperty("UNWEIGHTED_APP_NAMES"));
+        setWeightedAppNames(prop.getProperty("WEIGHTED_APP_NAMES"));
+    }
 
     public static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.storage", "partitionManager");
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec

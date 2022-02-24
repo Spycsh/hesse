@@ -17,7 +17,8 @@ import java.util.concurrent.CompletableFuture;
  * to obtain the partitionId
  * arrange several vertexes into one partition will reduce the communication cost
  */
-public class ControllerFn implements StatefulFunction {
+public class
+ControllerFn implements StatefulFunction {
 
     final int partitionNumber = 5;
 
