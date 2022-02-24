@@ -3,6 +3,7 @@ package io.github.spycsh.hesse.storage;
 import io.github.spycsh.hesse.types.TemporalEdge;
 import io.github.spycsh.hesse.types.TemporalWeightedEdge;
 import io.github.spycsh.hesse.types.Types;
+import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
@@ -21,7 +22,6 @@ public class VertexStorageFn implements StatefulFunction {
     private static final ValueSpec<HashMap<Integer, Double>> NEIGHBOURS_WEIGHTED_VALUE = ValueSpec.named("neighboursWeighted").withCustomType(Types.NEIGHBOURS_WEIGHTED_TYPE);
     private static final ValueSpec<HashMap<Integer, Double>> BUFFERED_NEIGHBOURS_WEIGHTED_VALUE = ValueSpec.named("bufferedNeighboursWeighted").withCustomType(Types.BUFFERED_NEIGHBOURS_WEIGHTED_VALUE);
 
-    // TODO may hold a list for different sources
     private static final ValueSpec<Long> LAST_MESSAGE_TIME_VALUE = ValueSpec.named("lastMessageTime").withLongType();
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.storage", "vertex-storage");
@@ -31,12 +31,29 @@ public class VertexStorageFn implements StatefulFunction {
             .withValueSpecs(NEIGHBOURS_VALUE, NEIGHBOURS_WEIGHTED_VALUE, BUFFERED_NEIGHBOURS_VALUE, BUFFERED_NEIGHBOURS_WEIGHTED_VALUE, LAST_MESSAGE_TIME_VALUE)
             .build();
 
-    /**
-     * pre-defined params
-     * TODO can be assigned in config file by user?
-     */
-    static final int BUFFER_THRESHOLD_SIZE = 5;
-    static final int BUFFER_THRESHOLD_TIME = 500;   // in milliseconds
+    Properties prop;
+
+    {
+        try {
+            prop = PropertyFileReader.readPropertyFile();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        setBufferThresholdSize(Integer.parseInt(prop.getProperty("BUFFER_THRESHOLD_SIZE")));
+        setBufferThresholdTime(Integer.parseInt(prop.getProperty("BUFFER_THRESHOLD_TIME")));
+    }
+
+    int BUFFER_THRESHOLD_SIZE;
+    int BUFFER_THRESHOLD_TIME;
+
+    public void setBufferThresholdSize(int size){
+        this.BUFFER_THRESHOLD_SIZE = size;
+    }
+
+    public void setBufferThresholdTime(int time){
+        this.BUFFER_THRESHOLD_TIME = time;
+    }
+
 
     List<String> unweightedAppNames = new ArrayList<String>(){{
         add("connected-components");

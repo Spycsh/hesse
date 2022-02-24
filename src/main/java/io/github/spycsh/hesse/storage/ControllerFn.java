@@ -10,8 +10,6 @@ import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 
-// TODO pass partition number to controller
-
 /**
  * partition by partitionId
  * this file and PartitionManagerFn provide a basic partitioning scheme

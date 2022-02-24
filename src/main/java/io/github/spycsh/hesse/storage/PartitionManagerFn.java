@@ -26,10 +26,6 @@ public class PartitionManagerFn implements StatefulFunction {
     private static final ValueSpec<HashSet<TemporalWeightedEdge>> TEMPORAL_WEIGHTED_EDGES =
             ValueSpec.named("temporalWeightedEdges").withCustomType(Types.TEMPORAL_EDGES_WEIGHTED_TYPE);
 
-
-    static final int BUFFER_THRESHOLD_SIZE = 5;
-    static final int BUFFER_THRESHOLD_TIME = 500;   // in milliseconds
-
     List<String> unweightedAppNames = new ArrayList<String>(){{
         add("connected-components");
     }};
