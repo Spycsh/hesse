@@ -56,3 +56,11 @@ delete corrupted topics
 docker exec hesse_kafka_1 kafka-topics --list --zookeeper zookeeper:2181
 docker exec hesse_kafka_1 kafka-topics --delete --zookeeper zookeeper:2181 --topic example-temporal-graph
 ```
+
+## query
+
+[comment]: <> (```shell)
+
+[comment]: <> (curl -X PUT -H "Content-Type: application/vnd.hesse.types/query_mini_batch" -d {"query_id": "1", "user_id": "1", "vertex_id": "1", "query_type": "mini-batch", "T": "50", "H": "2", "K": 2 } localhost:8091/hesse.query/temporal-query-handler/1)
+
+[comment]: <> (```)

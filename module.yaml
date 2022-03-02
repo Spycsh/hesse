@@ -12,24 +12,37 @@ spec:
   transport:
     type: io.statefun.transports.v1/async
 ---
+# add endpoint for query
+kind: io.statefun.endpoints.v2/http
+spec:
+  functions: hesse.query/*
+  urlPathTemplate: http://hesse:1108/
+  transport:
+    type: io.statefun.transports.v1/async
+---
 kind: io.statefun.kafka.v1/ingress
 spec:
-  id: hesse.io/example-temporal-graph1
+#  id: hesse.io/example-temporal-graph1
 #  id: hesse.io/example-temporal-graph2
+  id: hesse.io/example-temporal-graph3
   address: kafka:9092
   consumerGroupId: hesse
   startupPosition:
     type: earliest
   topics:
-    - topic: example-temporal-graph1
+#    - topic: example-temporal-graph1
 #    - topic: example-temporal-graph2
+    - topic: example-temporal-graph3
       valueType: hesse.types/temporal_edge # ingress msg type name specified in Types
-#      valueType: hesse.types/temporal_edge_weighted
+    #      valueType: hesse.types/temporal_edge_weighted
       targets:
-#       type name specified in VertexStorageFn or ControllerFn
-        - hesse.storage/vertex-storage # partition by vertexId
-#        - hesse.storage/controller  # partition by partitionId
+    #       type name specified in VertexStorageFn or ControllerFn
+#        - hesse.storage/vertex-storage # partition by vertexId
+        - hesse.storage/controller  # partition by partitionId
 ---
+#kind: io.statefun.playground.v1/ingress # use curl to send HTTP request to query layer
+#spec:
+#  port: 8091
 kind: io.statefun.kafka.v1/ingress
 spec:
   id: hesse.io/query
@@ -37,11 +50,11 @@ spec:
   consumerGroupId: hesse
   startupPosition:
     type: earliest
-    topics:
-      - topic: query
-        valueType: hesse.types/query # ingress msg type name specified in Types
-        targets:
-          - hesse.query/temporal-query-handler
+  topics:
+    - topic: query
+      valueType: hesse.types/query_mini_batch # ingress msg type name specified in Types
+      targets:
+        - hesse.query/temporal-query-handler
 ---
 kind: io.statefun.kafka.v1/egress
 spec:
