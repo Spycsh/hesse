@@ -7,11 +7,10 @@ import org.apache.flink.statefun.sdk.java.TypeName;
 import org.apache.flink.statefun.sdk.java.types.SimpleType;
 import org.apache.flink.statefun.sdk.java.types.Type;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class Types {
+
     private Types() {}
 
     private static final ObjectMapper JSON_OBJ_MAPPER = new ObjectMapper();
@@ -103,5 +102,76 @@ public class Types {
             JSON_OBJ_MAPPER::writeValueAsBytes,
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<VertexShortestPathChange>() {
             }));
+
+    public static final Type<TreeMap<Integer, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, TreeMap.class));
+
+    public static final Type<HashMap<String, TreeMap<Integer, ArrayList<VertexActivity>>>> PARTITION_ACTIVITIES = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "partition_activities"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashMap.class));
+
+
+    /**
+     * Type denoting a query of mini batch
+     * that is sent from ingress to storage
+     */
+    public static final Type<QueryMiniBatch> QUERY_MINI_BATCH_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatch.class));
+
+    /**
+     * Type denoting a query of mini batch with state
+     * sent from storage to application
+     */
+    public static final Type<QueryMiniBatchWithState> QUERY_MINI_BATCH_WITH_STATE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_with_state"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatchWithState.class));
+
+    /**
+     * MiniBatchFn -> neighbours' VertexStorageFn
+     */
+    public static final Type<ForwardQueryMiniBatch> FORWARD_QUERY_MINI_BATCH_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_mini_batch"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQueryMiniBatch.class));
+
+    /**
+     * neighbour's VertexStorageFn to neighbours' MiniBatchFn
+     */
+    public static final Type<ForwardQueryMiniBatchWithState> FORWARD_QUERY_MINI_BATCH_WITH_STATE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_mini_batch_with_state"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQueryMiniBatchWithState.class));
+
+    /**
+     * query result
+     */
+    public static final Type<QueryMiniBatchResult> QUERY_MINI_BATCH_RESULT_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_result"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatchResult.class));
+
+    public static final Type<HashSet<QueryMiniBatchSourceId>> QUERY_MINI_BATCH_SOURCE_IDs_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_source_ids"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
+
+    public static final Type<ArrayList<QueryMiniBatchResult>> QUERY_MINI_BATCH_RESULTS_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_results"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ArrayList.class));
+
 
 }

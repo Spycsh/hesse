@@ -1,9 +1,6 @@
 package io.github.spycsh.hesse.storage;
 
-import io.github.spycsh.hesse.types.PartitionConfig;
-import io.github.spycsh.hesse.types.TemporalEdge;
-import io.github.spycsh.hesse.types.TemporalWeightedEdge;
-import io.github.spycsh.hesse.types.Types;
+import io.github.spycsh.hesse.types.*;
 import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
@@ -27,6 +24,10 @@ public class PartitionManagerFn implements StatefulFunction {
     private static final ValueSpec<HashSet<TemporalWeightedEdge>> TEMPORAL_WEIGHTED_EDGES =
             ValueSpec.named("temporalWeightedEdges").withCustomType(Types.TEMPORAL_EDGES_WEIGHTED_TYPE);
 
+//    private static final ValueSpec<TreeMap<Integer, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES = ValueSpec.named("vertexActivities").withCustomType(Types.VERTEX_ACTIVITIES);
+    private static final ValueSpec<HashMap<String, TreeMap<Integer, ArrayList<VertexActivity>>>> PARTITION_ACTIVITIES =
+        ValueSpec.named("partitionActivities").withCustomType(Types.PARTITION_ACTIVITIES);
+
     List<String> unweightedAppNames = new ArrayList<>();
     List<String> weightedAppNames = new ArrayList<>();
 
@@ -39,6 +40,8 @@ public class PartitionManagerFn implements StatefulFunction {
     }
 
     Properties prop;
+
+    private static final int EVENT_TIME_INTERVAL = 5;
 
     {
         try {
@@ -72,21 +75,26 @@ public class PartitionManagerFn implements StatefulFunction {
         // it will store in the internal buffer
         if(message.is(Types.TEMPORAL_EDGE_TYPE)){
             // get current set of temporal edges
-            HashSet<TemporalEdge> temporalEdges = context.storage().get(TEMPORAL_EDGES).orElse(new HashSet<>());
+//            HashSet<TemporalEdge> temporalEdges = context.storage().get(TEMPORAL_EDGES).orElse(new HashSet<>());
             // get the temporal edge that needed to be added
             TemporalEdge temporalEdge = message.as(Types.TEMPORAL_EDGE_TYPE);
-            temporalEdges.add(temporalEdge);
-            context.storage().set(TEMPORAL_EDGES, temporalEdges);
+//            temporalEdges.add(temporalEdge);
+//            context.storage().set(TEMPORAL_EDGES, temporalEdges);
+
+            // TODO persistence, event time batch checkpointing
+            storeActivity(context, temporalEdge);
 
             outputTemporalEdgeChange(context, temporalEdge);
             sendNeighbourToApplications(context, temporalEdge);
         } else if(message.is(Types.TEMPORAL_EDGE_WEIGHTED_TYPE)){
             // get current set of temporal edges
-            HashSet<TemporalWeightedEdge> temporalWeightedEdges = context.storage().get(TEMPORAL_WEIGHTED_EDGES).orElse(new HashSet<>());
+//            HashSet<TemporalWeightedEdge> temporalWeightedEdges = context.storage().get(TEMPORAL_WEIGHTED_EDGES).orElse(new HashSet<>());
             // get the temporal edge that needed to be added
             TemporalWeightedEdge temporalWeightedEdge = message.as(Types.TEMPORAL_EDGE_WEIGHTED_TYPE);
-            temporalWeightedEdges.add(temporalWeightedEdge);
-            context.storage().set(TEMPORAL_WEIGHTED_EDGES, temporalWeightedEdges);
+//            temporalWeightedEdges.add(temporalWeightedEdge);
+//            context.storage().set(TEMPORAL_WEIGHTED_EDGES, temporalWeightedEdges);
+            // TODO persistence, event time batch checkpointing
+            storeActivity(context, temporalWeightedEdge);
 
             outputTemporalEdgeChange(context, temporalWeightedEdge);
             sendNeighbourToApplications(context, temporalWeightedEdge);
@@ -148,5 +156,36 @@ public class PartitionManagerFn implements StatefulFunction {
                             bufferedWeightedNeighbours)
                     .build());
         }
+    }
+
+    private void storeActivity(Context context, TemporalEdge edge) {
+
+        HashMap<String, TreeMap<Integer, ArrayList<VertexActivity>>> partitionActivities = context.storage().get(PARTITION_ACTIVITIES).orElse(new HashMap<>());
+        TreeMap<Integer, ArrayList<VertexActivity>> vertexActivities = partitionActivities.getOrDefault(edge.getSrcId(), new TreeMap<>());
+        int batchIndex = Integer.parseInt(edge.getTimestamp()) / EVENT_TIME_INTERVAL;
+        ArrayList<VertexActivity> batchActivity = vertexActivities.getOrDefault(batchIndex, new ArrayList<>());
+        batchActivity.add(
+                new VertexActivity("add",
+                        edge.getSrcId(), edge.getDstId(), edge.getTimestamp()));
+
+        vertexActivities.put(batchIndex, batchActivity);
+        partitionActivities.put(edge.getSrcId(), vertexActivities);
+
+        context.storage().set(PARTITION_ACTIVITIES, partitionActivities);
+    }
+
+    private void storeActivity(Context context, TemporalWeightedEdge edge) {
+        HashMap<String, TreeMap<Integer, ArrayList<VertexActivity>>> partitionActivities = context.storage().get(PARTITION_ACTIVITIES).orElse(new HashMap<>());
+        TreeMap<Integer, ArrayList<VertexActivity>> vertexActivities = partitionActivities.getOrDefault(edge.getSrcId(), new TreeMap<>());
+        int batchIndex = Integer.parseInt(edge.getTimestamp()) / EVENT_TIME_INTERVAL;
+        ArrayList<VertexActivity> batchActivity = vertexActivities.getOrDefault(batchIndex, new ArrayList<>());
+        batchActivity.add(
+                new VertexActivity("add",
+                        edge.getSrcId(), edge.getDstId(), edge.getWeight(), edge.getTimestamp()));
+
+        vertexActivities.put(batchIndex, batchActivity);
+        partitionActivities.put(edge.getSrcId(), vertexActivities);
+
+        context.storage().set(PARTITION_ACTIVITIES, partitionActivities);
     }
 }

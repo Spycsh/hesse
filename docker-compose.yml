@@ -94,3 +94,20 @@ services:
     volumes:
       - ./example1.txt:/mnt/example1.txt
 #      - ./example2.txt:/mnt/example2.txt
+
+
+  # Kafka query ingress
+  hesse-query-producer:
+    image: ververica/statefun-playground-producer:latest
+    depends_on:
+      - kafka
+      - statefun-worker
+    links:
+      - "kafka:kafka"
+    environment:
+      APP_PATH: /mnt/query1.txt
+      APP_KAFKA_HOST: kafka:9092
+      APP_KAFKA_TOPIC: query
+      APP_JSON_PATH: user_id
+    volumes:
+      - ./query1.txt:/mnt/query1.txt
