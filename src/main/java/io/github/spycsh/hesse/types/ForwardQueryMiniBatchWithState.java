@@ -21,25 +21,20 @@ public class ForwardQueryMiniBatchWithState {
     @JsonProperty("query_type")
     private String queryType;
 
-    @JsonProperty("T")
-    private int T;
+    @JsonProperty("t")
+    private int t;
 
-    @JsonProperty("H")
-    private int H;
+    @JsonProperty("h")
+    private int h;
 
-    @JsonProperty("K")
-    private int K;
+    @JsonProperty("k")
+    private int k;
 
     @JsonProperty("vertex_activities")
     List<VertexActivity> vertexActivities = new ArrayList<>();
 
-//    public ForwardQueryMiniBatchWithState(String source, int t, int h, int k, List<VertexActivity> vertexActivities) {
-//        this.source = source;
-//        T = t;
-//        H = h;
-//        K = k;
-//        this.vertexActivities = vertexActivities;
-//    }
+    public ForwardQueryMiniBatchWithState() {
+    }
 
     public ForwardQueryMiniBatchWithState(String source, ForwardQueryMiniBatch q, List<VertexActivity> vertexActivities) {
         this.source = source;
@@ -47,9 +42,9 @@ public class ForwardQueryMiniBatchWithState {
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
-        this.T = q.getT();
-        this.H = q.getH();
-        this.K = q.getK();
+        this.t = q.getT();
+        this.h = q.getH();
+        this.k = q.getK();
         this.vertexActivities = vertexActivities;
     }
 
@@ -79,14 +74,14 @@ public class ForwardQueryMiniBatchWithState {
 
 
     public int getT() {
-        return T;
+        return t;
     }
 
     public int getH() {
-        return H;
+        return h;
     }
 
     public int getK() {
-        return K;
+        return k;
     }
 }

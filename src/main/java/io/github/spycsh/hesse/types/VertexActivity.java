@@ -8,6 +8,8 @@ public class VertexActivity {
     private String weight;
     private String timestamp;
 
+    public VertexActivity() {}
+
     public VertexActivity(String activityType, String srcId, String dstId, String timestamp) {
         this.activityType = activityType;
         this.srcId = srcId;

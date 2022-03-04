@@ -23,7 +23,7 @@ services:
       - "6123"
     ports:
       - "8081:8081"
-      - "8091:8091"
+#      - "8091:8091"
     environment:
       ROLE: master
       MASTER_HOST: statefun-manager
@@ -93,6 +93,8 @@ services:
 #      APP_KAFKA_TOPIC: example-temporal-graph1
 #      APP_KAFKA_TOPIC: example-temporal-graph2
       APP_KAFKA_TOPIC: example-temporal-graph3
+#      APP_DELAY_SECONDS: 1
+      APP_LOOP: "false"
       APP_JSON_PATH: src_id
     volumes:
 #      - ./example1.txt:/mnt/example1.txt
@@ -112,6 +114,18 @@ services:
       APP_PATH: /mnt/query1.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: query
-      APP_JSON_PATH: user_id
+      APP_DELAY_SECONDS: 1 # this is the interval between producing two records
+      APP_LOOP: "false"
+      APP_JSON_PATH: query_id
     volumes:
       - ./query1.txt:/mnt/query1.txt
+
+# curl query ingress
+#  hesse-query-producer:
+#    image: apache/flink-statefun-playground:3.2.0-1.0
+#    ports:
+#      - "8091:8091"
+#    depends_on:
+#      - hesse
+#    volumes:
+#      - ./module.yaml:/module.yaml

@@ -2,12 +2,9 @@ package io.github.spycsh.hesse.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class QueryMiniBatchResult {
-    @JsonProperty("source")
-    private String source;
+import java.util.ArrayList;
 
-    @JsonProperty("target")
-    private String target;
+public class QueryMiniBatchResult {
 
     @JsonProperty("query_id")
     private String queryId;
@@ -21,13 +18,18 @@ public class QueryMiniBatchResult {
     @JsonProperty("query_type")
     private String queryType;
 
-    public QueryMiniBatchResult(String source, String target, String queryId, String userId, String vertexId, String queryType) {
-        this.source = source;
-        this.target = target;
+    @JsonProperty("aggregated_results")
+    private ArrayList<Edge> aggregatedResults;  // aggregated results sent from children nodes
+
+    public QueryMiniBatchResult() {
+    }
+
+    public QueryMiniBatchResult(String queryId, String userId, String vertexId, String queryType,ArrayList<Edge> aggregatedResults) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
         this.queryType = queryType;
+        this.aggregatedResults = aggregatedResults;
     }
 
     public String getQueryId() {
@@ -46,11 +48,11 @@ public class QueryMiniBatchResult {
         return queryType;
     }
 
-    public String getSource() {
-        return source;
+    public ArrayList<Edge> getAggregatedResults() {
+        return aggregatedResults;
     }
 
-    public String getTarget() {
-        return target;
-    }
+//    public void setAggregatedResults(ArrayList<Edge> aggregatedResults) {
+//        this.aggregatedResults = aggregatedResults;
+//    }
 }

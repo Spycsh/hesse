@@ -103,7 +103,7 @@ public class Types {
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<VertexShortestPathChange>() {
             }));
 
-    public static final Type<TreeMap<Integer, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES = SimpleType.simpleImmutableTypeFrom(
+    public static final Type<TreeMap<String, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES = SimpleType.simpleImmutableTypeFrom(
             TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities"),
             JSON_OBJ_MAPPER::writeValueAsBytes,
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, TreeMap.class));
@@ -161,17 +161,22 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatchResult.class));
 
-    public static final Type<HashSet<QueryMiniBatchSourceId>> QUERY_MINI_BATCH_SOURCE_IDs_TYPE =
+    public static final Type<QueryMiniBatchContext> QUERY_MINI_BATCH_SOURCE_IDs_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_source_ids"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatchContext.class));
 
-    public static final Type<ArrayList<QueryMiniBatchResult>> QUERY_MINI_BATCH_RESULTS_TYPE =
-            SimpleType.simpleImmutableTypeFrom(
-                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_results"),
-                    JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ArrayList.class));
+    /**
+     * each query has a context on each vertex
+     * so for one vertex there is a list of contexts corresponding to list of queries
+     */
+    public static final Type<ArrayList<QueryMiniBatchContext>> QUERY_MINI_BATCH_CONTEXT_LIST_TYPE =
+        SimpleType.simpleImmutableTypeFrom(
+                TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_context_list"),
+                JSON_OBJ_MAPPER::writeValueAsBytes,
+                bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QueryMiniBatchContext>>() {
+                }));;
 
 
 }

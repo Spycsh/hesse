@@ -16,23 +16,25 @@ public class QueryMiniBatch {
     @JsonProperty("query_type")
     private String queryType;
 
-    @JsonProperty("T")
-    private int T;
+    @JsonProperty("t")
+    private int t;
 
-    @JsonProperty("H")
-    private int H;
+    @JsonProperty("h")
+    private int h;
 
-    @JsonProperty("K")
-    private int K;
+    @JsonProperty("k")
+    private int k;
+
+    public QueryMiniBatch() {}
 
     public QueryMiniBatch(String queryId, String userId, String vertexId, String queryType, int t, int h, int k) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
         this.queryType = queryType;
-        T = t;
-        H = h;
-        K = k;
+        this.t = t;
+        this.h = h;
+        this.k = k;
     }
 
     public String getQueryId() {
@@ -52,14 +54,14 @@ public class QueryMiniBatch {
     }
 
     public int getT() {
-        return T;
+        return t;
     }
 
     public int getH() {
-        return H;
+        return h;
     }
 
     public int getK() {
-        return K;
+        return k;
     }
 }

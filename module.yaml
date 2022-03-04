@@ -37,8 +37,8 @@ spec:
     #      valueType: hesse.types/temporal_edge_weighted
       targets:
     #       type name specified in VertexStorageFn or ControllerFn
-#        - hesse.storage/vertex-storage # partition by vertexId
-        - hesse.storage/controller  # partition by partitionId
+        - hesse.storage/vertex-storage # partition by vertexId
+#        - hesse.storage/controller  # partition by partitionId
 ---
 #kind: io.statefun.playground.v1/ingress # use curl to send HTTP request to query layer
 #spec:

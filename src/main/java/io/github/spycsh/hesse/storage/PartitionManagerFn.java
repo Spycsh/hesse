@@ -58,7 +58,7 @@ public class PartitionManagerFn implements StatefulFunction {
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec
             .builder(TYPE_NAME)
             .withSupplier(PartitionManagerFn::new)
-            .withValueSpecs(PARTITION_ID, TEMPORAL_EDGE, TEMPORAL_EDGES, TEMPORAL_WEIGHTED_EDGE, TEMPORAL_WEIGHTED_EDGES)
+            .withValueSpecs(PARTITION_ID, TEMPORAL_EDGE, TEMPORAL_EDGES, TEMPORAL_WEIGHTED_EDGE, TEMPORAL_WEIGHTED_EDGES, PARTITION_ACTIVITIES)
             .build();
 
     static final TypeName KAFKA_EGRESS = TypeName.typeNameOf("hesse.io", "partition-edges");

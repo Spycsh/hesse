@@ -21,7 +21,7 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.query", "temporal-query-handler");
 
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
-            .withSupplier(VertexStorageFn::new)
+            .withSupplier(TemporalQueryHandlerFn::new)
             .withValueSpecs()
             .build();
 
@@ -31,9 +31,9 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
             // send the query info to storage layer with the vertex id that is the query target
             QueryMiniBatch q = message.as(Types.QUERY_MINI_BATCH_TYPE);
             String vertexId = q.getVertexId();
-
+            System.out.println("Query " + q.getQueryId() + " of vertex " + q.getVertexId() + " "  + q.getQueryType());
             context.send(MessageBuilder
-                    .forAddress(TypeName.typeNameOf("hesse.storage", "mini-batch"), vertexId)
+                    .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
                     .withCustomType(
                             Types.QUERY_MINI_BATCH_TYPE,
                             q)

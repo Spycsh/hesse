@@ -21,7 +21,7 @@ public class VertexStorageFn implements StatefulFunction {
     private static final ValueSpec<HashMap<Integer, Double>> NEIGHBOURS_WEIGHTED_VALUE = ValueSpec.named("neighboursWeighted").withCustomType(Types.NEIGHBOURS_WEIGHTED_TYPE);
     private static final ValueSpec<HashMap<Integer, Double>> BUFFERED_NEIGHBOURS_WEIGHTED_VALUE = ValueSpec.named("bufferedNeighboursWeighted").withCustomType(Types.BUFFERED_NEIGHBOURS_WEIGHTED_VALUE);
 
-    private static final ValueSpec<TreeMap<Integer, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES = ValueSpec.named("vertexActivities").withCustomType(Types.VERTEX_ACTIVITIES);
+    private static final ValueSpec<TreeMap<String, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES = ValueSpec.named("vertexActivities").withCustomType(Types.VERTEX_ACTIVITIES);
 
 
     private static final ValueSpec<Long> LAST_MESSAGE_TIME_VALUE = ValueSpec.named("lastMessageTime").withLongType();
@@ -82,7 +82,6 @@ public class VertexStorageFn implements StatefulFunction {
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
-        System.out.println(SPEC.knownValues());
         HashMap<Integer, Double> bufferedNeighboursWeighted =
                 context.storage().get(BUFFERED_NEIGHBOURS_WEIGHTED_VALUE).orElse(new HashMap<>());
         HashSet<Integer> bufferedNeighbours = context.storage().get(BUFFERED_NEIGHBOURS_VALUE).orElse(new HashSet<>());
@@ -131,6 +130,7 @@ public class VertexStorageFn implements StatefulFunction {
         // handle the queries
         if(message.is(Types.QUERY_MINI_BATCH_TYPE)){
             QueryMiniBatch q = message.as(Types.QUERY_MINI_BATCH_TYPE);
+            System.out.println("[VertexStorageFn] QueryMiniBatch received");
 
             // only send the needed log
             // namely from the beginning to the batch which time T is in
@@ -147,6 +147,8 @@ public class VertexStorageFn implements StatefulFunction {
 
         if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
             ForwardQueryMiniBatch q = message.as(Types.FORWARD_QUERY_MINI_BATCH_TYPE);
+
+            System.out.println("[VertexStorageFn] ForwardQueryMiniBatch received");
 
             String sourceId = q.getSource();
 
@@ -166,14 +168,15 @@ public class VertexStorageFn implements StatefulFunction {
 
     private List<VertexActivity> filterActivityListFromBeginningToT(Context context, int T) {
         int batchIndex = T / EVENT_TIME_INTERVAL;
-        TreeMap<Integer, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
-        vertexActivities.keySet().removeIf(key -> key > batchIndex);
+        TreeMap<String, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
+        vertexActivities.keySet().removeIf(key -> Integer.parseInt(key) > batchIndex);
         return vertexActivities.values().stream().flatMap(ArrayList::stream).collect(Collectors.toList());
     }
 
     private void storeActivity(Context context, TemporalEdge temporalEdge) {
-        TreeMap<Integer, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
-        int batchIndex = Integer.parseInt(temporalEdge.getTimestamp()) / EVENT_TIME_INTERVAL;
+        TreeMap<String, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
+        int t = Integer.parseInt(temporalEdge.getTimestamp());
+        String batchIndex = String.valueOf(t / EVENT_TIME_INTERVAL);
         ArrayList<VertexActivity> batchActivity = vertexActivities.getOrDefault(batchIndex, new ArrayList<>());
         // currently only addition of edges is considered
         batchActivity.add(
@@ -184,15 +187,15 @@ public class VertexStorageFn implements StatefulFunction {
     }
 
     private void storeActivity(Context context, TemporalWeightedEdge temporalWeightedEdge) {
-        TreeMap<Integer, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
+        TreeMap<String, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
         int batchIndex = Integer.parseInt(temporalWeightedEdge.getTimestamp()) / EVENT_TIME_INTERVAL;
-        ArrayList<VertexActivity> batchActivity = vertexActivities.getOrDefault(batchIndex, new ArrayList<>());
+        ArrayList<VertexActivity> batchActivity = vertexActivities.getOrDefault(String.valueOf(batchIndex), new ArrayList<>());
         // currently only addition of edges is considered
         batchActivity.add(
                 new VertexActivity("add",
                         temporalWeightedEdge.getSrcId(), temporalWeightedEdge.getDstId(),
                         temporalWeightedEdge.getWeight(), temporalWeightedEdge.getTimestamp()));
-        vertexActivities.put(batchIndex, batchActivity);
+        vertexActivities.put(String.valueOf(batchIndex), batchActivity);
         context.storage().set(VERTEX_ACTIVITIES, vertexActivities);
     }
 

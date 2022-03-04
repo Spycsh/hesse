@@ -23,15 +23,15 @@ ControllerFn implements StatefulFunction {
     final int partitionNumber = 5;
 
     // temporal edge
-    private static final ValueSpec<TemporalEdge> TEMPORAL_EDGE = ValueSpec.named("temporalEdge").withCustomType(Types.TEMPORAL_EDGE_TYPE);
+//    private static final ValueSpec<TemporalEdge> TEMPORAL_EDGE = ValueSpec.named("temporalEdge").withCustomType(Types.TEMPORAL_EDGE_TYPE);
     // a set of temporal edges
-    private static final ValueSpec<HashSet<TemporalEdge>> TEMPORAL_EDGES = ValueSpec.named("temporalEdges").withCustomType(Types.TEMPORAL_EDGES_TYPE);
+//    private static final ValueSpec<HashSet<TemporalEdge>> TEMPORAL_EDGES = ValueSpec.named("temporalEdges").withCustomType(Types.TEMPORAL_EDGES_TYPE);
 
     public static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.storage", "controller");
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec
             .builder(TYPE_NAME)
             .withSupplier(ControllerFn::new)
-            .withValueSpecs(TEMPORAL_EDGE, TEMPORAL_EDGES)
+//            .withValueSpecs(TEMPORAL_EDGE, TEMPORAL_EDGES)
             .build();
 
     @Override
