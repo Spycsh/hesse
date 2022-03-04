@@ -119,13 +119,3 @@ services:
       APP_JSON_PATH: query_id
     volumes:
       - ./query1.txt:/mnt/query1.txt
-
-# curl query ingress
-#  hesse-query-producer:
-#    image: apache/flink-statefun-playground:3.2.0-1.0
-#    ports:
-#      - "8091:8091"
-#    depends_on:
-#      - hesse
-#    volumes:
-#      - ./module.yaml:/module.yaml
