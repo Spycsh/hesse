@@ -5,10 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ForwardQueryMiniBatchWithState {
-    @JsonProperty("source")
-    private String source;
-
+public class QuerySCCWithState {
     @JsonProperty("query_id")
     private String queryId;
 
@@ -24,27 +21,17 @@ public class ForwardQueryMiniBatchWithState {
     @JsonProperty("t")
     private int t;
 
-    @JsonProperty("h")
-    private int h;
-
-    @JsonProperty("k")
-    private int k;
-
     @JsonProperty("vertex_activities")
     List<VertexActivity> vertexActivities = new ArrayList<>();
 
-    public ForwardQueryMiniBatchWithState() {
-    }
+    public QuerySCCWithState() { }
 
-    public ForwardQueryMiniBatchWithState(ForwardQueryMiniBatch q, List<VertexActivity> vertexActivities) {
-        this.source = q.getSource();
+    public QuerySCCWithState(QuerySCC q, List<VertexActivity> vertexActivities) {
         this.queryId = q.getQueryId();
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
         this.t = q.getT();
-        this.h = q.getH();
-        this.k = q.getK();
         this.vertexActivities = vertexActivities;
     }
 
@@ -64,24 +51,11 @@ public class ForwardQueryMiniBatchWithState {
         return queryType;
     }
 
-    public List<VertexActivity> getVertexActivities() {
-        return vertexActivities;
-    }
-
-    public String getSource() {
-        return source;
-    }
-
-
     public int getT() {
         return t;
     }
 
-    public int getH() {
-        return h;
-    }
-
-    public int getK() {
-        return k;
+    public List<VertexActivity> getVertexActivities() {
+        return vertexActivities;
     }
 }

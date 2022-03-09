@@ -123,6 +123,15 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatch.class));
+    /**
+     * Type denoting a query of strongly connected component
+     * that is sent from ingress to storage
+     */
+    public static final Type<QuerySCC> QUERY_SCC_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_strongly_connected_component"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySCC.class));
 
     /**
      * Type denoting a query of mini batch with state
@@ -133,6 +142,16 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_with_state"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatchWithState.class));
+
+    /**
+     * Type denoting a query of strongly connected component with state
+     * sent from storage to application
+     */
+    public static final Type<QuerySCCWithState> QUERY_SCC_WITH_STATE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_strongly_connected_component_with_state"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySCCWithState.class));
 
     /**
      * MiniBatchFn -> neighbours' VertexStorageFn
@@ -152,6 +171,18 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQueryMiniBatchWithState.class));
 
+    public static final Type<ForwardQuerySCC> FORWARD_QUERY_SCC_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_mini_batch"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQuerySCC.class));
+
+    public static final Type<ForwardQuerySCCWithState> FORWARD_QUERY_SCC_WITH_STATE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_mini_batch"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQuerySCCWithState.class));
+
     /**
      * query result
      */
@@ -161,11 +192,11 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatchResult.class));
 
-    public static final Type<QueryMiniBatchContext> QUERY_MINI_BATCH_SOURCE_IDs_TYPE =
+    public static final Type<QuerySCCResult> QUERY_SCC_RESULT_TYPE =
             SimpleType.simpleImmutableTypeFrom(
-                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_source_ids"),
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_scc_result"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatchContext.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySCCResult.class));
 
     /**
      * each query has a context on each vertex
@@ -176,7 +207,12 @@ public class Types {
                 TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_context_list"),
                 JSON_OBJ_MAPPER::writeValueAsBytes,
                 bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QueryMiniBatchContext>>() {
-                }));;
+                }));
 
-
+    public static final Type<ArrayList<QuerySCCContext>> QUERY_SCC_CONTEXT_LIST_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_strongly_connected_components_context_list"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QuerySCCContext>>() {
+                    }));
 }

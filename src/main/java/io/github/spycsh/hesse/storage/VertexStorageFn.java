@@ -15,10 +15,7 @@ import java.util.stream.Collectors;
  */
 public class VertexStorageFn implements StatefulFunction {
 
-    private static final ValueSpec<HashSet<Integer>> NEIGHBOURS_VALUE = ValueSpec.named("neighbours").withCustomType(Types.NEIGHBOURS_TYPE);
     private static final ValueSpec<HashSet<Integer>> BUFFERED_NEIGHBOURS_VALUE = ValueSpec.named("bufferedNeighbours").withCustomType(Types.BUFFERED_NEIGHBOURS_VALUE);
-
-    private static final ValueSpec<HashMap<Integer, Double>> NEIGHBOURS_WEIGHTED_VALUE = ValueSpec.named("neighboursWeighted").withCustomType(Types.NEIGHBOURS_WEIGHTED_TYPE);
     private static final ValueSpec<HashMap<Integer, Double>> BUFFERED_NEIGHBOURS_WEIGHTED_VALUE = ValueSpec.named("bufferedNeighboursWeighted").withCustomType(Types.BUFFERED_NEIGHBOURS_WEIGHTED_VALUE);
 
     private static final ValueSpec<TreeMap<String, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES = ValueSpec.named("vertexActivities").withCustomType(Types.VERTEX_ACTIVITIES);
@@ -30,7 +27,7 @@ public class VertexStorageFn implements StatefulFunction {
 
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(VertexStorageFn::new)
-            .withValueSpecs(NEIGHBOURS_VALUE, NEIGHBOURS_WEIGHTED_VALUE, BUFFERED_NEIGHBOURS_VALUE, BUFFERED_NEIGHBOURS_WEIGHTED_VALUE, LAST_MESSAGE_TIME_VALUE, VERTEX_ACTIVITIES)
+            .withValueSpecs(BUFFERED_NEIGHBOURS_VALUE, BUFFERED_NEIGHBOURS_WEIGHTED_VALUE, LAST_MESSAGE_TIME_VALUE, VERTEX_ACTIVITIES)
             .build();
 
     int BUFFER_THRESHOLD_SIZE;
@@ -90,28 +87,19 @@ public class VertexStorageFn implements StatefulFunction {
         // read streaming temporal edges and convert them to adjacent list form
         if(message.is(Types.TEMPORAL_EDGE_TYPE)) {
             TemporalEdge temporalEdge = message.as(Types.TEMPORAL_EDGE_TYPE);
-
             // store the new activity of into specified batch one single vertex in its context
             // here the default activity type is add
             // should use this to recover to specified state and serve query
             // TODO persistence, event time batch checkpointing
             storeActivity(context, temporalEdge);
-
-//            HashSet<Integer> neighbours = context.storage().get(NEIGHBOURS_VALUE).orElse(new HashSet<>());
             int neighbourId = Integer.parseInt(temporalEdge.getDstId());
-//            neighbours.add(neighbourId);
-//            context.storage().set(NEIGHBOURS_VALUE, neighbours);
             bufferedNeighbours.add(neighbourId);
         } else if(message.is(Types.TEMPORAL_EDGE_WEIGHTED_TYPE)) {
             TemporalWeightedEdge temporalWeightedEdge = message.as(Types.TEMPORAL_EDGE_WEIGHTED_TYPE);
             // TODO persistence, event time batch checkpointing
             storeActivity(context, temporalWeightedEdge);
-//            HashMap<Integer, Double> neighboursWeighted = context.storage().get(NEIGHBOURS_WEIGHTED_VALUE).orElse(new HashMap<>());
             int neighbourId = Integer.parseInt(temporalWeightedEdge.getDstId());
-            // System.out.println(temporalWeightedEdge.getSrcId() + "->" + temporalWeightedEdge.getDstId());
             double weight = Double.parseDouble(temporalWeightedEdge.getWeight());
-//            neighboursWeighted.put(neighbourId, weight);
-//            context.storage().set(NEIGHBOURS_WEIGHTED_VALUE, neighboursWeighted);
             bufferedNeighboursWeighted.put(neighbourId, weight);
         }
 
@@ -127,7 +115,7 @@ public class VertexStorageFn implements StatefulFunction {
             context.storage().set(BUFFERED_NEIGHBOURS_WEIGHTED_VALUE, new HashMap<>());   // clear buffer
         }
 
-        // handle the queries
+        // handle the queries of mini batch
         if(message.is(Types.QUERY_MINI_BATCH_TYPE)){
             QueryMiniBatch q = message.as(Types.QUERY_MINI_BATCH_TYPE);
             System.out.println("[VertexStorageFn] QueryMiniBatch received");
@@ -145,26 +133,44 @@ public class VertexStorageFn implements StatefulFunction {
             sendQueryMiniBatchWithStateToApp(context, queryWithState);
         }
 
-        if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
-            ForwardQueryMiniBatch q = message.as(Types.FORWARD_QUERY_MINI_BATCH_TYPE);
-
-            System.out.println("[VertexStorageFn] ForwardQueryMiniBatch received");
-
-            String sourceId = q.getSource();
+        // handle the queries of connected component
+        if(message.is(Types.QUERY_SCC_TYPE)){
+            QuerySCC q = message.as(Types.QUERY_SCC_TYPE);
+            System.out.println("[VertexStorageFn] QueryStronglyConnectedComponent received");
 
             List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
+            QuerySCCWithState queryWithState = new QuerySCCWithState(
+                    q,
+                    filteredActivityList
+            );
+            sendQueryStronglyConnectedComponentWithStateToApp(context, queryWithState);
+        }
 
+        if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
+            ForwardQueryMiniBatch q = message.as(Types.FORWARD_QUERY_MINI_BATCH_TYPE);
+            System.out.println("[VertexStorageFn] ForwardQueryMiniBatch received");
+            List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
             ForwardQueryMiniBatchWithState queryWithState = new ForwardQueryMiniBatchWithState(
-                     sourceId,
                      q,
                      filteredActivityList
              );
             sendQueryMiniBatchWithStateToApp(context, queryWithState);
+        }
 
+        if(message.is(Types.FORWARD_QUERY_SCC_TYPE)){
+            ForwardQuerySCC q = message.as(Types.FORWARD_QUERY_SCC_TYPE);
+            System.out.println("[VertexStorageFn] ForwardQuerySCC received");
+            List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
+            ForwardQuerySCCWithState queryWithState = new ForwardQuerySCCWithState(
+                    q,
+                    filteredActivityList
+            );
+            sendQueryStronglyConnectedComponentWithStateToApp(context, queryWithState);
         }
 
         return context.done();
     }
+
 
     private List<VertexActivity> filterActivityListFromBeginningToT(Context context, int T) {
         int batchIndex = T / EVENT_TIME_INTERVAL;
@@ -240,6 +246,25 @@ public class VertexStorageFn implements StatefulFunction {
                         queryWithState)
                 .build());
     }
+
+    private void sendQueryStronglyConnectedComponentWithStateToApp(Context context, QuerySCCWithState queryWithState) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.applications", "strongly-connected-componentS"), context.self().id())
+                .withCustomType(
+                        Types.QUERY_SCC_WITH_STATE_TYPE,
+                        queryWithState)
+                .build());
+    }
+
+    private void sendQueryStronglyConnectedComponentWithStateToApp(Context context, ForwardQuerySCCWithState queryWithState) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.applications", "strongly-connected-componentS"), context.self().id())
+                .withCustomType(
+                        Types.FORWARD_QUERY_SCC_WITH_STATE_TYPE,
+                        queryWithState)
+                .build());
+    }
+
 
     private long getDiffTime(Context context) {
         long curUnixTime = System.currentTimeMillis();

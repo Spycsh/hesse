@@ -18,11 +18,6 @@ import java.util.concurrent.CompletableFuture;
 public class MiniBatchFn implements StatefulFunction {
 
     // set of sources of a vertex
-    /**
-     * sourceId specified by the query id and user id
-     */
-    private static final ValueSpec<QueryMiniBatchContext> QUERY_MINI_BATCH_CONTEXT =
-            ValueSpec.named("queryMiniBatchContext").withCustomType(Types.QUERY_MINI_BATCH_SOURCE_IDs_TYPE);
 
     private static final ValueSpec<ArrayList<QueryMiniBatchContext>> QUERY_MINI_BATCH_CONTEXT_LIST =
             ValueSpec.named("queryMiniBatchContextList").withCustomType(Types.QUERY_MINI_BATCH_CONTEXT_LIST_TYPE);
@@ -32,7 +27,7 @@ public class MiniBatchFn implements StatefulFunction {
 
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(MiniBatchFn::new)
-            .withValueSpecs(QUERY_MINI_BATCH_CONTEXT, QUERY_MINI_BATCH_CONTEXT_LIST)
+            .withValueSpecs(QUERY_MINI_BATCH_CONTEXT_LIST)
             .build();
 
     @Override
@@ -48,7 +43,7 @@ public class MiniBatchFn implements StatefulFunction {
             QueryMiniBatchWithState q = message.as(Types.QUERY_MINI_BATCH_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
             int T = q.getT();
-            ArrayList<String> neighbourIds = recoverStateAtT(context, T, vertexActivities);
+            ArrayList<String> neighbourIds = recoverStateAtT(T, vertexActivities);
             int H = q.getH();
             int K = q.getK();
 
@@ -89,7 +84,7 @@ public class MiniBatchFn implements StatefulFunction {
             ArrayList<QueryMiniBatchContext> queryMiniBatchContextList = context.storage().get(QUERY_MINI_BATCH_CONTEXT_LIST).orElse(new ArrayList<>());
 
             int T = q.getT();
-            ArrayList<String> neighbourIds = recoverStateAtT(context, T, q.getVertexActivities());
+            ArrayList<String> neighbourIds = recoverStateAtT(T, q.getVertexActivities());
             int H = q.getH();
 
             if(K == 0 || neighbourIds.size() == 0){
@@ -256,7 +251,7 @@ public class MiniBatchFn implements StatefulFunction {
         Collections.shuffle(neighbourIds);
     }
 
-    private ArrayList<String> recoverStateAtT(Context context, int T, List<VertexActivity> activityLog){
+    private ArrayList<String> recoverStateAtT(int T, List<VertexActivity> activityLog){
 
         activityLog.sort((o1, o2) -> Integer.parseInt(o2.getTimestamp()) - Integer.parseInt(o1.getTimestamp()));
 

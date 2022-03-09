@@ -1,6 +1,6 @@
 package io.github.spycsh.hesse.query;
 
-import io.github.spycsh.hesse.storage.VertexStorageFn;
+import io.github.spycsh.hesse.types.QuerySCC;
 import io.github.spycsh.hesse.types.QueryMiniBatch;
 import io.github.spycsh.hesse.types.Types;
 import org.apache.flink.statefun.sdk.java.Context;
@@ -31,11 +31,23 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
             // send the query info to storage layer with the vertex id that is the query target
             QueryMiniBatch q = message.as(Types.QUERY_MINI_BATCH_TYPE);
             String vertexId = q.getVertexId();
-            System.out.println("Query " + q.getQueryId() + " of vertex " + q.getVertexId() + " "  + q.getQueryType());
+            System.out.printf("[TemporalQueryHandler %s] Query %s of vertex %s with query type %s\n",
+                    context.self().id(), q.getQueryId(), vertexId, q.getQueryType());
             context.send(MessageBuilder
                     .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
                     .withCustomType(
                             Types.QUERY_MINI_BATCH_TYPE,
+                            q)
+                    .build());
+        } else if(message.is(Types.QUERY_SCC_TYPE)){
+            QuerySCC q = message.as(Types.QUERY_SCC_TYPE);
+            String vertexId = q.getVertexId();
+            System.out.printf("[TemporalQueryHandler %s] Query %s of vertex %s with query type %s\n",
+                    context.self().id(), q.getQueryId(), vertexId, q.getQueryType());
+            context.send(MessageBuilder
+                    .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
+                    .withCustomType(
+                            Types.QUERY_SCC_TYPE,
                             q)
                     .build());
         }

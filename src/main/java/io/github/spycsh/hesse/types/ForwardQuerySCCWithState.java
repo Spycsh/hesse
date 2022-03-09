@@ -2,10 +2,11 @@ package io.github.spycsh.hesse.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ForwardQueryMiniBatchWithState {
+public class ForwardQuerySCCWithState {
     @JsonProperty("source")
     private String source;
 
@@ -24,28 +25,23 @@ public class ForwardQueryMiniBatchWithState {
     @JsonProperty("t")
     private int t;
 
-    @JsonProperty("h")
-    private int h;
-
-    @JsonProperty("k")
-    private int k;
+    @JsonProperty("stack")
+    private ArrayDeque<String> stack;
 
     @JsonProperty("vertex_activities")
     List<VertexActivity> vertexActivities = new ArrayList<>();
 
-    public ForwardQueryMiniBatchWithState() {
-    }
+    public ForwardQuerySCCWithState() { }
 
-    public ForwardQueryMiniBatchWithState(ForwardQueryMiniBatch q, List<VertexActivity> vertexActivities) {
+    public ForwardQuerySCCWithState(ForwardQuerySCC q, List<VertexActivity> vertexActivities) {
         this.source = q.getSource();
         this.queryId = q.getQueryId();
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
         this.t = q.getT();
-        this.h = q.getH();
-        this.k = q.getK();
         this.vertexActivities = vertexActivities;
+        this.stack = q.getStack();
     }
 
     public String getQueryId() {
@@ -64,24 +60,19 @@ public class ForwardQueryMiniBatchWithState {
         return queryType;
     }
 
-    public List<VertexActivity> getVertexActivities() {
-        return vertexActivities;
+    public int getT() {
+        return t;
     }
 
     public String getSource() {
         return source;
     }
 
-
-    public int getT() {
-        return t;
+    public List<VertexActivity> getVertexActivities() {
+        return vertexActivities;
     }
 
-    public int getH() {
-        return h;
-    }
-
-    public int getK() {
-        return k;
+    public ArrayDeque<String> getStack() {
+        return stack;
     }
 }
