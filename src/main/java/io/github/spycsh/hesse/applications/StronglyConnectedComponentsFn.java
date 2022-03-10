@@ -5,7 +5,6 @@ import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 
-import java.time.Year;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +28,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
         if(message.is(Types.QUERY_SCC_WITH_STATE_TYPE)){
+            System.out.printf("[StronglyConnectedComponentsFn %s] QuerySCCWithState received\n", context.self().id());
+
             QuerySCCWithState q = message.as(Types.QUERY_SCC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
             int T = q.getT();
@@ -51,6 +52,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
         }
 
         if(message.is(Types.FORWARD_QUERY_SCC_WITH_STATE_TYPE)){
+            System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received\n", context.self().id());
+
             ForwardQuerySCCWithState q = message.as(Types.FORWARD_QUERY_SCC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
             ArrayList<String> neighbourIds = recoverStateAtT(q.getT(), vertexActivities);
@@ -147,10 +150,13 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
             int n = querySCCContext.getResponseNumToCollect();
             if(n-1 == 0){
+                System.out.printf("[StronglyConnectedComponentsFn %s] QuerySCCResult received " +
+                        "and all responses are collected\n", context.self().id());
+
                 // if all responses are collected
                 // if it is the source node, just egress
                 if(context.self().id().equals(result.getQueryId())){
-                    System.out.println("success");
+                    System.out.println("[StronglyConnectedComponentsFn %s] is source node, success!");
                     if(sccFlag){
                         System.out.printf("current Strongly connected component id: %s \n", updatedLowLinkId);
                     } else {
@@ -159,6 +165,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
                 } else {    // not source code
                         // send to its parents the aggregated low link id
+                    System.out.printf("[StronglyConnectedComponentsFn %s] not the source node\n", context.self().id());
                         for(String src: querySCCContext.getSourceIds()){
                             context.send(MessageBuilder
                                     .forAddress(TypeName.typeNameOf("hesse.applications", "strongly-connected-components"), src)
@@ -174,6 +181,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                 querySCCContexts.remove(querySCCContext);
 
             }else{  // not the last result to collect
+                System.out.printf("[StronglyConnectedComponentsFn %s] QuerySCCResult received " +
+                        "but not all responses are collected\n", context.self().id());
                 querySCCContext.setResponseNumToCollect(n - 1);
                 // store the current smallest low link id
                 context.storage().set(QUERY_SCC_CONTEXT_LIST, querySCCContexts);
