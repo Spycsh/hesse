@@ -118,7 +118,7 @@ public class VertexStorageFn implements StatefulFunction {
         // handle the queries of mini batch
         if(message.is(Types.QUERY_MINI_BATCH_TYPE)){
             QueryMiniBatch q = message.as(Types.QUERY_MINI_BATCH_TYPE);
-            System.out.printf("[VertexStorageFn %s] QueryMiniBatch received", context.self().id());
+            System.out.printf("[VertexStorageFn %s] QueryMiniBatch received\n", context.self().id());
 
             // only send the needed log
             // namely from the beginning to the batch which time T is in
@@ -136,7 +136,7 @@ public class VertexStorageFn implements StatefulFunction {
         // handle the queries of connected component
         if(message.is(Types.QUERY_SCC_TYPE)){
             QuerySCC q = message.as(Types.QUERY_SCC_TYPE);
-            System.out.printf("[VertexStorageFn %s] QueryStronglyConnectedComponent received", context.self().id());
+            System.out.printf("[VertexStorageFn %s] QueryStronglyConnectedComponent received\n", context.self().id());
 
             List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
             QuerySCCWithState queryWithState = new QuerySCCWithState(
@@ -148,7 +148,7 @@ public class VertexStorageFn implements StatefulFunction {
 
         if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
             ForwardQueryMiniBatch q = message.as(Types.FORWARD_QUERY_MINI_BATCH_TYPE);
-            System.out.printf("[VertexStorageFn %s] ForwardQueryMiniBatch received", context.self().id());
+            System.out.printf("[VertexStorageFn %s] ForwardQueryMiniBatch received\n", context.self().id());
             List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
             ForwardQueryMiniBatchWithState queryWithState = new ForwardQueryMiniBatchWithState(
                      q,
@@ -159,7 +159,7 @@ public class VertexStorageFn implements StatefulFunction {
 
         if(message.is(Types.FORWARD_QUERY_SCC_TYPE)){
             ForwardQuerySCC q = message.as(Types.FORWARD_QUERY_SCC_TYPE);
-            System.out.printf("[VertexStorageFn %s] ForwardQuerySCC received", context.self().id());
+            System.out.printf("[VertexStorageFn %s] ForwardQuerySCC received\n", context.self().id());
             List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
             ForwardQuerySCCWithState queryWithState = new ForwardQuerySCCWithState(
                     q,

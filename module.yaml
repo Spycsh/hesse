@@ -22,17 +22,17 @@ spec:
 ---
 kind: io.statefun.kafka.v1/ingress
 spec:
-#  id: hesse.io/example-temporal-graph1
+  id: hesse.io/example-temporal-graph1
 #  id: hesse.io/example-temporal-graph2
-  id: hesse.io/example-temporal-graph3
+#  id: hesse.io/example-temporal-graph3
   address: kafka:9092
   consumerGroupId: hesse
   startupPosition:
     type: earliest
   topics:
-#    - topic: example-temporal-graph1
+    - topic: example-temporal-graph1
 #    - topic: example-temporal-graph2
-    - topic: example-temporal-graph3
+#    - topic: example-temporal-graph3
       valueType: hesse.types/temporal_edge # ingress msg type name specified in Types
     #      valueType: hesse.types/temporal_edge_weighted
       targets:
@@ -52,7 +52,8 @@ spec:
     type: earliest
   topics:
     - topic: query
-      valueType: hesse.types/query_mini_batch # ingress msg type name specified in Types
+#      valueType: hesse.types/query_mini_batch # ingress msg type name specified in Types
+      valueType: hesse.types/query_strongly_connected_component # ingress msg type name specified in Types
       targets:
         - hesse.query/temporal-query-handler
 ---

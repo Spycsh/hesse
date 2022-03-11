@@ -2,6 +2,8 @@ package io.github.spycsh.hesse.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayDeque;
+
 public class QuerySCCResult {
 
     @JsonProperty("query_id")
@@ -22,16 +24,20 @@ public class QuerySCCResult {
     @JsonProperty("scc_flag")
     private boolean sccFlag; // a flag represents whether on the current path the component is found
 
+    @JsonProperty("stack")
+    private ArrayDeque<String> stack;
+
     public QuerySCCResult() {
     }
 
-    public QuerySCCResult(String queryId, String userId, String vertexId, String queryType, String lowLinkId, Boolean sccFlag) {
+    public QuerySCCResult(String queryId, String userId, String vertexId, String queryType, String lowLinkId, Boolean sccFlag, ArrayDeque<String> stack) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
         this.queryType = queryType;
         this.lowLinkId = lowLinkId;
         this.sccFlag = sccFlag;
+        this.stack = stack;
     }
 
     public String getQueryId() {
@@ -56,5 +62,9 @@ public class QuerySCCResult {
 
     public boolean isSccFlag() {
         return sccFlag;
+    }
+
+    public ArrayDeque<String> getStack() {
+        return stack;
     }
 }

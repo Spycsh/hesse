@@ -3,6 +3,7 @@ package io.github.spycsh.hesse;
 import io.github.spycsh.hesse.applications.ConnectedComponentsFn;
 import io.github.spycsh.hesse.applications.MiniBatchFn;
 import io.github.spycsh.hesse.applications.SingleSourceShortestPathFn;
+import io.github.spycsh.hesse.applications.StronglyConnectedComponentsFn;
 import io.github.spycsh.hesse.query.TemporalQueryHandlerFn;
 import io.github.spycsh.hesse.storage.ControllerFn;
 import io.github.spycsh.hesse.storage.PartitionManagerFn;
@@ -29,6 +30,7 @@ public class hesseAppServer {
         // register the query functions
         functions.withStatefulFunction(TemporalQueryHandlerFn.SPEC);
         functions.withStatefulFunction(MiniBatchFn.SPEC);
+        functions.withStatefulFunction(StronglyConnectedComponentsFn.SPEC);
 
         final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
 

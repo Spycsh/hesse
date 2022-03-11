@@ -1,0 +1,6 @@
+{"src_id": "4", "dst_id": "5", "timestamp": "0"}
+{"src_id": "5", "dst_id": "0", "timestamp": "0"}
+{"src_id": "5", "dst_id": "6", "timestamp": "0"}
+{"src_id": "6", "dst_id": "4", "timestamp": "0"}
+{"src_id": "0", "dst_id": "2", "timestamp": "0"}
+{"src_id": "2", "dst_id": "6", "timestamp": "0"}

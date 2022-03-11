@@ -33,6 +33,9 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
             String vertexId = q.getVertexId();
             System.out.printf("[TemporalQueryHandler %s] Query %s of vertex %s with query type %s\n",
                     context.self().id(), q.getQueryId(), vertexId, q.getQueryType());
+            if(!q.getQueryType().equals("mini-batch"))
+                throw new IllegalArgumentException("[TemporalQueryHandler] query type should be mini-batch but receive" +
+                        "wrong type, check module.yaml or query ingress\n");
             context.send(MessageBuilder
                     .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
                     .withCustomType(
@@ -44,6 +47,9 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
             String vertexId = q.getVertexId();
             System.out.printf("[TemporalQueryHandler %s] Query %s of vertex %s with query type %s\n",
                     context.self().id(), q.getQueryId(), vertexId, q.getQueryType());
+            if(!q.getQueryType().equals("strongly-connected-components"))
+                throw new IllegalArgumentException("[TemporalQueryHandler] query type should be mini-batch but receive" +
+                        "wrong type, check module.yaml or query ingress\n");
             context.send(MessageBuilder
                     .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
                     .withCustomType(

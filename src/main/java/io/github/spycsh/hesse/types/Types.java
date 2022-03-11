@@ -173,13 +173,13 @@ public class Types {
 
     public static final Type<ForwardQuerySCC> FORWARD_QUERY_SCC_TYPE =
             SimpleType.simpleImmutableTypeFrom(
-                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_mini_batch"),
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_scc"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQuerySCC.class));
 
     public static final Type<ForwardQuerySCCWithState> FORWARD_QUERY_SCC_WITH_STATE_TYPE =
             SimpleType.simpleImmutableTypeFrom(
-                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_mini_batch"),
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_scc_with_state"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQuerySCCWithState.class));
 
@@ -215,4 +215,10 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QuerySCCContext>>() {
                     }));
+
+//    public static final Type<SCCPathContext> QUERY_SCC_PATH_CONTEXT_TYPE =
+//            SimpleType.simpleImmutableTypeFrom(
+//                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_strongly_connected_components_path_context"),
+//                    JSON_OBJ_MAPPER::writeValueAsBytes,
+//                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, SCCPathContext.class));
 }
