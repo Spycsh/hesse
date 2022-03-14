@@ -1,122 +1,88 @@
-version: "2.1"
-
+version: '2.1'
 services:
-
-  ###############################################################
-  #    Functions service
-  ###############################################################
-
   hesse:
     build:
       dockerfile: Dockerfile
       context: .
     expose:
-      - "1108"
-
-  ###############################################################
-  #    StateFun runtime
-  ###############################################################
-
+    - '1108'
   statefun-manager:
     image: apache/flink-statefun:3.2.0-java11
     expose:
-      - "6123"
+    - '6123'
     ports:
-      - "8081:8081"
-#      - "8091:8091"
+    - 8081:8081
     environment:
       ROLE: master
       MASTER_HOST: statefun-manager
     volumes:
-      - ./module.yaml:/opt/statefun/modules/hesse/module.yaml
-
+    - ./module.yaml:/opt/statefun/modules/hesse/module.yaml
   statefun-worker:
     image: apache/flink-statefun:3.2.0-java11
     expose:
-      - "6121"
-      - "6122"
+    - '6121'
+    - '6122'
     depends_on:
-      - statefun-manager
-      - kafka
-      - hesse
+    - statefun-manager
+    - kafka
+    - hesse
     links:
-      - "statefun-manager:statefun-manager"
-      - "kafka:kafka"
-      - "hesse:hesse"
+    - statefun-manager:statefun-manager
+    - kafka:kafka
+    - hesse:hesse
     environment:
       ROLE: worker
       MASTER_HOST: statefun-manager
     volumes:
-      - ./module.yaml:/opt/statefun/modules/hesse/module.yaml
-
-  ###############################################################
-  #    Kafka for ingress and egress
-  ###############################################################
-
+    - ./module.yaml:/opt/statefun/modules/hesse/module.yaml
   zookeeper:
     image: confluentinc/cp-zookeeper:5.4.3
     environment:
-      ZOOKEEPER_CLIENT_PORT: "2181"
+      ZOOKEEPER_CLIENT_PORT: '2181'
     ports:
-      - "2181:2181"
-
+    - 2181:2181
   kafka:
     image: confluentinc/cp-kafka:5.4.3
     ports:
-      - "9092:9092"
+    - 9092:9092
     depends_on:
-      - zookeeper
+    - zookeeper
     links:
-      - "zookeeper:zookeeper"
+    - zookeeper:zookeeper
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
-  ###############################################################
-  #    Simple Kafka JSON producer to simulate ingress events
-  ###############################################################
-
   hesse-producer:
     image: ververica/statefun-playground-producer:latest
     depends_on:
-      - kafka
-      - statefun-worker
+    - kafka
+    - statefun-worker
     links:
-      - "kafka:kafka"
+    - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/graph/example_scc_edges_1.txt
-#      APP_PATH: /mnt/example2.txt
-#      APP_PATH: /mnt/example3.txt
+      APP_PATH: /mnt/datasets/graph/example_minibatch_edges_1.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: example-temporal-graph1
-#      APP_KAFKA_TOPIC: example-temporal-graph2
-#      APP_KAFKA_TOPIC: example-temporal-graph3
-#      APP_DELAY_SECONDS: 1
-      APP_LOOP: "false"
+      APP_LOOP: 'false'
       APP_JSON_PATH: src_id
     volumes:
-      - ./datasets/graph/example_scc_edges_1.txt:/mnt/datasets/graph/example_scc_edges_1.txt
-#      - ./example2.txt:/mnt/example2.txt
-#      - ./example3.txt:/mnt/example3.txt
-
-
-  # Kafka query ingress
+    - ./datasets/graph/example_minibatch_edges_1.txt:/mnt/datasets/graph/example_minibatch_edges_1.txt
   hesse-query-producer:
     image: spycsh/query-producer:latest
     depends_on:
-      - kafka
-      - statefun-worker
+    - kafka
+    - statefun-worker
     links:
-      - "kafka:kafka"
+    - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/query/query_scc_1.txt
+      APP_PATH: /mnt/datasets/query/query_minibatch_1.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: query
-      APP_DELAY_SECONDS: 1 # this is the interval between producing two records
+      APP_DELAY_SECONDS: 1
       APP_DELAY_START_SECONDS: 20
-      APP_LOOP: "false"
+      APP_LOOP: 'false'
       APP_JSON_PATH: query_id
     volumes:
-      - ./datasets/query/query_scc_1.txt:/mnt/datasets/query/query_scc_1.txt
+    - ./datasets/query/query_minibatch_1.txt:/mnt/datasets/query/query_minibatch_1.txt

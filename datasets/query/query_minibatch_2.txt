@@ -1,0 +1,2 @@
+{"query_id": "1", "user_id": "1", "vertex_id": "1", "query_type": "mini-batch", "t": "50", "h": "2", "k": "2"}
+{"query_id": "2", "user_id": "1", "vertex_id": "5", "query_type": "mini-batch", "t": "50", "h": "3", "k": "3"}

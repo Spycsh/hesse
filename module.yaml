@@ -1,18 +1,17 @@
 kind: io.statefun.endpoints.v2/http
 spec:
-  functions: hesse.storage/*  # The runtime will invoke all functions under this namespace with the endpoint URL template.
+  functions: hesse.storage/*
   urlPathTemplate: http://hesse:1108/
   transport:
     type: io.statefun.transports.v1/async
 ---
 kind: io.statefun.endpoints.v2/http
 spec:
-  functions: hesse.applications/*  # The runtime will invoke all functions under this namespace with the endpoint URL template.
+  functions: hesse.applications/*
   urlPathTemplate: http://hesse:1108/
   transport:
     type: io.statefun.transports.v1/async
 ---
-# add endpoint for query
 kind: io.statefun.endpoints.v2/http
 spec:
   functions: hesse.query/*
@@ -23,26 +22,16 @@ spec:
 kind: io.statefun.kafka.v1/ingress
 spec:
   id: hesse.io/example-temporal-graph1
-#  id: hesse.io/example-temporal-graph2
-#  id: hesse.io/example-temporal-graph3
   address: kafka:9092
   consumerGroupId: hesse
   startupPosition:
     type: earliest
   topics:
-    - topic: example-temporal-graph1
-#    - topic: example-temporal-graph2
-#    - topic: example-temporal-graph3
-      valueType: hesse.types/temporal_edge # ingress msg type name specified in Types
-    #      valueType: hesse.types/temporal_edge_weighted
-      targets:
-    #       type name specified in VertexStorageFn or ControllerFn
-        - hesse.storage/vertex-storage # partition by vertexId
-#        - hesse.storage/controller  # partition by partitionId
+  - topic: example-temporal-graph1
+    valueType: hesse.types/temporal_edge
+    targets:
+    - hesse.storage/vertex-storage
 ---
-#kind: io.statefun.playground.v1/ingress # use curl to send HTTP request to query layer
-#spec:
-#  port: 8091
 kind: io.statefun.kafka.v1/ingress
 spec:
   id: hesse.io/query
@@ -51,15 +40,14 @@ spec:
   startupPosition:
     type: earliest
   topics:
-    - topic: query
-#      valueType: hesse.types/query_mini_batch # ingress msg type name specified in Types
-      valueType: hesse.types/query_strongly_connected_component # ingress msg type name specified in Types
-      targets:
-        - hesse.query/temporal-query-handler
+  - topic: query
+    valueType: hesse.types/query_mini_batch
+    targets:
+    - hesse.query/temporal-query-handler
 ---
 kind: io.statefun.kafka.v1/egress
 spec:
-  id: hesse.io/connected-component-changes # output each connected-component change
+  id: hesse.io/connected-component-changes
   address: kafka:9092
   deliverySemantic:
     type: at-least-once
