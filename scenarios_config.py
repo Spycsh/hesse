@@ -43,19 +43,11 @@ print(query_ingress_path)
 with open('docker-compose.yml', 'r') as file:
     d = yaml.safe_load(file)
 
-# spec 5 -> topics[1]
 m_content = []
 with open('module.yaml', 'r') as file:
     m = yaml.safe_load_all(file)
     for mm in m:
         m_content.append(mm)
-        for k, v in mm.items():
-            if(k == 'kind'):
-                print(1)
-
-# print(m_content)
-
-print(d)
 
 d['services']['hesse-producer']['environment']['APP_PATH'] = '/mnt/' + graph_ingress_path
 d['services']['hesse-producer']['volumes'][0] = "./" + graph_ingress_path + ":" + '/mnt/' + graph_ingress_path
@@ -68,12 +60,9 @@ for i in range(len(m_content)):
     if i == idx:
         m_content[i]['spec']['topics'][0]['valueType'] = query_type_name
 
-# print(m_content)
-
 # begin to dump
 with open('module.yaml', 'w') as file:
     yaml.safe_dump_all(m_content, file, sort_keys=False, default_flow_style=False)
 
-# begin to dump
 with open('docker-compose.yml', 'w') as file:
     yaml.safe_dump(d, file, sort_keys=False, default_flow_style=False)
