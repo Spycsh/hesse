@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * this class support strongly connected component computation
+ * this class support connected component computation
  * each instance of it corresponding to a vertex
  * it should accept neighbours messages from the storage layer
  */

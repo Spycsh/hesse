@@ -1,0 +1,4 @@
+{"query_id": "1", "user_id": "1", "vertex_id": "1", "query_type": "strongly-connected-components", "t": "50"}
+{"query_id": "2", "user_id": "1", "vertex_id": "2", "query_type": "strongly-connected-components", "t": "50"}
+{"query_id": "3", "user_id": "1", "vertex_id": "3", "query_type": "strongly-connected-components", "t": "50"}
+{"query_id": "4", "user_id": "1", "vertex_id": "4", "query_type": "strongly-connected-components", "t": "50"}

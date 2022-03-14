@@ -92,8 +92,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                             .build());
                 }
 
-            }else if(stack.contains(context.self().id()) || neighbourIds.size() == 0){
-                // if there exists a cycle but not to the original source, or there are no more neighbours
+            }else if(stack.contains(context.self().id()) && checkIfAllNeighboursVisited(context, neighbourIds, stack, q.getVertexId())){
+                // if all its neighbours do not include unvisited node on the stack other than the source id
                 // this means that this path has no SCC
                 // do backtracking, remove them from the stack
                 // namely send QuerySCCResult with the scc flag false
@@ -232,6 +232,17 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
         }
 
         return context.done();
+    }
+
+    private boolean checkIfAllNeighboursVisited(Context context, ArrayList<String> neighbourIds, ArrayDeque<String> stack, String vertexId) {
+        for(String i: neighbourIds){
+            // if stack does not include the neighbour or the neighbour is the source id
+            // then return that not all neighbours are visited, so encourage next forwarding
+            if(!stack.contains(i) || i.equals(vertexId)){
+                return false;
+            }
+        }
+        return true;
     }
 
     private SCCPathContext findSCCContextByPathHash(ArrayList<SCCPathContext> sccPathContexts, int stackHash) {
