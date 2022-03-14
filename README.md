@@ -8,7 +8,7 @@ This project aims to build a highly scalable and efficient graph processing libr
 
 ## Architecture
 
-The architecture is basically divided into storage, query and application layers. As you can see they are corresponding to the three folders in the project. Flink Stateful Functions guarantee that each Function serve as a service and the functions specified in this project have their own context and communicate with each other by message passing. Currently, the Kafka ingress and egress are used. The containers are built and run in Docker environment.
+The architecture is basically divided into storage, query and application layers. As you can see they are corresponding to the three folders in the project source folder. Flink Stateful Functions guarantee that each Function serve as a service and the functions specified in this project have their own context and communicate with each other by message passing. Currently, the Kafka ingress and egress are used. The containers are built and run in Docker environment.
 
 As Flink Statefun is native to FaaS (Function as a Service), users can easily make contribution to this library and add their own independent new applications or algorithms to this library. Functions can be remote or embedded with the consistency promise by Flink internals.
 
@@ -20,7 +20,7 @@ The basic architecture is shown as follows:
 
 ## How to use
 
-Their are different scenarios so far you can try out, I write a simple [script](./scenarios_config.py) to help you select the right scenario. For developers, you can write your own to replace `docker-compose.yml` and `module.yaml`.
+There are different scenarios so far you can try out, I write a simple [script](./scenarios_config.py) to help you select the right scenario. For developers, you can write your own to replace `docker-compose.yml` and `module.yaml`.
 
 ```
 python scenarios_config.py
@@ -43,7 +43,7 @@ These are still in experiments and tips for developers
 * inspect the egress
 
 ```
-$ docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic <replace topic name here> --from-beginning
+docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic <replace topic name here> --from-beginning
 ```
 
 * use partition manager:
