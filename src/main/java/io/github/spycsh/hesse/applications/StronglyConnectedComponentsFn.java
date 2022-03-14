@@ -93,17 +93,15 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                 }
 
             }else if(stack.contains(context.self().id()) && checkIfAllNeighboursVisited(context, neighbourIds, stack, q.getVertexId())){
-                // if all its neighbours do not include unvisited node on the stack other than the source id
-                // this means that this path has no SCC
+                // see query_scc_3.txt, node 3
+                // if self is already on the stack,
+                // and all its neighbours do not include unvisited node on the stack other than the source id
+                // this means that this path has no SCC, must not continue to forward
                 // do backtracking, remove them from the stack
                 // namely send QuerySCCResult with the scc flag false
-                if(querySCCContext == null){
-                    System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received and there are" +
-                            " no neighbours\n", context.self().id());
-                } else{
-                    System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received and there is" +
-                            " a cycle back to the node on the stack\n", context.self().id());
-                }
+                System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received and " +
+                        "fail to find a SCC\n", context.self().id());
+
                 // just send the result back to its source with the sccFlag false
                 context.send(MessageBuilder
                         .forAddress(TypeName.typeNameOf("hesse.applications", "strongly-connected-components"), q.getSource())
