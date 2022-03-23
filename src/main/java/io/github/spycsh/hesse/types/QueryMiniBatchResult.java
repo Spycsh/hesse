@@ -2,6 +2,7 @@ package io.github.spycsh.hesse.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 
 public class QueryMiniBatchResult {
@@ -21,15 +22,19 @@ public class QueryMiniBatchResult {
     @JsonProperty("aggregated_results")
     private ArrayList<Edge> aggregatedResults;  // aggregated results sent from children nodes
 
+    @JsonProperty("stack")
+    private ArrayDeque<String> stack;
+
     public QueryMiniBatchResult() {
     }
 
-    public QueryMiniBatchResult(String queryId, String userId, String vertexId, String queryType,ArrayList<Edge> aggregatedResults) {
+    public QueryMiniBatchResult(String queryId, String userId, String vertexId, String queryType,ArrayList<Edge> aggregatedResults, ArrayDeque<String> stack) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
         this.queryType = queryType;
         this.aggregatedResults = aggregatedResults;
+        this.stack = stack;
     }
 
     public String getQueryId() {
@@ -52,7 +57,7 @@ public class QueryMiniBatchResult {
         return aggregatedResults;
     }
 
-//    public void setAggregatedResults(ArrayList<Edge> aggregatedResults) {
-//        this.aggregatedResults = aggregatedResults;
-//    }
+    public ArrayDeque<String> getStack() {
+        return stack;
+    }
 }

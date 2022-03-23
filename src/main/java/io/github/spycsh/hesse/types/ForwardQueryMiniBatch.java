@@ -2,6 +2,8 @@ package io.github.spycsh.hesse.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayDeque;
+
 public class ForwardQueryMiniBatch {
     @JsonProperty("source")
     private String source;
@@ -30,10 +32,13 @@ public class ForwardQueryMiniBatch {
     @JsonProperty("k")
     int k;
 
+    @JsonProperty("stack")
+    private ArrayDeque<String> stack;
+
     public ForwardQueryMiniBatch() {
     }
 
-    public ForwardQueryMiniBatch(String source, String target, QueryMiniBatchWithState q, int newHopNum) {
+    public ForwardQueryMiniBatch(String source, String target, QueryMiniBatchWithState q, int newHopNum, ArrayDeque<String> stack) {
         this.source = source;
         this.target = target;
         this.queryId = q.getQueryId();
@@ -43,9 +48,10 @@ public class ForwardQueryMiniBatch {
         this.t = q.getT();
         this.h = q.getH();
         this.k = newHopNum;
+        this.stack = stack;
     }
 
-    public ForwardQueryMiniBatch(String source, String target, ForwardQueryMiniBatchWithState q, int newHopNum) {
+    public ForwardQueryMiniBatch(String source, String target, ForwardQueryMiniBatchWithState q, int newHopNum, ArrayDeque<String> stack) {
         this.source = source;
         this.target = target;
         this.queryId = q.getQueryId();
@@ -55,6 +61,7 @@ public class ForwardQueryMiniBatch {
         this.t = q.getT();
         this.h = q.getH();
         this.k = newHopNum;
+        this.stack = stack;
     }
 
     public String getQueryId() {
@@ -91,5 +98,9 @@ public class ForwardQueryMiniBatch {
 
     public int getK() {
         return k;
+    }
+
+    public ArrayDeque<String> getStack() {
+        return stack;
     }
 }

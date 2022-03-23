@@ -16,55 +16,40 @@ public class QueryMiniBatchContext {
     @JsonProperty("user_id")
     private String userId;
 
-    @JsonProperty("response_num_to_collect")
-    private int responseNumToCollect;
+    @JsonProperty("mini_batch_path_contexts")
+    ArrayList<MiniBatchPathContext> miniBatchPathContexts;
 
-    @JsonProperty("source_ids")
-    private ArrayList<String> sourceIds;
-
-    @JsonProperty("current_aggregated_results")
-    private ArrayList<Edge> currentAggregatedResults;
 
     public QueryMiniBatchContext() {
     }
 
-    public QueryMiniBatchContext(String queryId, String userId, int responseNumToCollect, ArrayList<String> sourceIds, ArrayList<Edge> currentAggregatedResults) {
+    public QueryMiniBatchContext(String queryId, String userId, ArrayList<MiniBatchPathContext> miniBatchPathContexts) {
         this.queryId = queryId;
         this.userId = userId;
-        this.responseNumToCollect = responseNumToCollect;
-        this.sourceIds = sourceIds;
-        this.currentAggregatedResults = currentAggregatedResults;
+        this.miniBatchPathContexts = miniBatchPathContexts;
     }
 
     public String getQueryId() {
         return queryId;
     }
 
+    public void setQueryId(String queryId) {
+        this.queryId = queryId;
+    }
+
     public String getUserId() {
         return userId;
     }
 
-    public int getResponseNumToCollect() {
-        return responseNumToCollect;
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
-    public ArrayList<Edge> getCurrentAggregatedResults() {
-        return currentAggregatedResults;
+    public ArrayList<MiniBatchPathContext> getMiniBatchPathContexts() {
+        return miniBatchPathContexts;
     }
 
-    public void setCurrentAggregatedResults(ArrayList<Edge> currentAggregatedResults) {
-        this.currentAggregatedResults = currentAggregatedResults;
-    }
-
-    public ArrayList<String> getSourceIds() {
-        return sourceIds;
-    }
-
-//    public void setSourceIds(ArrayList<String> sourceIds) {
-//        this.sourceIds = sourceIds;
-//    }
-
-    public void setResponseNumToCollect(int responseNumToCollect) {
-        this.responseNumToCollect = responseNumToCollect;
+    public void setMiniBatchPathContexts(ArrayList<MiniBatchPathContext> miniBatchPathContexts) {
+        this.miniBatchPathContexts = miniBatchPathContexts;
     }
 }

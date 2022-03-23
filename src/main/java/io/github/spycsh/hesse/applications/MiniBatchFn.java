@@ -17,11 +17,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public class MiniBatchFn implements StatefulFunction {
 
-    // set of sources of a vertex
-
     private static final ValueSpec<ArrayList<QueryMiniBatchContext>> QUERY_MINI_BATCH_CONTEXT_LIST =
             ValueSpec.named("queryMiniBatchContextList").withCustomType(Types.QUERY_MINI_BATCH_CONTEXT_LIST_TYPE);
-
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "mini-batch");
 
@@ -33,10 +30,6 @@ public class MiniBatchFn implements StatefulFunction {
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
 
-        // Secondly receive the whole log of this node
-        // recover the state
-        // store in current context
-        // TODO not sending the whole log to recover but use checkpoint and part of log
         if(message.is(Types.QUERY_MINI_BATCH_WITH_STATE_TYPE)){
             System.out.printf("[MiniBatchFn %s] QueryMiniBatchWithState received\n", context.self().id());
 
@@ -47,13 +40,24 @@ public class MiniBatchFn implements StatefulFunction {
             int H = q.getH();
             int K = q.getK();
 
-
             // the source of the original source of one query will be null
             ArrayList<QueryMiniBatchContext> queryMiniBatchContextList =
                     context.storage().get(QUERY_MINI_BATCH_CONTEXT_LIST).orElse(new ArrayList<>());
-            // it should collect H responses (when H is less than neighbour size, collect the latter)
+
+
+            ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
+                add(context.self().id());
+            }};
+            /**
+             * the first node only need to receive min(H, neighbourIds.size()) results
+             */
+            // it should collect H responses (when H is less than neighbour size, collect the neighbour size)
             int responseNumToCollect = Math.min(H, neighbourIds.size());
-            queryMiniBatchContextList.add(new QueryMiniBatchContext(q.getQueryId(), q.getUserId(), responseNumToCollect, null, new ArrayList<>()));
+
+            MiniBatchPathContext miniBatchPathContext = new MiniBatchPathContext(generateNewStackHash(firstStk), responseNumToCollect, new ArrayList<Edge>());
+            queryMiniBatchContextList.add(new QueryMiniBatchContext(q.getQueryId(), q.getUserId(), new ArrayList<MiniBatchPathContext>(){{
+                add(miniBatchPathContext);
+            }}));
 
             context.storage().set(QUERY_MINI_BATCH_CONTEXT_LIST, queryMiniBatchContextList);
 
@@ -69,7 +73,7 @@ public class MiniBatchFn implements StatefulFunction {
                             .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), neighbourId)
                             .withCustomType(
                                     Types.FORWARD_QUERY_MINI_BATCH_TYPE,
-                                    new ForwardQueryMiniBatch(context.self().id(), neighbourId, q, q.getK() - 1)
+                                    new ForwardQueryMiniBatch(context.self().id(), neighbourId, q, q.getK() - 1, firstStk)
                             )
                             .build());
                 }
@@ -87,6 +91,8 @@ public class MiniBatchFn implements StatefulFunction {
             ArrayList<String> neighbourIds = recoverStateAtT(T, q.getVertexActivities());
             int H = q.getH();
 
+            ArrayDeque<String> stack = q.getStack();
+
             if(K == 0 || neighbourIds.size() == 0){
                 // if already is the last hop or the vertex has no more neighbours
                 // do not need to set source ids, just send back the result
@@ -102,7 +108,7 @@ public class MiniBatchFn implements StatefulFunction {
                 ArrayList<Edge> aggregatedResults = new ArrayList<>();
                 aggregatedResults.add(new Edge(sourceId, context.self().id()));
                 QueryMiniBatchResult queryMiniBatchResult = new QueryMiniBatchResult(
-                        q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(), aggregatedResults);
+                        q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(), aggregatedResults, stack);
 
                 context.send(MessageBuilder
                         .forAddress(TypeName.typeNameOf("hesse.applications", "mini-batch"), sourceId)
@@ -119,6 +125,8 @@ public class MiniBatchFn implements StatefulFunction {
                 // get randomized sample
                 shuffle(neighbourIds);
 
+                stack.addFirst(context.self().id());
+
                 int sampleCnt = H;
 
                 for (String neighbourId : neighbourIds) {
@@ -130,20 +138,28 @@ public class MiniBatchFn implements StatefulFunction {
                             .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), neighbourId)
                             .withCustomType(
                                     Types.FORWARD_QUERY_MINI_BATCH_TYPE,
-                                    new ForwardQueryMiniBatch(context.self().id(), neighbourId, q, K - 1)
+                                    new ForwardQueryMiniBatch(context.self().id(), neighbourId, q, K - 1, stack)
                             )
                             .build());
                 }
                 // find the queryMiniBatchContext with the queryId and userId
                 // set the source ids and the response number
                 QueryMiniBatchContext e = findQueryMiniBatchContext(q.getQueryId(), q.getUserId(), queryMiniBatchContextList);
+                ArrayDeque<String> currentStack = q.getStack();
+                int responseNumToCollect = Math.min(H, neighbourIds.size());
+
                 if(e == null){
-                    QueryMiniBatchContext qc = new QueryMiniBatchContext(q.getQueryId(), q.getUserId(), Math.min(H, neighbourIds.size()),
-                            new ArrayList<String>(){{add(sourceId);}}, new ArrayList<>());
+                    ArrayList<MiniBatchPathContext> list = new ArrayList<>();
+
+                    list.add(new MiniBatchPathContext(generateNewStackHash(currentStack), responseNumToCollect, new ArrayList<>()));
+                    QueryMiniBatchContext qc = new QueryMiniBatchContext(q.getQueryId(), q.getUserId(),
+                            list);
                     queryMiniBatchContextList.add(qc);
                 } else {
-                    e.getSourceIds().add(sourceId);
-                    e.setResponseNumToCollect(Math.min(H, neighbourIds.size()));
+                    e.getMiniBatchPathContexts().add(
+                            new MiniBatchPathContext(generateNewStackHash(currentStack),
+                                responseNumToCollect,
+                                new ArrayList<>()));
                 }
 
                 context.storage().set(QUERY_MINI_BATCH_CONTEXT_LIST, queryMiniBatchContextList);
@@ -152,7 +168,7 @@ public class MiniBatchFn implements StatefulFunction {
         }
 
         /**
-         * must receive Math.min(neighbour.size), H) responses, can the vertex send the query result
+         * must receive Math.min(neighbour.size, H) responses, can the vertex send the query result
          * back to its parent (source)
          */
         if (message.is(Types.QUERY_MINI_BATCH_RESULT_TYPE)){
@@ -164,29 +180,37 @@ public class MiniBatchFn implements StatefulFunction {
             QueryMiniBatchResult result = message.as(Types.QUERY_MINI_BATCH_RESULT_TYPE);
 
             // get current context of the node to the query
-            // contains the source ids of the current vertex
-            // the current aggregated results
             ArrayList<QueryMiniBatchContext> queryMiniBatchContextList = context.storage().get(QUERY_MINI_BATCH_CONTEXT_LIST).orElse(new ArrayList<>());
             QueryMiniBatchContext queryMiniBatchContext = findQueryMiniBatchContext(result.getQueryId(), result.getUserId(), queryMiniBatchContextList);
 
-            if(queryMiniBatchContext.getResponseNumToCollect() > 1){
+            ArrayDeque<String> stack = result.getStack();
+            int stackHash = generateNewStackHash(stack);
+
+            // find in context the current response num to collect by stackHash
+            ArrayList<MiniBatchPathContext> miniBatchPathContext = queryMiniBatchContext.getMiniBatchPathContexts();
+            MiniBatchPathContext miniBatchContextByPathHash = findMiniBatchContextByStackHash(miniBatchPathContext, stackHash);
+
+            stack.removeFirst();
+
+            if(miniBatchContextByPathHash.getResponseNum() > 1){
                 System.out.printf("[MiniBatchFn %s] queryMiniBatchContext not collects all the results, still %s " +
-                        " result(s) to collect\n", context.self().id(), queryMiniBatchContext.getResponseNumToCollect() - 1);
+                        " result(s) to collect\n", context.self().id(), miniBatchContextByPathHash.getResponseNum() - 1);
 
                 // after collecting this result, still not collect all results,
                 // so just aggregate the new result, not send or egress, because not received all the excepted results
                 for(Edge e : result.getAggregatedResults()){
-                    ArrayList<Edge> r = queryMiniBatchContext.getCurrentAggregatedResults();
+                    List<Edge> r = miniBatchContextByPathHash.getAggregatedMiniBatchEdges();
                     r.add(e);
                 }
-                queryMiniBatchContext.setResponseNumToCollect(queryMiniBatchContext.getResponseNumToCollect() - 1);
-            } else{
+
+                miniBatchContextByPathHash.setResponseNum(miniBatchContextByPathHash.getResponseNum() - 1);
+            } else {
                 // this is the last result to collect
                 // if it is the original source, egress the aggregated results
                 // otherwise, collect the last result and then collect its own results
                 // and send to its the parent
                 // finally delete the context of this vertex to this query
-                if(queryMiniBatchContext.getSourceIds() == null){
+                if(context.self().id().equals(result.getVertexId())){
                     System.out.printf("[MiniBatchFn %s] queryMiniBatchContext collects all the results and is the source\n",
                             context.self().id());
 
@@ -197,45 +221,54 @@ public class MiniBatchFn implements StatefulFunction {
                      */
                     System.out.println("success!!");
 
+                    result.getAggregatedResults().addAll(miniBatchContextByPathHash.getAggregatedMiniBatchEdges());
+
                     // print the last result
                     for(Edge e: result.getAggregatedResults())
                         System.out.println(e.getSrcId() + "->" + e.getDstId());
 
                     // print the aggregated results of the children nodes
-                    for(Edge e: queryMiniBatchContext.getCurrentAggregatedResults()){
-                        System.out.println(e.getSrcId() + "->" + e.getDstId());
-                    }
+//                    for(Edge e: miniBatchContextByPathHash.getAggregatedMiniBatchEdges()){
+//                        System.out.println(e.getSrcId() + "->" + e.getDstId());
+//                    }
                 } else {
                     System.out.printf("[MiniBatchFn %s] queryMiniBatchContext collects all the results but not the source\n", context.self().id());
 
-                    // for all the parent nodes, send own aggregated results
-                    for(String i: queryMiniBatchContext.getSourceIds()){
-                        // append received aggregated results
-                        ArrayList<Edge> aggregatedResults = result.getAggregatedResults();
-                        // append stored current aggregated results
-                        aggregatedResults.addAll(queryMiniBatchContext.getCurrentAggregatedResults());
-                        // add the new edge from parent to it self
-                        aggregatedResults.add(new Edge(i, context.self().id()));
-                        // result.setAggregatedResults(aggregatedResults);
+                    // add the buffered minibatch results to the result and sent back to its parent node
+                    result.getAggregatedResults().addAll(miniBatchContextByPathHash.getAggregatedMiniBatchEdges());
 
-                        context.send(MessageBuilder
-                                .forAddress(TypeName.typeNameOf("hesse.applications", "mini-batch"), i)
-                                .withCustomType(
-                                        Types.QUERY_MINI_BATCH_RESULT_TYPE,
-                                        result
-                                )
-                                .build());
-                    }
+                    // and also add the edge from self to the parent node
+                    result.getAggregatedResults().add(new Edge(stack.getFirst(), context.self().id()));
+
+                    context.send(MessageBuilder
+                            .forAddress(TypeName.typeNameOf("hesse.applications", "mini-batch"), stack.getFirst())
+                            .withCustomType(
+                                    Types.QUERY_MINI_BATCH_RESULT_TYPE,
+                                    result
+                            )
+                            .build());
+
                 }
 
                 // delete the current context of the vertex to the query
                 // it is not needed anymore
-                queryMiniBatchContextList.remove(queryMiniBatchContext);
+                queryMiniBatchContext.getMiniBatchPathContexts().remove(miniBatchContextByPathHash);
+                if(queryMiniBatchContext.getMiniBatchPathContexts().size() == 0)
+                    queryMiniBatchContextList.remove(queryMiniBatchContext);
             }
             context.storage().set(QUERY_MINI_BATCH_CONTEXT_LIST, queryMiniBatchContextList);
         }
 
         return context.done();
+    }
+
+    private MiniBatchPathContext findMiniBatchContextByStackHash(ArrayList<MiniBatchPathContext> miniBatchPathContext, int stackHash) {
+        for(MiniBatchPathContext e: miniBatchPathContext){
+            if(e.getPathHash() == stackHash){
+                return e;
+            }
+        }
+        return null;
     }
 
     private QueryMiniBatchContext findQueryMiniBatchContext(String queryId, String userId, ArrayList<QueryMiniBatchContext> queryMiniBatchContextList) {
@@ -272,5 +305,13 @@ public class MiniBatchFn implements StatefulFunction {
         }
 
         return neighbourIds;
+    }
+
+    private int generateNewStackHash(ArrayDeque<String> stack) {
+        StringBuffer sb = new StringBuffer();
+        for(String s:stack){
+            sb.append(s).append(" ");
+        }
+        return sb.toString().hashCode();
     }
 }

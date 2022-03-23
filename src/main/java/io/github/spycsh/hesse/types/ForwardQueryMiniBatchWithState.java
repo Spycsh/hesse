@@ -2,6 +2,7 @@ package io.github.spycsh.hesse.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +34,9 @@ public class ForwardQueryMiniBatchWithState {
     @JsonProperty("vertex_activities")
     List<VertexActivity> vertexActivities = new ArrayList<>();
 
+    @JsonProperty("stack")
+    private ArrayDeque<String> stack;
+
     public ForwardQueryMiniBatchWithState() {
     }
 
@@ -45,6 +49,7 @@ public class ForwardQueryMiniBatchWithState {
         this.t = q.getT();
         this.h = q.getH();
         this.k = q.getK();
+        this.stack = q.getStack();
         this.vertexActivities = vertexActivities;
     }
 
@@ -83,5 +88,9 @@ public class ForwardQueryMiniBatchWithState {
 
     public int getK() {
         return k;
+    }
+
+    public ArrayDeque<String> getStack() {
+        return stack;
     }
 }
