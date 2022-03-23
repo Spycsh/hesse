@@ -12,11 +12,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * this class support connected component computation
- * each instance of it corresponding to a vertex
- * it should accept neighbours messages from the storage layer
+ * this function serves the streaming tracking of the connected component
  */
-public class ConnectedComponentsFn implements StatefulFunction {
+public class StreamingConnectedComponentsFn implements StatefulFunction {
     // current component id of a vertex
     private static final ValueSpec<Integer> COMPONENT_ID = ValueSpec.named("componentId").withIntType();
 
@@ -27,7 +25,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "connected-components");
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
-            .withSupplier(ConnectedComponentsFn::new)
+            .withSupplier(StreamingConnectedComponentsFn::new)
             .withValueSpecs(COMPONENT_ID, NEIGHBOURS_VALUE)
             .build();
 

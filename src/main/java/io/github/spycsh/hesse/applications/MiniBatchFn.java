@@ -9,6 +9,9 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
+ * this function serves the temporal query of the graph about the mini-batch
+ * refer to http://snap.stanford.edu/graphsage/sample_and_agg.png for more details
+ * the question can be simplified as following:
  * given H and K and t
  * H: sample size for each hop
  * K: hop number

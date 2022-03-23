@@ -10,6 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * this function serves the temporal query of the graph about the strongly connected component
+ * e.g. it can answer at time T the vertex's connected component
+ */
 public class StronglyConnectedComponentsFn implements StatefulFunction {
     /**
      * sourceId specified by the query id and user id

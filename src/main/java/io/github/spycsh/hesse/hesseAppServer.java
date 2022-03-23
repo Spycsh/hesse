@@ -21,8 +21,8 @@ public class hesseAppServer {
         // options 2: partition by vertexId
         // use vertexStorage -> applications
         functions.withStatefulFunction(VertexStorageFn.SPEC);
-        functions.withStatefulFunction(ConnectedComponentsFn.SPEC);
-        functions.withStatefulFunction(SingleSourceShortestPathFn.SPEC);
+        functions.withStatefulFunction(StreamingConnectedComponentsFn.SPEC);
+        functions.withStatefulFunction(StreamingSingleSourceShortestPathFn.SPEC);
 
         // register the query functions
         functions.withStatefulFunction(TemporalQueryHandlerFn.SPEC);

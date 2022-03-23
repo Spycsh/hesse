@@ -11,7 +11,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public class SingleSourceShortestPathFn implements StatefulFunction {
+/**
+ * this function serves the streaming tracking of the single source shortest path
+ */
+public class StreamingSingleSourceShortestPathFn implements StatefulFunction {
 
     // set of known neighbours with weight from a vertex
     private static final ValueSpec<HashMap<Integer, Double>> NEIGHBOURS_WEIGHTED_VALUE = ValueSpec.named("neighboursWeighted").withCustomType(Types.NEIGHBOURS_WEIGHTED_TYPE);
@@ -25,7 +28,7 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "single-source-shortest-path");
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
-            .withSupplier(SingleSourceShortestPathFn::new)
+            .withSupplier(StreamingSingleSourceShortestPathFn::new)
             .withValueSpecs(SHORTEST_PATH_DISTANCES_VALUE, NEIGHBOURS_WEIGHTED_VALUE, VERTEX_SHORTEST_PATH_CHANGE_VALUE)
             .build();
 
