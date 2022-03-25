@@ -23,7 +23,7 @@ public class StreamingConnectedComponentsFn implements StatefulFunction {
 
 
 
-    static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "connected-components");
+    static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "streaming-connected-components");
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(StreamingConnectedComponentsFn::new)
             .withValueSpecs(COMPONENT_ID, NEIGHBOURS_VALUE)

@@ -41,7 +41,7 @@ spec:
     type: earliest
   topics:
   - topic: query
-    valueType: hesse.types/query_mini_batch
+    valueType: hesse.types/query_connected_component
     targets:
     - hesse.query/temporal-query-handler
 ---

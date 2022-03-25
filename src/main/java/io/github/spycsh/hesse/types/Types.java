@@ -134,6 +134,16 @@ public class Types {
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySCC.class));
 
     /**
+     * Type denoting a query of connected component
+     * that is sent from ingress to storage
+     */
+    public static final Type<QueryCC> QUERY_CC_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_connected_component"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryCC.class));
+
+    /**
      * Type denoting a query of mini batch with state
      * sent from storage to application
      */
@@ -153,6 +163,11 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySCCWithState.class));
 
+    public static final Type<QueryCCWithState> QUERY_CC_WITH_STATE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_connected_component_with_state"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryCCWithState.class));
     /**
      * MiniBatchFn -> neighbours' VertexStorageFn
      */
@@ -183,6 +198,18 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQuerySCCWithState.class));
 
+    public static final Type<ForwardQueryCC> FORWARD_QUERY_CC_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_cc"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQueryCC.class));
+
+    public static final Type<ForwardQueryCCWithState> FORWARD_QUERY_CC_WITH_STATE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_cc_with_state"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQueryCCWithState.class));
+
     /**
      * query result
      */
@@ -197,6 +224,12 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_scc_result"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySCCResult.class));
+
+    public static final Type<QueryCCResult> QUERY_CC_RESULT_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_cc_result"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryCCResult.class));
 
     /**
      * each query has a context on each vertex
@@ -216,9 +249,11 @@ public class Types {
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QuerySCCContext>>() {
                     }));
 
-//    public static final Type<SCCPathContext> QUERY_SCC_PATH_CONTEXT_TYPE =
-//            SimpleType.simpleImmutableTypeFrom(
-//                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_strongly_connected_components_path_context"),
-//                    JSON_OBJ_MAPPER::writeValueAsBytes,
-//                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, SCCPathContext.class));
+    public static final Type<ArrayList<QueryCCContext>> QUERY_CC_CONTEXT_LIST_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_connected_components_context_list"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QueryCCContext>>() {
+                    }));
+
 }

@@ -26,7 +26,7 @@ public class StreamingSingleSourceShortestPathFn implements StatefulFunction {
     private static final ValueSpec<VertexShortestPathChange> VERTEX_SHORTEST_PATH_CHANGE_VALUE =
             ValueSpec.named("shortestPathChange").withCustomType(Types.VERTEX_SHORTEST_PATH_CHANGE_TYPE);
 
-    static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "single-source-shortest-path");
+    static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "streaming-single-source-shortest-path");
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(StreamingSingleSourceShortestPathFn::new)
             .withValueSpecs(SHORTEST_PATH_DISTANCES_VALUE, NEIGHBOURS_WEIGHTED_VALUE, VERTEX_SHORTEST_PATH_CHANGE_VALUE)

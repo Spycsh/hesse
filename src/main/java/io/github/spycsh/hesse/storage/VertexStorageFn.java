@@ -83,7 +83,6 @@ public class VertexStorageFn implements StatefulFunction {
                 context.storage().get(BUFFERED_NEIGHBOURS_WEIGHTED_VALUE).orElse(new HashMap<>());
         HashSet<Integer> bufferedNeighbours = context.storage().get(BUFFERED_NEIGHBOURS_VALUE).orElse(new HashSet<>());
 
-
         // read streaming temporal edges and convert them to adjacent list form
         if(message.is(Types.TEMPORAL_EDGE_TYPE)) {
             TemporalEdge temporalEdge = message.as(Types.TEMPORAL_EDGE_TYPE);
@@ -146,6 +145,18 @@ public class VertexStorageFn implements StatefulFunction {
             sendQueryStronglyConnectedComponentWithStateToApp(context, queryWithState);
         }
 
+        if(message.is(Types.QUERY_CC_TYPE)){
+            QueryCC q = message.as(Types.QUERY_CC_TYPE);
+            System.out.printf("[VertexStorageFn %s] QueryConnectedComponent received\n", context.self().id());
+
+            List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
+            QueryCCWithState queryWithState = new QueryCCWithState(
+                    q,
+                    filteredActivityList
+            );
+            sendQueryConnectedComponentWithStateToApp(context, queryWithState);
+        }
+
         if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
             ForwardQueryMiniBatch q = message.as(Types.FORWARD_QUERY_MINI_BATCH_TYPE);
             System.out.printf("[VertexStorageFn %s] ForwardQueryMiniBatch received\n", context.self().id());
@@ -168,15 +179,38 @@ public class VertexStorageFn implements StatefulFunction {
             sendQueryStronglyConnectedComponentWithStateToApp(context, queryWithState);
         }
 
+        if(message.is(Types.FORWARD_QUERY_CC_TYPE)){
+            ForwardQueryCC q = message.as(Types.FORWARD_QUERY_CC_TYPE);
+            System.out.printf("[VertexStorageFn %s] ForwardQueryCC received\n", context.self().id());
+            List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
+            ForwardQueryCCWithState queryWithState = new ForwardQueryCCWithState(
+                    q,
+                    filteredActivityList
+            );
+            sendQueryConnectedComponentWithStateToApp(context, queryWithState);
+        }
+
         return context.done();
     }
 
 
-    private List<VertexActivity> filterActivityListFromBeginningToT(Context context, int T) {
-        int batchIndex = T / EVENT_TIME_INTERVAL;
+    private List<VertexActivity> filterActivityListByTimeRegion(Context context, int startT, int endT) {
+        int batchIndexStart = startT / EVENT_TIME_INTERVAL;
+        int batchIndexEnd = endT / EVENT_TIME_INTERVAL;
         TreeMap<String, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
-        vertexActivities.keySet().removeIf(key -> Integer.parseInt(key) > batchIndex);
+        vertexActivities.keySet().removeIf(key -> Integer.parseInt(key) > batchIndexEnd);
+        vertexActivities.keySet().removeIf(key -> Integer.parseInt(key) < batchIndexStart);
         return vertexActivities.values().stream().flatMap(ArrayList::stream).collect(Collectors.toList());
+
+    }
+
+    // TODO deprecate this function because it can be generalized as filterActivityListByTimeRegion(context, 0, T)
+    private List<VertexActivity> filterActivityListFromBeginningToT(Context context, int T) {
+        return filterActivityListByTimeRegion(context, 0, T);
+//        int batchIndex = T / EVENT_TIME_INTERVAL;
+//        TreeMap<String, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
+//        vertexActivities.keySet().removeIf(key -> Integer.parseInt(key) > batchIndex);
+//        return vertexActivities.values().stream().flatMap(ArrayList::stream).collect(Collectors.toList());
     }
 
     private void storeActivity(Context context, TemporalEdge temporalEdge) {
@@ -265,6 +299,23 @@ public class VertexStorageFn implements StatefulFunction {
                 .build());
     }
 
+    private void sendQueryConnectedComponentWithStateToApp(Context context, QueryCCWithState queryWithState) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.applications", "connected-components"), context.self().id())
+                .withCustomType(
+                        Types.QUERY_CC_WITH_STATE_TYPE,
+                        queryWithState)
+                .build());
+    }
+
+    private void sendQueryConnectedComponentWithStateToApp(Context context, ForwardQueryCCWithState queryWithState) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.applications", "connected-components"), context.self().id())
+                .withCustomType(
+                        Types.FORWARD_QUERY_CC_WITH_STATE_TYPE,
+                        queryWithState)
+                .build());
+    }
 
     private long getDiffTime(Context context) {
         long curUnixTime = System.currentTimeMillis();

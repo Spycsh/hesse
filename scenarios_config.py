@@ -28,7 +28,7 @@ query_file_name = d_q[index_q]
 
 print("\n")
 
-QUERY_TYPES = ['hesse.types/query_mini_batch', 'hesse.types/query_strongly_connected_component']
+QUERY_TYPES = ['hesse.types/query_mini_batch', 'hesse.types/query_strongly_connected_component', 'hesse.types/query_connected_component']
 for i in range(len(QUERY_TYPES)):
     print(str(i) + "\t" + QUERY_TYPES[i])
 index_q_type = input("select the query type:\n")

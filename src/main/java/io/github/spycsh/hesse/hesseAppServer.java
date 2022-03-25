@@ -27,6 +27,7 @@ public class hesseAppServer {
         // register the query functions
         functions.withStatefulFunction(TemporalQueryHandlerFn.SPEC);
         functions.withStatefulFunction(MiniBatchFn.SPEC);
+        functions.withStatefulFunction(ConnectedComponentsFn.SPEC);
         functions.withStatefulFunction(StronglyConnectedComponentsFn.SPEC);
 
         final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
