@@ -1,0 +1,4 @@
+{"query_id": "1", "user_id": "1", "vertex_id": "1", "query_type": "connected-components", "start_t": "0", "end_t":"20"}
+{"query_id": "2", "user_id": "2", "vertex_id": "2", "query_type": "connected-components", "start_t": "0", "end_t":"20"}
+{"query_id": "4", "user_id": "3", "vertex_id": "3", "query_type": "connected-components", "start_t": "0", "end_t":"60"}
+{"query_id": "5", "user_id": "3", "vertex_id": "4", "query_type": "connected-components", "start_t": "0", "end_t":"60"}

@@ -45,7 +45,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
                 add(context.self().id());
             }};
-            SCCPathContext sccPathContext = new SCCPathContext(generateNewStackHash(firstStk), context.self().id(), false, neighbourIds.size());
+            SCCPathContext sccPathContext = new SCCPathContext(generateNewStackHash(firstStk), context.self().id(), false, neighbourIds.size(), new ArrayList<>());
             querySCCContexts.add(new QuerySCCContext(q.getQueryId(), q.getUserId(),
                     new ArrayList<SCCPathContext>(){{add(sccPathContext);}}));
 
@@ -91,7 +91,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                             .withCustomType(
                                     Types.QUERY_SCC_RESULT_TYPE,
                                     new QuerySCCResult(q.getQueryId(), q.getUserId(),
-                                            q.getVertexId(), q.getQueryType(), context.self().id(), true, stack)
+                                            q.getVertexId(), q.getQueryType(), context.self().id(), true, new ArrayList<>(), stack)
                             )
                             .build());
                 }
@@ -112,7 +112,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                         .withCustomType(
                                 Types.QUERY_SCC_RESULT_TYPE,
                                 new QuerySCCResult(q.getQueryId(), q.getUserId(),
-                                        q.getVertexId(), q.getQueryType(), context.self().id(), false, stack)
+                                        q.getVertexId(), q.getQueryType(), context.self().id(), false, new ArrayList<>(), stack)
                         )
                         .build());
             } else {
@@ -131,14 +131,14 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
                 // if querySCCContext is null, it must have not been visited
                 if(querySCCContext == null){
-                    SCCPathContext sccPathContext = new SCCPathContext(newStackHash, context.self().id(), false, neighbourIds.size());
+                    SCCPathContext sccPathContext = new SCCPathContext(newStackHash, context.self().id(), false, neighbourIds.size(), new ArrayList<>());
                     querySCCContext = new QuerySCCContext(q.getQueryId(), q.getUserId(), new ArrayList<SCCPathContext>(){{add(sccPathContext);}});
                     querySCCContexts.add(querySCCContext);
                 } else{
                     // there is already a path to the current node so there is a querySCCContext
                     // so just add the current path context in current node
                     ArrayList<SCCPathContext> sccPathContexts = querySCCContext.getSccPathContexts();
-                    sccPathContexts.add(new SCCPathContext(newStackHash, context.self().id(), false, neighbourIds.size()));
+                    sccPathContexts.add(new SCCPathContext(newStackHash, context.self().id(), false, neighbourIds.size(), new ArrayList<>()));
                 }
 
                 context.storage().set(QUERY_SCC_CONTEXT_LIST, querySCCContexts);
@@ -186,6 +186,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                 // update the low link id and store into context
                 updatedLowLinkId = Math.min(Integer.parseInt(result.getLowLinkId()), updatedLowLinkId);
                 sccContextByPathHash.setAggregatedLowLinkId(String.valueOf(updatedLowLinkId));
+                sccContextByPathHash.getAggregatedSCCIds().addAll(result.getAggregatedSCCIds());
+
                 sccContextByPathHash.setSccFlag(true);
             }
 
@@ -194,23 +196,29 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                 System.out.printf("[StronglyConnectedComponentsFn %s] QuerySCCResult received " +
                         "and all responses are collected for one path\n", context.self().id());
 
-                // remove the pathContext using stackHash
-                // remove this path
-                querySCCContext.getSccPathContexts().remove(sccContextByPathHash);
-                if(querySCCContext.getSccPathContexts().size() == 0){
-                    // if no paths
-                    // no longer need the SCC context of current node
-                    querySCCContexts.remove(querySCCContext);
-                }
-
                 // if it is the source node, just egress
                 if(context.self().id().equals(result.getVertexId())){
                     System.out.printf("[StronglyConnectedComponentsFn %s] is source node, success!\n", context.self().id());
                     System.out.printf("[StronglyConnectedComponentsFn %s] Result of query %s by user %s: Strongly connected component id of node %s is %s \n",
                             context.self().id(), result.getQueryId(), result.getUserId(), context.self().id(), updatedLowLinkId);
+
+                    System.out.printf("[ConnectedComponentsFn %s] Other node ids that contain in the same component are: ",
+                            context.self().id());
+                    for(String id : sccContextByPathHash.getAggregatedSCCIds())
+                        System.out.print(id + " ");
+                    System.out.println();
                 } else {
                     // not source node, send to its parents the aggregated low link id
                     System.out.printf("[StronglyConnectedComponentsFn %s] not the source node\n", context.self().id());
+
+                    /**
+                     * merge all the cc ids, send to parent
+                     */
+                    List<String> aggregatedSCCIds = new ArrayList<>();
+                    for(SCCPathContext c: sccPathContexts){
+                        aggregatedSCCIds.addAll(c.getAggregatedSCCIds());
+                    }
+                    aggregatedSCCIds.add(context.self().id());
 
                     // backtracking
                     context.send(MessageBuilder
@@ -218,13 +226,20 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                             .withCustomType(
                                     Types.QUERY_SCC_RESULT_TYPE,
                                     new QuerySCCResult(result.getQueryId(), result.getUserId(),
-                                            result.getVertexId(), result.getQueryType(), String.valueOf(updatedLowLinkId), sccFlag, stack)
+                                            result.getVertexId(), result.getQueryType(), String.valueOf(updatedLowLinkId), sccFlag, aggregatedSCCIds, stack)
                             )
                             .build());
                 }
 
                 // no longer need the SCC context of current node
                 // querySCCContexts.remove(querySCCContext);
+                // remove the pathContext using stackHash
+                querySCCContext.getSccPathContexts().remove(sccContextByPathHash);
+                if(querySCCContext.getSccPathContexts().size() == 0){
+                    // if no paths
+                    // no longer need the SCC context of current node
+                    querySCCContexts.remove(querySCCContext);
+                }
             } else {  // not the last result to collect
                 System.out.printf("[StronglyConnectedComponentsFn %s] QuerySCCResult received " +
                         "but not all responses of one path are collected\n", context.self().id());
@@ -265,13 +280,17 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
     }
 
     private ArrayList<String> recoverStateAtT(int T, List<VertexActivity> activityLog){
+        return recoverStateByTimeRegion(0, T, activityLog);
+    }
 
+    private ArrayList<String> recoverStateByTimeRegion(int startT, int endT, List<VertexActivity> activityLog) {
         activityLog.sort((o1, o2) -> Integer.parseInt(o2.getTimestamp()) - Integer.parseInt(o1.getTimestamp()));
 
         ArrayList<String> neighbourIds = new ArrayList<>();
 
         for(VertexActivity activity: activityLog){
-            if(Integer.parseInt(activity.getTimestamp()) <= T) {  // recover the state with all the ordered activities that have event time <= T
+            // recover the state with all the ordered activities between startT and endT
+            if(Integer.parseInt(activity.getTimestamp()) >= startT && Integer.parseInt(activity.getTimestamp()) <= endT) {
                 if (activity.getActivityType().equals("add")) {
                     // check whether has weight to decide which state to recover
                     // has weight -> weight != 0 -> HashMap<Integer, Double> a hashmap of mapping from neighbour id to weight
@@ -286,6 +305,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
         return neighbourIds;
     }
+
 
     private QuerySCCContext findSCCContext(String queryId, String userId, ArrayList<QuerySCCContext> list) {
         for(QuerySCCContext e: list) {

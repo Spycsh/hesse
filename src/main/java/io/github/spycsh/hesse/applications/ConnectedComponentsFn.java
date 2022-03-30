@@ -5,9 +5,7 @@ import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -42,7 +40,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
                 add(context.self().id());
             }};
-            CCPathContext ccPathContext = new CCPathContext(generateNewStackHash(firstStk), context.self().id(), neighbourIds.size(), new ArrayList<>());
+            CCPathContext ccPathContext = new CCPathContext(generateNewStackHash(firstStk), context.self().id(), neighbourIds.size(), new HashSet<>());
             queryCCContexts.add(new QueryCCContext(q.getQueryId(), q.getUserId(),
                     new ArrayList<CCPathContext>(){{add(ccPathContext);}}));
 
@@ -79,7 +77,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
                 System.out.printf("[ConnectedComponentsFn %s] ForwardQueryCCWithState received and self" +
                         " is already on the stack or has no more neighbours\n", context.self().id());
 
-                List<String> aggregatedCCIds = new ArrayList<>();
+                Set<String> aggregatedCCIds = new HashSet<>();
                 if(neighbourIds.size() == 0)
                     aggregatedCCIds.add(context.self().id());
                 context.send(MessageBuilder
@@ -100,12 +98,12 @@ public class ConnectedComponentsFn implements StatefulFunction {
                 int newStackHash = generateNewStackHash(stack);
 
                 if(queryCCContext == null){ // first path context
-                    CCPathContext ccPathContext = new CCPathContext(newStackHash, context.self().id(),  neighbourIds.size(), new ArrayList<>());
+                    CCPathContext ccPathContext = new CCPathContext(newStackHash, context.self().id(),  neighbourIds.size(), new HashSet<>());
                     queryCCContext = new QueryCCContext(q.getQueryId(), q.getUserId(), new ArrayList<CCPathContext>(){{add(ccPathContext);}});
                     queryCCContexts.add(queryCCContext);
                 } else {
                     ArrayList<CCPathContext> ccPathContexts = queryCCContext.getCcPathContexts();
-                    ccPathContexts.add(new CCPathContext(newStackHash, context.self().id(), neighbourIds.size(), new ArrayList<>()));
+                    ccPathContexts.add(new CCPathContext(newStackHash, context.self().id(), neighbourIds.size(), new HashSet<>()));
                 }
 
                 context.storage().set(QUERY_CC_CONTEXT_LIST, queryCCContexts);
@@ -175,7 +173,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
                     /**
                      * merge all the cc ids, send to parent
                      */
-                    List<String> aggregatedCCIds = new ArrayList<>();
+                    Set<String> aggregatedCCIds = new HashSet<>();
                     for(CCPathContext c: ccPathContexts){
                         aggregatedCCIds.addAll(c.getAggregatedCCIds());
                     }

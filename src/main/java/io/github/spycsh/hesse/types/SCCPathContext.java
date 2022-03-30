@@ -2,6 +2,8 @@ package io.github.spycsh.hesse.types;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 
 public class SCCPathContext {
     @JsonProperty("path_hash")
@@ -16,14 +18,18 @@ public class SCCPathContext {
     @JsonProperty("response_num")
     private int responseNum;
 
+    @JsonProperty("aggregated_strongly_connected_component_ids")
+    private List<String> aggregatedSCCIds;   // aggregated strongly connected component ids on the path
+
     public SCCPathContext() {
     }
 
-    public SCCPathContext(int pathHash, String aggregatedLowLinkId, boolean sccFlag, int responseNum) {
+    public SCCPathContext(int pathHash, String aggregatedLowLinkId, boolean sccFlag, int responseNum, List<String> aggregatedSCCIds) {
         this.pathHash = pathHash;
         this.aggregatedLowLinkId = aggregatedLowLinkId;
         this.sccFlag = sccFlag;
         this.responseNum = responseNum;
+        this.aggregatedSCCIds = aggregatedSCCIds;
     }
 
     public String getAggregatedLowLinkId() {
@@ -56,5 +62,13 @@ public class SCCPathContext {
 
     public void setResponseNum(int responseNum) {
         this.responseNum = responseNum;
+    }
+
+    public List<String> getAggregatedSCCIds() {
+        return aggregatedSCCIds;
+    }
+
+    public void setAggregatedSCCIds(List<String> aggregatedSCCIds) {
+        this.aggregatedSCCIds = aggregatedSCCIds;
     }
 }

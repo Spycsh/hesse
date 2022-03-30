@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Set;
 
 public class QueryCCResult {
 
@@ -23,7 +24,7 @@ public class QueryCCResult {
     private String lowLinkId;  // minimum component id aggregated from children nodes
 
     @JsonProperty("aggregated_connected_component_ids")
-    private List<String> aggregatedCCIds;
+    private Set<String> aggregatedCCIds;
 
     @JsonProperty("stack")
     private ArrayDeque<String> stack;
@@ -31,7 +32,7 @@ public class QueryCCResult {
     public QueryCCResult() {
     }
 
-    public QueryCCResult(String queryId, String userId, String vertexId, String queryType, String lowLinkId, List<String> aggregatedCCIds, ArrayDeque<String> stack) {
+    public QueryCCResult(String queryId, String userId, String vertexId, String queryType, String lowLinkId, Set<String> aggregatedCCIds, ArrayDeque<String> stack) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
@@ -81,11 +82,11 @@ public class QueryCCResult {
         this.lowLinkId = lowLinkId;
     }
 
-    public List<String> getAggregatedCCIds() {
+    public Set<String> getAggregatedCCIds() {
         return aggregatedCCIds;
     }
 
-    public void setAggregatedCCIds(List<String> aggregatedCCIds) {
+    public void setAggregatedCCIds(Set<String> aggregatedCCIds) {
         this.aggregatedCCIds = aggregatedCCIds;
     }
 

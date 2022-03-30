@@ -62,13 +62,13 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/graph/example_cc_edges_1.txt
+      APP_PATH: /mnt/datasets/graph/example_cc_edges_2.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: example-temporal-graph1
       APP_LOOP: 'false'
       APP_JSON_PATH: src_id
     volumes:
-    - ./datasets/graph/example_cc_edges_1.txt:/mnt/datasets/graph/example_cc_edges_1.txt
+    - ./datasets/graph/example_cc_edges_2.txt:/mnt/datasets/graph/example_cc_edges_2.txt
   hesse-query-producer:
     image: spycsh/query-producer:latest
     depends_on:
@@ -77,7 +77,7 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/query/query_cc_1.txt
+      APP_PATH: /mnt/datasets/query/query_cc_2.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: query
       APP_DELAY_SECONDS: 1
@@ -85,4 +85,4 @@ services:
       APP_LOOP: 'false'
       APP_JSON_PATH: query_id
     volumes:
-    - ./datasets/query/query_cc_1.txt:/mnt/datasets/query/query_cc_1.txt
+    - ./datasets/query/query_cc_2.txt:/mnt/datasets/query/query_cc_2.txt

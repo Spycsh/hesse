@@ -3,6 +3,7 @@ package io.github.spycsh.hesse.types;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayDeque;
+import java.util.List;
 
 public class QuerySCCResult {
 
@@ -24,19 +25,23 @@ public class QuerySCCResult {
     @JsonProperty("scc_flag")
     private boolean sccFlag; // a flag represents whether on the current path the component is found
 
+    @JsonProperty("aggregated_strongly_connected_component_ids")
+    private List<String> aggregatedSCCIds;   // all the ids belonging to one strongly connected component
+
     @JsonProperty("stack")
     private ArrayDeque<String> stack;
 
     public QuerySCCResult() {
     }
 
-    public QuerySCCResult(String queryId, String userId, String vertexId, String queryType, String lowLinkId, Boolean sccFlag, ArrayDeque<String> stack) {
+    public QuerySCCResult(String queryId, String userId, String vertexId, String queryType, String lowLinkId, Boolean sccFlag, List<String> aggregatedSCCIds, ArrayDeque<String> stack) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
         this.queryType = queryType;
         this.lowLinkId = lowLinkId;
         this.sccFlag = sccFlag;
+        this.aggregatedSCCIds = aggregatedSCCIds;
         this.stack = stack;
     }
 
@@ -62,6 +67,10 @@ public class QuerySCCResult {
 
     public boolean isSccFlag() {
         return sccFlag;
+    }
+
+    public List<String> getAggregatedSCCIds() {
+        return aggregatedSCCIds;
     }
 
     public ArrayDeque<String> getStack() {

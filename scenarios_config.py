@@ -66,3 +66,5 @@ with open('module.yaml', 'w') as file:
 
 with open('docker-compose.yml', 'w') as file:
     yaml.safe_dump(d, file, sort_keys=False, default_flow_style=False)
+
+print("Success initialize")
