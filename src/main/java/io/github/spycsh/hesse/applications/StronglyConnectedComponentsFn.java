@@ -5,9 +5,7 @@ import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -45,7 +43,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
                 add(context.self().id());
             }};
-            SCCPathContext sccPathContext = new SCCPathContext(generateNewStackHash(firstStk), context.self().id(), false, neighbourIds.size(), new ArrayList<>());
+            SCCPathContext sccPathContext = new SCCPathContext(generateNewStackHash(firstStk), context.self().id(), false, neighbourIds.size(), new HashSet<>());
             querySCCContexts.add(new QuerySCCContext(q.getQueryId(), q.getUserId(),
                     new ArrayList<SCCPathContext>(){{add(sccPathContext);}}));
 
@@ -91,17 +89,24 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                             .withCustomType(
                                     Types.QUERY_SCC_RESULT_TYPE,
                                     new QuerySCCResult(q.getQueryId(), q.getUserId(),
-                                            q.getVertexId(), q.getQueryType(), context.self().id(), true, new ArrayList<>(), stack)
+                                            q.getVertexId(), q.getQueryType(), context.self().id(), true, new HashSet<>(), stack)
                             )
                             .build());
                 }
 
-            }else if(stack.contains(context.self().id()) && checkIfAllNeighboursVisited(context, neighbourIds, stack, q.getVertexId())){
-                // see query_scc_3.txt, node 3
-                // if self is already on the stack,
-                // and all its neighbours do not include unvisited node on the stack other than the source id
-                // this means that this path has no SCC, must not continue to forward
-                // do backtracking, remove them from the stack
+            }else if(stack.contains(context.self().id()) && checkConsecutiveCycle(new ArrayDeque<>(stack))){
+                /**
+                 * if the stack contains self, it can be a loop not belonging to the scc
+                 * see query_scc_3.txt
+                 * e.g. 2->3->0->4->3->0->4 here has no scc
+                 * but it can also be another way pointed back to the source id
+                 * e.g. 2->3->0->4->3->1->2 here is a scc
+                 * one way is to record that if 3->0->4 occurs twice consecutively, stop forwarding
+                 */
+
+                // this path does not contains a scc
+                // set sccFlag false
+                // see query_scc_3.txt, node 2
                 // namely send QuerySCCResult with the scc flag false
                 System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received and " +
                         "fail to find a SCC\n", context.self().id());
@@ -112,11 +117,12 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                         .withCustomType(
                                 Types.QUERY_SCC_RESULT_TYPE,
                                 new QuerySCCResult(q.getQueryId(), q.getUserId(),
-                                        q.getVertexId(), q.getQueryType(), context.self().id(), false, new ArrayList<>(), stack)
+                                        q.getVertexId(), q.getQueryType(), context.self().id(), false, new HashSet<>(), stack)
                         )
                         .build());
+
             } else {
-                // if it has not been on the stack
+                // if it has not been on the stack, or has no two consecutive duplicated cycles
                 // pushes self into the stack and continues to forward to neighbours
                 System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received " +
                                 "and the node has neighbours and is not on the stack\n", context.self().id());
@@ -131,14 +137,14 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
                 // if querySCCContext is null, it must have not been visited
                 if(querySCCContext == null){
-                    SCCPathContext sccPathContext = new SCCPathContext(newStackHash, context.self().id(), false, neighbourIds.size(), new ArrayList<>());
+                    SCCPathContext sccPathContext = new SCCPathContext(newStackHash, context.self().id(), false, neighbourIds.size(), new HashSet<>());
                     querySCCContext = new QuerySCCContext(q.getQueryId(), q.getUserId(), new ArrayList<SCCPathContext>(){{add(sccPathContext);}});
                     querySCCContexts.add(querySCCContext);
                 } else{
                     // there is already a path to the current node so there is a querySCCContext
                     // so just add the current path context in current node
                     ArrayList<SCCPathContext> sccPathContexts = querySCCContext.getSccPathContexts();
-                    sccPathContexts.add(new SCCPathContext(newStackHash, context.self().id(), false, neighbourIds.size(), new ArrayList<>()));
+                    sccPathContexts.add(new SCCPathContext(newStackHash, context.self().id(), false, neighbourIds.size(), new HashSet<>()));
                 }
 
                 context.storage().set(QUERY_SCC_CONTEXT_LIST, querySCCContexts);
@@ -204,7 +210,12 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
                     System.out.printf("[ConnectedComponentsFn %s] Other node ids that contain in the same component are: ",
                             context.self().id());
-                    for(String id : sccContextByPathHash.getAggregatedSCCIds())
+                    // merge all ids
+                    List<String> aggregatedSCCIds = new ArrayList<>();
+                    for(SCCPathContext c: sccPathContexts){
+                        aggregatedSCCIds.addAll(c.getAggregatedSCCIds());
+                    }
+                    for(String id : aggregatedSCCIds)
                         System.out.print(id + " ");
                     System.out.println();
                 } else {
@@ -214,7 +225,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                     /**
                      * merge all the cc ids, send to parent
                      */
-                    List<String> aggregatedSCCIds = new ArrayList<>();
+                    Set<String> aggregatedSCCIds = new HashSet<>();
                     for(SCCPathContext c: sccPathContexts){
                         aggregatedSCCIds.addAll(c.getAggregatedSCCIds());
                     }
@@ -251,11 +262,17 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
         return context.done();
     }
 
-    private boolean checkIfAllNeighboursVisited(Context context, ArrayList<String> neighbourIds, ArrayDeque<String> stack, String vertexId) {
-        for(String i: neighbourIds){
-            // if stack does not include the neighbour or the neighbour is the source id
-            // then return that not all neighbours are visited, so encourage next forwarding
-            if(!stack.contains(i) || i.equals(vertexId)){
+    private boolean checkConsecutiveCycle(ArrayDeque<String> stack) {
+        Queue<String> q = new LinkedList<>();
+        while(stack.peek() != null && !q.contains(stack.peek())){
+            q.offer(stack.poll());
+        }
+        // System.out.println(stack);
+        // System.out.println(q);
+        while(q.size() != 0){
+            String e1 = q.poll();
+            String e2 = stack.poll();
+            if(e2 == null || !e2.equals(e1)){
                 return false;
             }
         }

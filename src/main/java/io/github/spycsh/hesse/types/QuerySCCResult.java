@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Set;
 
 public class QuerySCCResult {
 
@@ -26,7 +27,7 @@ public class QuerySCCResult {
     private boolean sccFlag; // a flag represents whether on the current path the component is found
 
     @JsonProperty("aggregated_strongly_connected_component_ids")
-    private List<String> aggregatedSCCIds;   // all the ids belonging to one strongly connected component
+    private Set<String> aggregatedSCCIds;   // all the ids belonging to one strongly connected component
 
     @JsonProperty("stack")
     private ArrayDeque<String> stack;
@@ -34,7 +35,7 @@ public class QuerySCCResult {
     public QuerySCCResult() {
     }
 
-    public QuerySCCResult(String queryId, String userId, String vertexId, String queryType, String lowLinkId, Boolean sccFlag, List<String> aggregatedSCCIds, ArrayDeque<String> stack) {
+    public QuerySCCResult(String queryId, String userId, String vertexId, String queryType, String lowLinkId, Boolean sccFlag, Set<String> aggregatedSCCIds, ArrayDeque<String> stack) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
@@ -69,7 +70,7 @@ public class QuerySCCResult {
         return sccFlag;
     }
 
-    public List<String> getAggregatedSCCIds() {
+    public Set<String> getAggregatedSCCIds() {
         return aggregatedSCCIds;
     }
 
