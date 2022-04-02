@@ -103,13 +103,11 @@ public class VertexStorageFn implements StatefulFunction {
             // store the new activity of into specified batch one single vertex in its context
             // here the default activity type is add
             // should use this to recover to specified state and serve query
-            // TODO persistence, event time batch checkpointing
             storeActivity(context, temporalEdge);
             int neighbourId = Integer.parseInt(temporalEdge.getDstId());
             bufferedNeighbours.add(neighbourId);
         } else if(message.is(Types.TEMPORAL_EDGE_WEIGHTED_TYPE)) {
             TemporalWeightedEdge temporalWeightedEdge = message.as(Types.TEMPORAL_EDGE_WEIGHTED_TYPE);
-            // TODO persistence, event time batch checkpointing
             storeActivity(context, temporalWeightedEdge);
             int neighbourId = Integer.parseInt(temporalWeightedEdge.getDstId());
             double weight = Double.parseDouble(temporalWeightedEdge.getWeight());
@@ -135,7 +133,6 @@ public class VertexStorageFn implements StatefulFunction {
 
             // only send the needed log
             // namely from the beginning to the batch which time T is in
-            // TODO restore from checkpoints
             // remove all the log that is later than the time region that the batch index corresponding to
             List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
 
@@ -218,13 +215,8 @@ public class VertexStorageFn implements StatefulFunction {
 
     }
 
-    // TODO deprecate this function because it can be generalized as filterActivityListByTimeRegion(context, 0, T)
     private List<VertexActivity> filterActivityListFromBeginningToT(Context context, int T) {
         return filterActivityListByTimeRegion(context, 0, T);
-//        int batchIndex = T / EVENT_TIME_INTERVAL;
-//        TreeMap<String, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
-//        vertexActivities.keySet().removeIf(key -> Integer.parseInt(key) > batchIndex);
-//        return vertexActivities.values().stream().flatMap(ArrayList::stream).collect(Collectors.toList());
     }
 
     private void storeActivity(Context context, TemporalEdge temporalEdge) {
