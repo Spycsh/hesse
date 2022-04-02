@@ -1,16 +1,15 @@
-package io.github.spycsh.hesse.types;
+package io.github.spycsh.hesse.types.scc;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.spycsh.hesse.types.VertexActivity;
 
 import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.ArrayList;
+import java.util.List;
 
-public class ForwardQuerySCC {
+public class ForwardQuerySCCWithState {
     @JsonProperty("source")
     private String source;
-
-    @JsonProperty("target")
-    private String target;
 
     @JsonProperty("query_id")
     private String queryId;
@@ -30,28 +29,20 @@ public class ForwardQuerySCC {
     @JsonProperty("stack")
     private ArrayDeque<String> stack;
 
-    public ForwardQuerySCC() { }
+    @JsonProperty("vertex_activities")
+    List<VertexActivity> vertexActivities = new ArrayList<>();
 
-    public ForwardQuerySCC(String source, String target, ArrayDeque<String> stack, QuerySCCWithState q) {
-        this.source = source;
-        this.target = target;
+    public ForwardQuerySCCWithState() { }
+
+    public ForwardQuerySCCWithState(ForwardQuerySCC q, List<VertexActivity> vertexActivities) {
+        this.source = q.getSource();
         this.queryId = q.getQueryId();
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
         this.t = q.getT();
-        this.stack = stack;
-    }
-
-    public ForwardQuerySCC(String source, String target, ArrayDeque<String> stack, ForwardQuerySCCWithState q) {
-        this.source = source;
-        this.target = target;
-        this.queryId = q.getQueryId();
-        this.userId = q.getUserId();
-        this.vertexId = q.getVertexId();
-        this.queryType = q.getQueryType();
-        this.t = q.getT();
-        this.stack = stack;
+        this.vertexActivities = vertexActivities;
+        this.stack = q.getStack();
     }
 
     public String getQueryId() {
@@ -78,8 +69,8 @@ public class ForwardQuerySCC {
         return source;
     }
 
-    public String getTarget() {
-        return target;
+    public List<VertexActivity> getVertexActivities() {
+        return vertexActivities;
     }
 
     public ArrayDeque<String> getStack() {

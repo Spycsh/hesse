@@ -3,6 +3,13 @@ package io.github.spycsh.hesse.types;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.github.spycsh.hesse.types.cc.*;
+import io.github.spycsh.hesse.types.egress.VertexComponentChange;
+import io.github.spycsh.hesse.types.egress.VertexShortestPathChange;
+import io.github.spycsh.hesse.types.ingress.TemporalEdge;
+import io.github.spycsh.hesse.types.ingress.TemporalWeightedEdge;
+import io.github.spycsh.hesse.types.minibatch.*;
+import io.github.spycsh.hesse.types.scc.*;
 import org.apache.flink.statefun.sdk.java.TypeName;
 import org.apache.flink.statefun.sdk.java.types.SimpleType;
 import org.apache.flink.statefun.sdk.java.types.Type;

@@ -1,6 +1,20 @@
 package io.github.spycsh.hesse.storage;
 
 import io.github.spycsh.hesse.types.*;
+import io.github.spycsh.hesse.types.cc.ForwardQueryCC;
+import io.github.spycsh.hesse.types.cc.ForwardQueryCCWithState;
+import io.github.spycsh.hesse.types.cc.QueryCC;
+import io.github.spycsh.hesse.types.cc.QueryCCWithState;
+import io.github.spycsh.hesse.types.ingress.TemporalEdge;
+import io.github.spycsh.hesse.types.ingress.TemporalWeightedEdge;
+import io.github.spycsh.hesse.types.minibatch.ForwardQueryMiniBatch;
+import io.github.spycsh.hesse.types.minibatch.ForwardQueryMiniBatchWithState;
+import io.github.spycsh.hesse.types.minibatch.QueryMiniBatch;
+import io.github.spycsh.hesse.types.minibatch.QueryMiniBatchWithState;
+import io.github.spycsh.hesse.types.scc.ForwardQuerySCC;
+import io.github.spycsh.hesse.types.scc.ForwardQuerySCCWithState;
+import io.github.spycsh.hesse.types.scc.QuerySCC;
+import io.github.spycsh.hesse.types.scc.QuerySCCWithState;
 import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;

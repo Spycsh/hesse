@@ -1,6 +1,7 @@
-package io.github.spycsh.hesse.types;
+package io.github.spycsh.hesse.types.minibatch;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.spycsh.hesse.types.egress.Edge;
 
 import java.util.List;
 

@@ -1,10 +1,10 @@
-package io.github.spycsh.hesse.types;
+package io.github.spycsh.hesse.types.minibatch;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayDeque;
 
-public class ForwardQueryCC {
+public class ForwardQueryMiniBatch {
     @JsonProperty("source")
     private String source;
 
@@ -23,37 +23,44 @@ public class ForwardQueryCC {
     @JsonProperty("query_type")
     private String queryType;
 
-    @JsonProperty("start_t")
-    private int startT;
+    @JsonProperty("t")
+    int t;
 
-    @JsonProperty("end_t")
-    private int endT;
+    @JsonProperty("h")
+    int h;
+
+    @JsonProperty("k")
+    int k;
 
     @JsonProperty("stack")
     private ArrayDeque<String> stack;
 
-    public ForwardQueryCC() { }
+    public ForwardQueryMiniBatch() {
+    }
 
-    public ForwardQueryCC(String source, String target, ArrayDeque<String> stack, QueryCCWithState q) {
+    public ForwardQueryMiniBatch(String source, String target, QueryMiniBatchWithState q, int newHopNum, ArrayDeque<String> stack) {
         this.source = source;
         this.target = target;
         this.queryId = q.getQueryId();
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
-        this.startT = q.getStartT();
-        this.endT = q.getEndT();
+        this.t = q.getT();
+        this.h = q.getH();
+        this.k = newHopNum;
         this.stack = stack;
     }
 
-    public ForwardQueryCC(String source, String target, ArrayDeque<String> stack, ForwardQueryCCWithState q) {
+    public ForwardQueryMiniBatch(String source, String target, ForwardQueryMiniBatchWithState q, int newHopNum, ArrayDeque<String> stack) {
         this.source = source;
         this.target = target;
         this.queryId = q.getQueryId();
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
-        this.startT = q.getStartT();
+        this.t = q.getT();
+        this.h = q.getH();
+        this.k = newHopNum;
         this.stack = stack;
     }
 
@@ -65,19 +72,13 @@ public class ForwardQueryCC {
         return userId;
     }
 
-    public String getVertexId() {
-        return vertexId;
-    }
-
     public String getQueryType() {
         return queryType;
     }
 
-    public int getStartT() {
-        return startT;
+    public String getVertexId() {
+        return vertexId;
     }
-
-    public int getEndT(){ return endT; }
 
     public String getSource() {
         return source;
@@ -85,6 +86,18 @@ public class ForwardQueryCC {
 
     public String getTarget() {
         return target;
+    }
+
+    public int getT() {
+        return t;
+    }
+
+    public int getH() {
+        return h;
+    }
+
+    public int getK() {
+        return k;
     }
 
     public ArrayDeque<String> getStack() {

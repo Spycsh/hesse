@@ -1,6 +1,8 @@
 package io.github.spycsh.hesse.storage;
 
 import io.github.spycsh.hesse.types.*;
+import io.github.spycsh.hesse.types.ingress.TemporalEdge;
+import io.github.spycsh.hesse.types.ingress.TemporalWeightedEdge;
 import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;

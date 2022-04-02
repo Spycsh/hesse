@@ -1,6 +1,7 @@
-package io.github.spycsh.hesse.types;
+package io.github.spycsh.hesse.types.cc;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.spycsh.hesse.types.cc.CCPathContext;
 
 import java.util.ArrayList;
 

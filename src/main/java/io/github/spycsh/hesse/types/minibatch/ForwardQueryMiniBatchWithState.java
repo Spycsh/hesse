@@ -1,12 +1,13 @@
-package io.github.spycsh.hesse.types;
+package io.github.spycsh.hesse.types.minibatch;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.spycsh.hesse.types.VertexActivity;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ForwardQueryCCWithState {
+public class ForwardQueryMiniBatchWithState {
     @JsonProperty("source")
     private String source;
 
@@ -22,30 +23,35 @@ public class ForwardQueryCCWithState {
     @JsonProperty("query_type")
     private String queryType;
 
-    @JsonProperty("start_t")
-    private int startT;
+    @JsonProperty("t")
+    private int t;
 
-    @JsonProperty("end_t")
-    private int endT;
+    @JsonProperty("h")
+    private int h;
 
-    @JsonProperty("stack")
-    private ArrayDeque<String> stack;
+    @JsonProperty("k")
+    private int k;
 
     @JsonProperty("vertex_activities")
     List<VertexActivity> vertexActivities = new ArrayList<>();
 
-    public ForwardQueryCCWithState() { }
+    @JsonProperty("stack")
+    private ArrayDeque<String> stack;
 
-    public ForwardQueryCCWithState(ForwardQueryCC q, List<VertexActivity> vertexActivities) {
+    public ForwardQueryMiniBatchWithState() {
+    }
+
+    public ForwardQueryMiniBatchWithState(ForwardQueryMiniBatch q, List<VertexActivity> vertexActivities) {
         this.source = q.getSource();
         this.queryId = q.getQueryId();
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
-        this.startT = q.getStartT();
-        this.endT = q.getEndT();
-        this.vertexActivities = vertexActivities;
+        this.t = q.getT();
+        this.h = q.getH();
+        this.k = q.getK();
         this.stack = q.getStack();
+        this.vertexActivities = vertexActivities;
     }
 
     public String getQueryId() {
@@ -64,20 +70,25 @@ public class ForwardQueryCCWithState {
         return queryType;
     }
 
-    public int getStartT() {
-        return startT;
-    }
-
-    public int getEndT() {
-        return endT;
+    public List<VertexActivity> getVertexActivities() {
+        return vertexActivities;
     }
 
     public String getSource() {
         return source;
     }
 
-    public List<VertexActivity> getVertexActivities() {
-        return vertexActivities;
+
+    public int getT() {
+        return t;
+    }
+
+    public int getH() {
+        return h;
+    }
+
+    public int getK() {
+        return k;
     }
 
     public ArrayDeque<String> getStack() {

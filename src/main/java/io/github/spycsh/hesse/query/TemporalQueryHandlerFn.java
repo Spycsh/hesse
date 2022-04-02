@@ -1,8 +1,8 @@
 package io.github.spycsh.hesse.query;
 
-import io.github.spycsh.hesse.types.QueryCC;
-import io.github.spycsh.hesse.types.QuerySCC;
-import io.github.spycsh.hesse.types.QueryMiniBatch;
+import io.github.spycsh.hesse.types.cc.QueryCC;
+import io.github.spycsh.hesse.types.scc.QuerySCC;
+import io.github.spycsh.hesse.types.minibatch.QueryMiniBatch;
 import io.github.spycsh.hesse.types.Types;
 import org.apache.flink.statefun.sdk.java.Context;
 import org.apache.flink.statefun.sdk.java.StatefulFunction;

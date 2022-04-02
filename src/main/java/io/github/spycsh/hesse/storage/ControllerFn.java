@@ -1,13 +1,12 @@
 package io.github.spycsh.hesse.storage;
 
-import io.github.spycsh.hesse.types.TemporalEdge;
-import io.github.spycsh.hesse.types.TemporalWeightedEdge;
+import io.github.spycsh.hesse.types.ingress.TemporalEdge;
+import io.github.spycsh.hesse.types.ingress.TemporalWeightedEdge;
 import io.github.spycsh.hesse.types.Types;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 
-import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 
 /**

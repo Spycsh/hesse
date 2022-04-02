@@ -1,4 +1,4 @@
-package io.github.spycsh.hesse.types;
+package io.github.spycsh.hesse.types.egress;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

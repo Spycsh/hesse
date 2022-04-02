@@ -1,6 +1,8 @@
 package io.github.spycsh.hesse.applications;
 
 import io.github.spycsh.hesse.types.*;
+import io.github.spycsh.hesse.types.egress.Edge;
+import io.github.spycsh.hesse.types.minibatch.*;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;

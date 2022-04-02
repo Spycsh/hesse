@@ -1,7 +1,7 @@
 package io.github.spycsh.hesse.applications;
 
 import io.github.spycsh.hesse.types.Types;
-import io.github.spycsh.hesse.types.VertexComponentChange;
+import io.github.spycsh.hesse.types.egress.VertexComponentChange;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
 import org.apache.flink.statefun.sdk.java.message.Message;
