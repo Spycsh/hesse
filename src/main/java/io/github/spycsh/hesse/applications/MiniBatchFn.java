@@ -2,6 +2,7 @@ package io.github.spycsh.hesse.applications;
 
 import io.github.spycsh.hesse.types.*;
 import io.github.spycsh.hesse.types.egress.Edge;
+import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.minibatch.*;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
@@ -225,9 +226,11 @@ public class MiniBatchFn implements StatefulFunction {
                     System.out.println("success!!");
                     result.getAggregatedResults().addAll(miniBatchContextByPathHash.getAggregatedMiniBatchEdges());
 
-                    // print the last result
+                    StringBuilder sb = new StringBuilder();
                     for(Edge e: result.getAggregatedResults())
-                        System.out.println(e.getSrcId() + "->" + e.getDstId());
+                        sb.append(e.getSrcId()).append("->").append(e.getDstId()).append("\n");
+
+                    sendResult(context, result.getQueryId(), result.getUserId(), sb.toString());
 
                 } else {
                     System.out.printf("[MiniBatchFn %s] queryMiniBatchContext collects all the results but not the source\n", context.self().id());
@@ -280,6 +283,15 @@ public class MiniBatchFn implements StatefulFunction {
 
     private void shuffle(ArrayList<String> neighbourIds) {
         Collections.shuffle(neighbourIds);
+    }
+
+    private void sendResult(Context context, String resultStr, String queryId, String userId) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.query", "temporal-query-handler"), queryId)
+                .withCustomType(
+                        Types.QUERY_RESULT_TYPE,
+                        new QueryResult(queryId, userId, resultStr))
+                .build());
     }
 
     private ArrayList<String> recoverStateAtT(int T, List<VertexActivity> activityLog){

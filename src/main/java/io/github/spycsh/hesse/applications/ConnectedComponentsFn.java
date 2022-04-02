@@ -2,6 +2,7 @@ package io.github.spycsh.hesse.applications;
 
 import io.github.spycsh.hesse.types.*;
 import io.github.spycsh.hesse.types.cc.*;
+import io.github.spycsh.hesse.types.egress.QueryResult;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
@@ -159,13 +160,19 @@ public class ConnectedComponentsFn implements StatefulFunction {
                 // if it is the source node, just egress
                 if(context.self().id().equals(result.getVertexId())){
                     System.out.printf("[ConnectedComponentsFn %s] is source node, success!\n", context.self().id());
-                    System.out.printf("[ConnectedComponentsFn %s] Result of query %s by user %s: connected component id of node %s is %s \n",
+                    String str1 = String.format("[ConnectedComponentsFn %s] Result of query %s by user %s: connected component id of node %s is %s \n",
                             context.self().id(), result.getQueryId(), result.getUserId(), context.self().id(), updatedLowLinkId);
-                    System.out.printf("[ConnectedComponentsFn %s] Other node ids that contain in the same component are: ",
+                    String str2 = String.format("[ConnectedComponentsFn %s] Other node ids that contain in the same component are:",
                             context.self().id());
+
+                    StringBuilder sb = new StringBuilder();
                     for(String id : ccContextByPathHash.getAggregatedCCIds())
-                        System.out.print(id + " ");
-                    System.out.println();
+                        sb.append(" ").append(id);
+
+                    String resultStr = str1 + str2 + sb.toString();
+
+                    sendResult(context, resultStr, result.getQueryId(), result.getUserId());
+
                 } else {
                     // not source node, send to its parents the aggregated low link id
                     System.out.printf("[ConnectedComponentsFn %s] not the source node\n", context.self().id());
@@ -207,6 +214,15 @@ public class ConnectedComponentsFn implements StatefulFunction {
         }
 
         return context.done();
+    }
+
+    private void sendResult(Context context, String resultStr, String queryId, String userId) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.query", "temporal-query-handler"), queryId)
+                .withCustomType(
+                        Types.QUERY_RESULT_TYPE,
+                        new QueryResult(queryId, userId, resultStr))
+                .build());
     }
 
     private ArrayList<String> recoverStateByTimeRegion(int startT, int endT, List<VertexActivity> activityLog) {

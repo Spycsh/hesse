@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.github.spycsh.hesse.types.cc.*;
+import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.egress.VertexComponentChange;
 import io.github.spycsh.hesse.types.egress.VertexShortestPathChange;
 import io.github.spycsh.hesse.types.ingress.TemporalEdge;
@@ -261,6 +262,19 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_connected_components_context_list"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QueryCCContext>>() {
+                    }));
+
+    public static final Type<QueryResult> QUERY_RESULT_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_result"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryResult.class));
+
+    public static final Type<ArrayList<HistoryQuery>> QUERY_HISTORY =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "history_query"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<HistoryQuery>>() {
                     }));
 
 }

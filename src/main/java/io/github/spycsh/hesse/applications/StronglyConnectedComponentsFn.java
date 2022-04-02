@@ -1,6 +1,7 @@
 package io.github.spycsh.hesse.applications;
 
 import io.github.spycsh.hesse.types.*;
+import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.scc.*;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
@@ -208,19 +209,23 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                 // if it is the source node, just egress
                 if(context.self().id().equals(result.getVertexId())){
                     System.out.printf("[StronglyConnectedComponentsFn %s] is source node, success!\n", context.self().id());
-                    System.out.printf("[StronglyConnectedComponentsFn %s] Result of query %s by user %s: Strongly connected component id of node %s is %s \n",
+                    String str1 = String.format("[StronglyConnectedComponentsFn %s] Result of query %s by user %s: Strongly connected component id of node %s is %s \n",
                             context.self().id(), result.getQueryId(), result.getUserId(), context.self().id(), updatedLowLinkId);
 
-                    System.out.printf("[ConnectedComponentsFn %s] Other node ids that contain in the same component are: ",
+                    String str2 = String.format("[ConnectedComponentsFn %s] Other node ids that contain in the same component are: ",
                             context.self().id());
                     // merge all ids
                     List<String> aggregatedSCCIds = new ArrayList<>();
                     for(SCCPathContext c: sccPathContexts){
                         aggregatedSCCIds.addAll(c.getAggregatedSCCIds());
                     }
+                    StringBuilder sb = new StringBuilder();
                     for(String id : aggregatedSCCIds)
-                        System.out.print(id + " ");
+                        sb.append(" ").append(id);
                     System.out.println();
+
+                    String resultStr = str1 + str2 + sb.toString();
+                    sendResult(context, result.getQueryId(), result.getUserId(), resultStr);
                 } else {
                     // not source node, send to its parents the aggregated low link id
                     System.out.printf("[StronglyConnectedComponentsFn %s] not the source node\n", context.self().id());
@@ -321,6 +326,15 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
         return neighbourIds;
     }
 
+    private void sendResult(Context context, String resultStr, String queryId, String userId) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.query", "temporal-query-handler"), queryId)
+                .withCustomType(
+                        Types.QUERY_RESULT_TYPE,
+                        new QueryResult(queryId, userId, resultStr))
+                .build());
+    }
+
     private QuerySCCContext findSCCContext(String queryId, String userId, ArrayList<QuerySCCContext> list) {
         for(QuerySCCContext e: list) {
             if (e.getQueryId().equals(queryId) && e.getUserId().equals(userId)) {
@@ -329,4 +343,5 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
         }
         return null;
     }
+
 }
