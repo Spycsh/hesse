@@ -51,13 +51,11 @@ public class MiniBatchFn implements StatefulFunction {
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
                 add(context.self().id());
             }};
-            /**
-             * the first node only need to receive min(H, neighbourIds.size()) results
-             */
+
             // it should collect H responses (when H is less than neighbour size, collect the neighbour size)
             int responseNumToCollect = Math.min(H, neighbourIds.size());
 
-            MiniBatchPathContext miniBatchPathContext = new MiniBatchPathContext(generateNewStackHash(firstStk), responseNumToCollect, new ArrayList<Edge>());
+            MiniBatchPathContext miniBatchPathContext = new MiniBatchPathContext(generateNewStackHash(firstStk), responseNumToCollect, new ArrayList<>());
             queryMiniBatchContextList.add(new QueryMiniBatchContext(q.getQueryId(), q.getUserId(), new ArrayList<MiniBatchPathContext>(){{
                 add(miniBatchPathContext);
             }}));
@@ -170,16 +168,14 @@ public class MiniBatchFn implements StatefulFunction {
             }
         }
 
-        /**
-         * must receive Math.min(neighbour.size, H) responses, can the vertex send the query result
-         * back to its parent (source)
-         */
+        // must receive Math.min(neighbour.size, H) responses, can the vertex send the query result
+        // back to its parent (source)
         if (message.is(Types.QUERY_MINI_BATCH_RESULT_TYPE)){
             System.out.printf("[MiniBatchFn %s] QueryMiniBatchResult received\n", context.self().id());
 
-            //  jackson has no idea what type of elements should be in the ArrayList object.
+            // jackson has no idea what type of elements should be in the ArrayList object.
             // so it will parse to ArrayList<LinkedHashMap>
-//            ArrayList<QueryMiniBatchResult> result = message.as(Types.QUERY_MINI_BATCH_RESULTS_TYPE);
+            // ArrayList<QueryMiniBatchResult> result = message.as(Types.QUERY_MINI_BATCH_RESULTS_TYPE);
             QueryMiniBatchResult result = message.as(Types.QUERY_MINI_BATCH_RESULT_TYPE);
 
             // get current context of the node to the query
@@ -190,11 +186,17 @@ public class MiniBatchFn implements StatefulFunction {
             int stackHash = generateNewStackHash(stack);
 
             // find in context the current response num to collect by stackHash
+            if(queryMiniBatchContext == null){
+                throw new IllegalStateException("queryMiniBatchContext should not be null!");
+            }
             ArrayList<MiniBatchPathContext> miniBatchPathContext = queryMiniBatchContext.getMiniBatchPathContexts();
             MiniBatchPathContext miniBatchContextByPathHash = findMiniBatchContextByStackHash(miniBatchPathContext, stackHash);
 
             stack.removeFirst();
 
+            if(miniBatchContextByPathHash == null){
+                throw new IllegalStateException("miniBatchContextByPathHash should not be null!");
+            }
             if(miniBatchContextByPathHash.getResponseNum() > 1){
                 System.out.printf("[MiniBatchFn %s] queryMiniBatchContext not collects all the results, still %s " +
                         " result(s) to collect\n", context.self().id(), miniBatchContextByPathHash.getResponseNum() - 1);
@@ -218,22 +220,13 @@ public class MiniBatchFn implements StatefulFunction {
                             context.self().id());
 
                     // this is the original source, egress
-                    System.out.println("9999");
-                    /**
-                     * egress
-                     */
                     System.out.println("success!!");
-
                     result.getAggregatedResults().addAll(miniBatchContextByPathHash.getAggregatedMiniBatchEdges());
 
                     // print the last result
                     for(Edge e: result.getAggregatedResults())
                         System.out.println(e.getSrcId() + "->" + e.getDstId());
 
-                    // print the aggregated results of the children nodes
-//                    for(Edge e: miniBatchContextByPathHash.getAggregatedMiniBatchEdges()){
-//                        System.out.println(e.getSrcId() + "->" + e.getDstId());
-//                    }
                 } else {
                     System.out.printf("[MiniBatchFn %s] queryMiniBatchContext collects all the results but not the source\n", context.self().id());
 
@@ -288,13 +281,17 @@ public class MiniBatchFn implements StatefulFunction {
     }
 
     private ArrayList<String> recoverStateAtT(int T, List<VertexActivity> activityLog){
+        return recoverStateByTimeRegion(0, T, activityLog);
+    }
 
+    private ArrayList<String> recoverStateByTimeRegion(int startT, int endT, List<VertexActivity> activityLog) {
         activityLog.sort((o1, o2) -> Integer.parseInt(o2.getTimestamp()) - Integer.parseInt(o1.getTimestamp()));
 
         ArrayList<String> neighbourIds = new ArrayList<>();
 
         for(VertexActivity activity: activityLog){
-            if(Integer.parseInt(activity.getTimestamp()) <= T) {  // recover the state with all the ordered activities that have event time <= T
+            // recover the state with all the ordered activities between startT and endT
+            if(Integer.parseInt(activity.getTimestamp()) >= startT && Integer.parseInt(activity.getTimestamp()) <= endT) {
                 if (activity.getActivityType().equals("add")) {
                     // check whether has weight to decide which state to recover
                     // has weight -> weight != 0 -> HashMap<Integer, Double> a hashmap of mapping from neighbour id to weight
@@ -311,7 +308,7 @@ public class MiniBatchFn implements StatefulFunction {
     }
 
     private int generateNewStackHash(ArrayDeque<String> stack) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for(String s:stack){
             sb.append(s).append(" ");
         }

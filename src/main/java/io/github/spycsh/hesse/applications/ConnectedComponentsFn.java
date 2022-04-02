@@ -9,26 +9,24 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * this function serves the temporal query of the graph about the connected component
- * e.g. it can answer at arbitrary time region the vertex's connected component
+ * this function serves the temporal query of the vertex's connected component id
+ * and all ids in the same connected component in any arbitrary time window
  */
 public class ConnectedComponentsFn implements StatefulFunction {
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "connected-components");
-
     private static final ValueSpec<ArrayList<QueryCCContext>> QUERY_CC_CONTEXT_LIST =
             ValueSpec.named("queryCCContext").withCustomType(Types.QUERY_CC_CONTEXT_LIST_TYPE);
-
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(ConnectedComponentsFn::new)
             .withValueSpecs(QUERY_CC_CONTEXT_LIST)
             .build();
 
-
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
         if(message.is(Types.QUERY_CC_WITH_STATE_TYPE)){
             System.out.printf("[ConnectedComponentsFn %s] QueryCCWithState received\n", context.self().id());
+
             QueryCCWithState q = message.as(Types.QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
             int startT = q.getStartT();
@@ -36,7 +34,6 @@ public class ConnectedComponentsFn implements StatefulFunction {
             ArrayList<String> neighbourIds = recoverStateByTimeRegion(startT, endT, vertexActivities);
 
             ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
-
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
                 add(context.self().id());
             }};
@@ -136,9 +133,11 @@ public class ConnectedComponentsFn implements StatefulFunction {
             // find in context the current response num to collect by stackHash
             ArrayList<CCPathContext> ccPathContexts = queryCCContext.getCcPathContexts();
             CCPathContext ccContextByPathHash = findCCContextByPathHash(ccPathContexts, stackHash);
-            /**
-             * add all the aggregated cc ids for one path from descendants
-             */
+
+            // add all the aggregated cc ids for one path from descendants
+            if(ccContextByPathHash == null){
+                throw new IllegalStateException("ccContextByPathHash should not be null!");
+            }
             ccContextByPathHash.getAggregatedCCIds().addAll(result.getAggregatedCCIds());
 
             int n = ccContextByPathHash.getResponseNum();
@@ -170,9 +169,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
                     // not source node, send to its parents the aggregated low link id
                     System.out.printf("[ConnectedComponentsFn %s] not the source node\n", context.self().id());
 
-                    /**
-                     * merge all the cc ids, send to parent
-                     */
+                    // merge all the cc ids, send to parent
                     Set<String> aggregatedCCIds = new HashSet<>();
                     for(CCPathContext c: ccPathContexts){
                         aggregatedCCIds.addAll(c.getAggregatedCCIds());
@@ -235,7 +232,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
     }
 
     private int generateNewStackHash(ArrayDeque<String> stack) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for(String s:stack){
             sb.append(s).append(" ");
         }

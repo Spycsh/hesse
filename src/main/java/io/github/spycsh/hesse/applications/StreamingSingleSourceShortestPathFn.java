@@ -48,10 +48,6 @@ public class StreamingSingleSourceShortestPathFn implements StatefulFunction {
                         put(context.self().id(), "0.0");
                     }});
 
-//            for(Map.Entry<String, String> e:shortestPathDistances.entrySet()){
-//                System.out.println("id: "+ context.self().id()+" from source: " + e.getKey() + " weight: "+e.getValue());
-//            }
-
             context.storage().set(SHORTEST_PATH_DISTANCES_VALUE, shortestPathDistances);
 
             broadcastShortestPathChange(context, newAddedNeighboursWithWeights, shortestPathDistances);

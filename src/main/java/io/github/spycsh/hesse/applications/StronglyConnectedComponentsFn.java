@@ -36,9 +36,9 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             ArrayList<String> neighbourIds = recoverStateAtT(T, vertexActivities);
 
             ArrayList<QuerySCCContext> querySCCContexts = context.storage().get(QUERY_SCC_CONTEXT_LIST).orElse(new ArrayList<>());
-            /**
-             * the first node only need to receive neighbourIds.size() results
-             * set the component id to itself
+            /*
+              the first node only need to receive neighbourIds.size() results
+              set the component id to itself
              */
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
                 add(context.self().id());
@@ -95,13 +95,13 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                 }
 
             }else if(stack.contains(context.self().id()) && checkConsecutiveCycle(new ArrayDeque<>(stack))){
-                /**
-                 * if the stack contains self, it can be a loop not belonging to the scc
-                 * see query_scc_3.txt
-                 * e.g. 2->3->0->4->3->0->4 here has no scc
-                 * but it can also be another way pointed back to the source id
-                 * e.g. 2->3->0->4->3->1->2 here is a scc
-                 * one way is to record that if 3->0->4 occurs twice consecutively, stop forwarding
+                /*
+                  if the stack contains self, it can be a loop not belonging to the scc
+                  see query_scc_3.txt
+                  e.g. 2->3->0->4->3->0->4 here has no scc
+                  but it can also be another way pointed back to the source id
+                  e.g. 2->3->0->4->3->1->2 here is a scc
+                  one way is to record that if 3->0->4 occurs twice consecutively, stop forwarding
                  */
 
                 // this path does not contains a scc
@@ -129,10 +129,9 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
                 stack.addFirst(context.self().id());    // add itself in the stack
 
-                /**
-                 * the children nodes need to receive neighbourIds.size() results
-                 * for all the parent paths pointing to it
-                 */
+
+                 //the children nodes need to receive neighbourIds.size() results
+                 // for all the parent paths pointing to it
                 int newStackHash = generateNewStackHash(stack);
 
                 // if querySCCContext is null, it must have not been visited
@@ -178,6 +177,9 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             ArrayList<SCCPathContext> sccPathContexts = querySCCContext.getSccPathContexts();
             SCCPathContext sccContextByPathHash = findSCCContextByPathHash(sccPathContexts, stackHash);
 
+            if(sccContextByPathHash == null){
+                throw new IllegalStateException("sccContextByPathHash should not be null because the result is sent back from children nodes\n");
+            }
             int n = sccContextByPathHash.getResponseNum();
 
             // remove the first of the stack namely itself
@@ -222,9 +224,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                     // not source node, send to its parents the aggregated low link id
                     System.out.printf("[StronglyConnectedComponentsFn %s] not the source node\n", context.self().id());
 
-                    /**
-                     * merge all the cc ids, send to parent
-                     */
+                    // merge all the cc ids, send to parent
                     Set<String> aggregatedSCCIds = new HashSet<>();
                     for(SCCPathContext c: sccPathContexts){
                         aggregatedSCCIds.addAll(c.getAggregatedSCCIds());
@@ -267,8 +267,6 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
         while(stack.peek() != null && !q.contains(stack.peek())){
             q.offer(stack.poll());
         }
-        // System.out.println(stack);
-        // System.out.println(q);
         while(q.size() != 0){
             String e1 = q.poll();
             String e2 = stack.poll();
@@ -289,7 +287,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
     }
 
     private int generateNewStackHash(ArrayDeque<String> stack) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for(String s:stack){
             sb.append(s).append(" ");
         }
@@ -319,10 +317,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                 }
             }
         }
-
         return neighbourIds;
     }
-
 
     private QuerySCCContext findSCCContext(String queryId, String userId, ArrayList<QuerySCCContext> list) {
         for(QuerySCCContext e: list) {
