@@ -2,6 +2,25 @@
 
 A temporal graph library based on Flink Stateful Functions
 
+## Already Done (v1.0)
+
+- [x] Architecture design and Docker environment
+- [x] Kafka Graph Ingress and Query Ingress Stream
+- [x] Connected Component, Strongly Connected Component, MiniBatch algorithms based on Graph Traversal
+- [x] A basic non-benchmarking storage paradigm using TreeMap with persistence
+- [x] Query support for three algorithms on arbitrary time window
+- [x] Query cache
+- [x] Time calculation for query
+
+## TODO
+
+- [ ] A unified User Defined Function interface
+- [ ] Hot Plugging Support
+- [ ] User-configurable Implementation of different storage paradigms
+- [ ] Performance benchmarking for different storage paradigms
+- [ ] Query Concurrency investigation
+- [ ] Performance benchmarking comparing with other temporal graph engines
+
 ## Features
 
 This project aims to build a highly scalable and efficient graph processing library on top of [Flink Statefun Functions](https://nightlies.apache.org/flink/flink-statefun-docs-stable/). It provides efficient storage of temporal graph and implement the query of graph state at any specific event time for different graph algorithms.
