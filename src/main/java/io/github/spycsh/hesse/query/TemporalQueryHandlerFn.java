@@ -39,13 +39,8 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
             System.out.printf("[TemporalQueryHandler %s] Query %s of vertex %s with query type %s\n",
                     context.self().id(), q.getQueryId(), vertexId, q.getQueryType());
 
-            /*
-                check cache
-                if cache has no this query, just forward
-                if cache has already receive the query but has no result yet, also forward query
-                if cache has this query and already has result, show the result and set queryExist flag true
-             */
-            boolean queryExist = checkCache(context, q);
+            // check whether in cache the query exist
+            boolean queryExist = checkCache(context, q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType());
 
             if(!q.getQueryType().equals("mini-batch"))
                 throw new IllegalArgumentException("[TemporalQueryHandler] query type should be mini-batch but receive" +
@@ -65,7 +60,8 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
             System.out.printf("[TemporalQueryHandler %s] Query %s of vertex %s with query type %s\n",
                     context.self().id(), q.getQueryId(), vertexId, q.getQueryType());
 
-            boolean queryExist = checkCache(context, q);
+            // check whether in cache the query exist
+            boolean queryExist = checkCache(context, q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType());
 
             if(!q.getQueryType().equals("strongly-connected-components"))
                 throw new IllegalArgumentException("[TemporalQueryHandler] query type should be mini-batch but receive" +
@@ -85,7 +81,8 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
             System.out.printf("[TemporalQueryHandler %s] Query %s of vertex %s with query type %s\n",
                     context.self().id(), q.getQueryId(), vertexId, q.getQueryType());
 
-            boolean queryExist = checkCache(context, q);
+            // check whether in cache the query exist
+            boolean queryExist = checkCache(context, q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType());
 
             if(!q.getQueryType().equals("connected-components"))
                 throw new IllegalArgumentException("[TemporalQueryHandler] query type should be connected-components but receive" +
@@ -106,7 +103,7 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
 
             ArrayList<HistoryQuery> historyQueries = context.storage().get(QUERY_HISTORY).orElse(new ArrayList<>());
             for(HistoryQuery hq: historyQueries){
-                if(hq.getQueryId().equals(res.getQueryId()) && hq.getQueryId().equals(res.getUserId())){
+                if(hq.getQueryId().equals(res.getQueryId()) && hq.getUserId().equals(res.getUserId())){
                     System.out.println(res.getResult());
                     long duration = System.currentTimeMillis() - hq.getQueryReceiveTime();
                     System.out.println("query process time: " + duration + "ms");
@@ -120,51 +117,38 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
         return context.done();
     }
 
-    private boolean checkCache(Context context, QueryMiniBatch q) {
+
+    /**
+     * When performing the query, system will check whether there is already a query in the cache
+     * 1. if this query has an entry in history query list and already has a result,
+     * then print it and set queryExist flag to be true
+     * 2. if this query does not have a result but has an entry, that means it is in processing
+     * just perform the query as a new one with current system time as queryReceiveTime
+     * 3. if this query has no entry, create an entry in the history query list
+     *
+     */
+    private boolean checkCache(Context context, String queryId, String userId, String vertexId, String queryType) {
         ArrayList<HistoryQuery> historyQueries = context.storage().get(QUERY_HISTORY).orElse(new ArrayList<>());
         boolean queryExist = false;
         for(HistoryQuery hq: historyQueries){
-            if(hq.getQueryId().equals(q.getQueryId()) && hq.getQueryId().equals(q.getUserId()) && hq.getResult() != null){
+            if(hq.getQueryId().equals(queryId) && hq.getUserId().equals(userId) && hq.getResult() != null){
                 System.out.println(hq.getResult());
                 queryExist = true;
-                historyQueries.add(new HistoryQuery(q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(),
+            } else if(hq.getQueryId().equals(queryId) && hq.getUserId().equals(userId) && hq.getResult() == null){
+                historyQueries.add(new HistoryQuery(queryId, userId, vertexId, queryType,
                         System.currentTimeMillis()));
                 context.storage().set(QUERY_HISTORY, historyQueries);
+                queryExist = true;
             }
+        }
+
+        if(!queryExist){
+            historyQueries.add(new HistoryQuery(queryId, userId, vertexId, queryType,
+                    System.currentTimeMillis()));
+            context.storage().set(QUERY_HISTORY, historyQueries);
         }
 
         return queryExist;
     }
 
-    private boolean checkCache(Context context, QueryCC q) {
-        ArrayList<HistoryQuery> historyQueries = context.storage().get(QUERY_HISTORY).orElse(new ArrayList<>());
-        boolean queryExist = false;
-        for(HistoryQuery hq: historyQueries){
-            if(hq.getQueryId().equals(q.getQueryId()) && hq.getQueryId().equals(q.getUserId()) && hq.getResult() != null){
-                System.out.println(hq.getResult());
-                queryExist = true;
-                historyQueries.add(new HistoryQuery(q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(),
-                        System.currentTimeMillis()));
-                context.storage().set(QUERY_HISTORY, historyQueries);
-            }
-        }
-
-        return queryExist;
-    }
-
-    private boolean checkCache(Context context, QuerySCC q) {
-        ArrayList<HistoryQuery> historyQueries = context.storage().get(QUERY_HISTORY).orElse(new ArrayList<>());
-        boolean queryExist = false;
-        for(HistoryQuery hq: historyQueries){
-            if(hq.getQueryId().equals(q.getQueryId()) && hq.getQueryId().equals(q.getUserId()) && hq.getResult() != null){
-                System.out.println(hq.getResult());
-                queryExist = true;
-                historyQueries.add(new HistoryQuery(q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(),
-                        System.currentTimeMillis()));
-                context.storage().set(QUERY_HISTORY, historyQueries);
-            }
-        }
-
-        return queryExist;
-    }
 }

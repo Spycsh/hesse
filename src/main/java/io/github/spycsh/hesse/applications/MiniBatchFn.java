@@ -285,7 +285,7 @@ public class MiniBatchFn implements StatefulFunction {
         Collections.shuffle(neighbourIds);
     }
 
-    private void sendResult(Context context, String resultStr, String queryId, String userId) {
+    private void sendResult(Context context, String queryId, String userId, String resultStr) {
         context.send(MessageBuilder
                 .forAddress(TypeName.typeNameOf("hesse.query", "temporal-query-handler"), queryId)
                 .withCustomType(

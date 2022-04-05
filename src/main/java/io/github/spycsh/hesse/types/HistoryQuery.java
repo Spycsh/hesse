@@ -21,6 +21,8 @@ public class HistoryQuery {
     @JsonProperty("result")
     private String result;  // a string of result for the query
 
+    public HistoryQuery() {}
+
     public HistoryQuery(String queryId, String userId, String vertexId, String queryType, long queryReceiveTime) {
         this.queryId = queryId;
         this.userId = userId;

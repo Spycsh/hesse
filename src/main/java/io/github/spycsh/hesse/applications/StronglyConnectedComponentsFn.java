@@ -212,7 +212,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                     String str1 = String.format("[StronglyConnectedComponentsFn %s] Result of query %s by user %s: Strongly connected component id of node %s is %s \n",
                             context.self().id(), result.getQueryId(), result.getUserId(), context.self().id(), updatedLowLinkId);
 
-                    String str2 = String.format("[ConnectedComponentsFn %s] Other node ids that contain in the same component are: ",
+                    String str2 = String.format("[StronglyConnectedComponentsFn %s] Other node ids that contain in the same component are: ",
                             context.self().id());
                     // merge all ids
                     List<String> aggregatedSCCIds = new ArrayList<>();
@@ -326,7 +326,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
         return neighbourIds;
     }
 
-    private void sendResult(Context context, String resultStr, String queryId, String userId) {
+    private void sendResult(Context context, String queryId, String userId, String resultStr) {
         context.send(MessageBuilder
                 .forAddress(TypeName.typeNameOf("hesse.query", "temporal-query-handler"), queryId)
                 .withCustomType(

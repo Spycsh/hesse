@@ -171,7 +171,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
                     String resultStr = str1 + str2 + sb.toString();
 
-                    sendResult(context, resultStr, result.getQueryId(), result.getUserId());
+                    sendResult(context, result.getQueryId(), result.getUserId(), resultStr);
 
                 } else {
                     // not source node, send to its parents the aggregated low link id
@@ -216,7 +216,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
         return context.done();
     }
 
-    private void sendResult(Context context, String resultStr, String queryId, String userId) {
+    private void sendResult(Context context, String queryId, String userId, String resultStr) {
         context.send(MessageBuilder
                 .forAddress(TypeName.typeNameOf("hesse.query", "temporal-query-handler"), queryId)
                 .withCustomType(

@@ -15,6 +15,8 @@ public class QueryResult {
     @JsonProperty("result")
     private String result;  // a string of result for the query
 
+    public QueryResult() {}
+
     public QueryResult(String queryId, String userId, String result) {
         this.queryId = queryId;
         this.userId = userId;
