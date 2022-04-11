@@ -33,9 +33,13 @@ As Flink Statefun is native to FaaS (Function as a Service), users can easily ma
 
 The basic architecture is shown as follows:
 
-![arch](doc/arch_hesse.png)
+![arch old](doc/arch_hesse.png)
 
+After redesigning in version 2.0 (still in implementing), the new architecture will be as follows:
 
+![arch](doc/arch_hesse_new.png)
+
+Regarding the hesse sql and its usage, please refer to [hesse sql](https://github.com/Spycsh/hesse-sql)
 
 ## How to use
 
