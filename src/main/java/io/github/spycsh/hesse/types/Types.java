@@ -111,11 +111,6 @@ public class Types {
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<VertexShortestPathChange>() {
             }));
 
-    public static final Type<TreeMap<String, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES = SimpleType.simpleImmutableTypeFrom(
-            TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities"),
-            JSON_OBJ_MAPPER::writeValueAsBytes,
-            bytes -> JSON_OBJ_MAPPER.readValue(bytes, TreeMap.class));
-
     public static final Type<HashMap<String, TreeMap<Integer, ArrayList<VertexActivity>>>> PARTITION_ACTIVITIES = SimpleType.simpleImmutableTypeFrom(
             TypeName.typeNameOf(TYPES_NAMESPACE, "partition_activities"),
             JSON_OBJ_MAPPER::writeValueAsBytes,
@@ -276,5 +271,26 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<HistoryQuery>>() {
                     }));
+
+    // list
+    public static final Type<List<VertexActivity>> VERTEX_ACTIVITIES_LIST_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities_list"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<List<VertexActivity>>() {
+            }));
+
+    // red black tree
+    public static final Type<TreeSet<VertexActivity>> VERTEX_ACTIVITIES_RBT_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities_rbt"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<TreeSet<VertexActivity>>() {
+            }));
+
+    // bucketed red black tree
+    public static final Type<TreeMap<String, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES_BRBT_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities_brbt"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<TreeMap<String, ArrayList<VertexActivity>>>() {
+            }));
 
 }

@@ -1,6 +1,6 @@
 package io.github.spycsh.hesse.types;
 
-public class VertexActivity {
+public class VertexActivity implements Comparable<VertexActivity>{
     private String activityType;
 
     private String srcId;
@@ -63,5 +63,10 @@ public class VertexActivity {
 
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
+    }
+
+    @Override
+    public int compareTo(VertexActivity o) {
+        return o.getTimestamp().compareTo(this.getTimestamp());
     }
 }

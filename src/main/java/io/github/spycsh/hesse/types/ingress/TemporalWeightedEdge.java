@@ -2,6 +2,9 @@ package io.github.spycsh.hesse.types.ingress;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * deprecated
+ */
 public class TemporalWeightedEdge {
     @JsonProperty("src_id")
     private String srcId;

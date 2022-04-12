@@ -117,7 +117,7 @@ services:
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: query
       APP_DELAY_SECONDS: 1 # this is the interval between producing two records
-      APP_DELAY_START_SECONDS: 20
+      APP_DELAY_START_SECONDS: 50
       APP_LOOP: "false"
       APP_JSON_PATH: query_id
     volumes:
