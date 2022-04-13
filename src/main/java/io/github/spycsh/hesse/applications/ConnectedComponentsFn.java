@@ -31,9 +31,8 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
             QueryCCWithState q = message.as(Types.QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-            int startT = q.getStartT();
-            int endT = q.getEndT();
-            ArrayList<String> neighbourIds = recoverStateByTimeRegion(vertexActivities);
+
+            HashSet<String> neighbourIds = recoverStateByTimeRegion(vertexActivities);
 
             ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
@@ -64,7 +63,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
             ForwardQueryCCWithState q = message.as(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-            ArrayList<String> neighbourIds = recoverStateByTimeRegion(vertexActivities);
+            HashSet<String> neighbourIds = recoverStateByTimeRegion(vertexActivities);
 
             ArrayDeque<String> stack = q.getStack();
 
@@ -229,9 +228,9 @@ public class ConnectedComponentsFn implements StatefulFunction {
                 .build());
     }
 
-    private ArrayList<String> recoverStateByTimeRegion(List<VertexActivity> activityLog) {
+    private HashSet<String> recoverStateByTimeRegion(List<VertexActivity> activityLog) {
 
-        ArrayList<String> neighbourIds = new ArrayList<>();
+        HashSet<String> neighbourIds = new HashSet<>();
 
         for(VertexActivity activity:activityLog){
             if(activity.getActivityType().equals("add")) {
