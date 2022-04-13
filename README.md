@@ -14,10 +14,10 @@ A temporal graph library based on Flink Stateful Functions
 
 ## TODO
 
+- [x] User-configurable Implementation of different storage paradigms
+- [ ] Performance benchmarking for different storage paradigms
 - [ ] A unified User Defined Function interface
 - [ ] Hot Plugging Support
-- [ ] User-configurable Implementation of different storage paradigms
-- [ ] Performance benchmarking for different storage paradigms
 - [ ] Query Concurrency investigation
 - [ ] Performance benchmarking comparing with other temporal graph engines
 

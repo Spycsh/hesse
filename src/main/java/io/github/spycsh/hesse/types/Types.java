@@ -279,18 +279,19 @@ public class Types {
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<List<VertexActivity>>() {
             }));
 
-    // red black tree
-    public static final Type<TreeSet<VertexActivity>> VERTEX_ACTIVITIES_RBT_TYPE = SimpleType.simpleImmutableTypeFrom(
-            TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities_rbt"),
+    // priority queue
+    // red black tree TreeSort unsupported because it cannot handle duplicated timestamp
+    public static final Type<PriorityQueue<VertexActivity>> VERTEX_ACTIVITIES_PQ_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities_pq"),
             JSON_OBJ_MAPPER::writeValueAsBytes,
-            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<TreeSet<VertexActivity>>() {
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<PriorityQueue<VertexActivity>>() {
             }));
 
     // bucketed red black tree
-    public static final Type<TreeMap<String, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES_BRBT_TYPE = SimpleType.simpleImmutableTypeFrom(
+    public static final Type<TreeMap<String, List<VertexActivity>>> VERTEX_ACTIVITIES_BRBT_TYPE = SimpleType.simpleImmutableTypeFrom(
             TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities_brbt"),
             JSON_OBJ_MAPPER::writeValueAsBytes,
-            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<TreeMap<String, ArrayList<VertexActivity>>>() {
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<TreeMap<String, List<VertexActivity>>>() {
             }));
 
 }

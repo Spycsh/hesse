@@ -67,6 +67,24 @@ public class VertexActivity implements Comparable<VertexActivity>{
 
     @Override
     public int compareTo(VertexActivity o) {
-        return o.getTimestamp().compareTo(this.getTimestamp());
+        if(this.getTimestamp().equals(o.getTimestamp())){
+            if(this.getSrcId().equals(o.getSrcId())){
+                return this.getDstId().compareTo(o.getDstId());
+            } else{
+                return this.getSrcId().compareTo(o.getSrcId());
+            }
+        }
+        return Integer.parseInt(this.getTimestamp()) - Integer.parseInt(o.getTimestamp());
+    }
+
+    @Override
+    public String toString() {
+        return "VertexActivity{" +
+                "activityType='" + activityType + '\'' +
+                ", srcId='" + srcId + '\'' +
+                ", dstId='" + dstId + '\'' +
+                ", weight='" + weight + '\'' +
+                ", timestamp='" + timestamp + '\'' +
+                '}';
     }
 }

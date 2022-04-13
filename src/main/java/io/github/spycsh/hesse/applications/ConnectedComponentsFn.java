@@ -33,7 +33,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
             List<VertexActivity> vertexActivities = q.getVertexActivities();
             int startT = q.getStartT();
             int endT = q.getEndT();
-            ArrayList<String> neighbourIds = recoverStateByTimeRegion(startT, endT, vertexActivities);
+            ArrayList<String> neighbourIds = recoverStateByTimeRegion(vertexActivities);
 
             ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
@@ -56,6 +56,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
             }
 
             context.storage().set(QUERY_CC_CONTEXT_LIST, queryCCContexts);
+            context.storage().set(QUERY_CC_CONTEXT_LIST, queryCCContexts);
         }
 
         if(message.is(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE)){
@@ -63,22 +64,25 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
             ForwardQueryCCWithState q = message.as(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-            ArrayList<String> neighbourIds = recoverStateByTimeRegion(q.getStartT(), q.getEndT(), vertexActivities);
+            ArrayList<String> neighbourIds = recoverStateByTimeRegion(vertexActivities);
 
             ArrayDeque<String> stack = q.getStack();
 
             ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
             QueryCCContext queryCCContext = findCCContext(q.getQueryId(), q.getUserId(), queryCCContexts);
 
-            // if self already on stack path or has no more neighbours, then return response
+            // if self already on stack path or has no more neighbours other than the node that the message comes from,
+            // then return response
             // otherwise, continue forwarding
             if(stack.contains(context.self().id()) || neighbourIds.size() == 0){
                 System.out.printf("[ConnectedComponentsFn %s] ForwardQueryCCWithState received and self" +
                         " is already on the stack or has no more neighbours\n", context.self().id());
 
                 Set<String> aggregatedCCIds = new HashSet<>();
-                if(neighbourIds.size() == 0)
+
+                if(neighbourIds.size() == 0){
                     aggregatedCCIds.add(context.self().id());
+                }
                 context.send(MessageBuilder
                         .forAddress(TypeName.typeNameOf("hesse.applications", "connected-components"), q.getSource())
                         .withCustomType(
@@ -225,22 +229,15 @@ public class ConnectedComponentsFn implements StatefulFunction {
                 .build());
     }
 
-    private ArrayList<String> recoverStateByTimeRegion(int startT, int endT, List<VertexActivity> activityLog) {
-        activityLog.sort((o1, o2) -> Integer.parseInt(o2.getTimestamp()) - Integer.parseInt(o1.getTimestamp()));
+    private ArrayList<String> recoverStateByTimeRegion(List<VertexActivity> activityLog) {
 
         ArrayList<String> neighbourIds = new ArrayList<>();
 
-        for(VertexActivity activity: activityLog){
-            // recover the state with all the ordered activities between startT and endT
-            if(Integer.parseInt(activity.getTimestamp()) >= startT && Integer.parseInt(activity.getTimestamp()) <= endT) {
-                if (activity.getActivityType().equals("add")) {
-                    // check whether has weight to decide which state to recover
-                    // has weight -> weight != 0 -> HashMap<Integer, Double> a hashmap of mapping from neighbour id to weight
-                    // no weight -> weight == 0 -> ArrayList<Integer> array of list of neighbour id
-                    // TODO now only do with unweighted graph, the state is all the neighbours at T
-                    if (activity.getWeight() == null) {
-                        neighbourIds.add(activity.getDstId());
-                    }
+        for(VertexActivity activity:activityLog){
+            if(activity.getActivityType().equals("add")) {
+                // TODO now only do with unweighted graph, the state is all the neighbours at T
+                if(activity.getWeight() == null){
+                    neighbourIds.add(activity.getDstId());
                 }
             }
         }

@@ -54,6 +54,7 @@ public class ForwardQueryCC {
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
         this.startT = q.getStartT();
+        this.endT = q.getEndT();
         this.stack = stack;
     }
 

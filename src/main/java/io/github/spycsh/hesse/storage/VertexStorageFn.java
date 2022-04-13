@@ -1,14 +1,11 @@
 package io.github.spycsh.hesse.storage;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.spycsh.hesse.types.*;
 import io.github.spycsh.hesse.types.cc.ForwardQueryCC;
 import io.github.spycsh.hesse.types.cc.ForwardQueryCCWithState;
 import io.github.spycsh.hesse.types.cc.QueryCC;
 import io.github.spycsh.hesse.types.cc.QueryCCWithState;
 import io.github.spycsh.hesse.types.ingress.TemporalEdge;
-import io.github.spycsh.hesse.types.ingress.TemporalWeightedEdge;
 import io.github.spycsh.hesse.types.minibatch.ForwardQueryMiniBatch;
 import io.github.spycsh.hesse.types.minibatch.ForwardQueryMiniBatchWithState;
 import io.github.spycsh.hesse.types.minibatch.QueryMiniBatch;
@@ -21,12 +18,9 @@ import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
-import org.apache.flink.statefun.sdk.java.types.SimpleType;
-import org.apache.flink.statefun.sdk.java.types.Type;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 /**
  * partition by vertexId storage function
@@ -35,10 +29,6 @@ public class VertexStorageFn implements StatefulFunction {
 
     private static final ValueSpec<HashSet<Integer>> BUFFERED_NEIGHBOURS_VALUE = ValueSpec.named("bufferedNeighbours").withCustomType(Types.BUFFERED_NEIGHBOURS_VALUE);
     private static final ValueSpec<HashMap<Integer, Double>> BUFFERED_NEIGHBOURS_WEIGHTED_VALUE = ValueSpec.named("bufferedNeighboursWeighted").withCustomType(Types.BUFFERED_NEIGHBOURS_WEIGHTED_VALUE);
-
-    // during serializing, only serialize the fields that are
-    private static final ObjectMapper JSON_OBJ_MAPPER = new ObjectMapper();
-    private static final String TYPES_NAMESPACE = "hesse.types";
 
     private static final ValueSpec<Long> LAST_MESSAGE_TIME_VALUE = ValueSpec.named("lastMessageTime").withLongType();
 
@@ -56,13 +46,25 @@ public class VertexStorageFn implements StatefulFunction {
     List<String> unweightedAppNames = new ArrayList<>();
     List<String> weightedAppNames = new ArrayList<>();
 
-    int storageParadigm = 2;    // default using red black tree
+    int storageParadigm = 2;    // default paradigm
+
+    /**
+     * A pre-config event time interval that used to separate
+     * the whole sequence of temporal edges into batches
+     * e.g. there are three records with timestamp 0, 5, 7
+     * and the event time interval is 5
+     * then it will have two batches [0, 5), [5, 10)
+     * 0 will be in the first batch while 5 and 7 will be in the second one
+     *
+     * This is specifically used for BRBT
+     */
+    private int eventTimeInterval = 5;
 
     // valueSpecs of the vertex activities
 
     private static final ValueSpec<List<VertexActivity>> VERTEX_ACTIVITIES_LIST = ValueSpec.named("vertexActivitiesList").withCustomType(Types.VERTEX_ACTIVITIES_LIST_TYPE);
-    private static final ValueSpec<TreeSet<VertexActivity>> VERTEX_ACTIVITIES_RBT = ValueSpec.named("vertexActivitiesRBT").withCustomType(Types.VERTEX_ACTIVITIES_RBT_TYPE);
-    private static final ValueSpec<TreeMap<String, ArrayList<VertexActivity>>> VERTEX_ACTIVITIES_BRBT = ValueSpec.named("vertexActivitiesBRBT").withCustomType(Types.VERTEX_ACTIVITIES_BRBT_TYPE);
+    private static final ValueSpec<PriorityQueue<VertexActivity>> VERTEX_ACTIVITIES_PQ = ValueSpec.named("vertexActivitiesPQ").withCustomType(Types.VERTEX_ACTIVITIES_PQ_TYPE);
+    private static final ValueSpec<TreeMap<String, List<VertexActivity>>> VERTEX_ACTIVITIES_BRBT = ValueSpec.named("vertexActivitiesBRBT").withCustomType(Types.VERTEX_ACTIVITIES_BRBT_TYPE);
 
     Properties prop;
 
@@ -79,6 +81,7 @@ public class VertexStorageFn implements StatefulFunction {
         setWeightedAppNames(prop.getProperty("WEIGHTED_APP_NAMES"));
 
         setStorageParadigm(Integer.parseInt(prop.getProperty("STORAGE_PARADIGM")));
+        setEventTimeInterval(Integer.parseInt(prop.getProperty("EVENT_TIME_INTERVAL")));
     }
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.storage", "vertex-storage");
@@ -86,7 +89,7 @@ public class VertexStorageFn implements StatefulFunction {
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(VertexStorageFn::new)
             .withValueSpecs(BUFFERED_NEIGHBOURS_VALUE, BUFFERED_NEIGHBOURS_WEIGHTED_VALUE, LAST_MESSAGE_TIME_VALUE,
-                    VERTEX_ACTIVITIES_LIST, VERTEX_ACTIVITIES_RBT, VERTEX_ACTIVITIES_BRBT)
+                    VERTEX_ACTIVITIES_LIST, VERTEX_ACTIVITIES_PQ, VERTEX_ACTIVITIES_BRBT)
             .build();
 
 
@@ -102,17 +105,10 @@ public class VertexStorageFn implements StatefulFunction {
         this.weightedAppNames.addAll(Arrays.asList(appNames.split(",")));
     }
 
-    /**
-     * A pre-config event time interval that used to separate
-     * the whole sequence of temporal edges into batches
-     * e.g. there are three records with timestamp 0, 5, 7
-     * and the event time interval is 5
-     * then it will have two batches [0, 5), [5, 10)
-     * 0 will be in the first batch while 5 and 7 will be in the second one
-     *
-     * This is specifically used for BRBT
-     */
-    private static final int EVENT_TIME_INTERVAL = 5;
+    public void setEventTimeInterval(int eventTimeInterval) {
+        this.eventTimeInterval = eventTimeInterval;
+    }
+
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
@@ -175,7 +171,7 @@ public class VertexStorageFn implements StatefulFunction {
 
         if(message.is(Types.QUERY_CC_TYPE)){
             QueryCC q = message.as(Types.QUERY_CC_TYPE);
-            System.out.printf("[VertexStorageFn %s] QueryConnectedComponent received\n", context.self().id());
+            System.out.printf("[VertexStorageFn %s] QueryConnectedComponent received with startT:%s, endT:%s\n", context.self().id(), q.getStartT(), q.getEndT());
 
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             QueryCCWithState queryWithState = new QueryCCWithState(
@@ -209,7 +205,7 @@ public class VertexStorageFn implements StatefulFunction {
 
         if(message.is(Types.FORWARD_QUERY_CC_TYPE)){
             ForwardQueryCC q = message.as(Types.FORWARD_QUERY_CC_TYPE);
-            System.out.printf("[VertexStorageFn %s] ForwardQueryCC received\n", context.self().id());
+            System.out.printf("[VertexStorageFn %s] ForwardQueryCC received with startT:%s, endT:%s\n", context.self().id(),q.getStartT(),q.getEndT());
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             ForwardQueryCCWithState queryWithState = new ForwardQueryCCWithState(
                     q,
@@ -232,31 +228,37 @@ public class VertexStorageFn implements StatefulFunction {
                         vertexActivitiesRes1.add(curActivity);
                     }
                 }
-                return vertexActivitiesList;
+                return vertexActivitiesRes1;
             case 2:
-                TreeSet<VertexActivity> vertexActivitiesRBT = context.storage().get(VERTEX_ACTIVITIES_RBT).orElse(
-                        new TreeSet<>(Comparator.comparingInt(o -> Integer.parseInt(o.getTimestamp()))));
+                PriorityQueue<VertexActivity> vertexActivitiesPQ = context.storage().get(VERTEX_ACTIVITIES_PQ).orElse(
+                        new PriorityQueue<>());
                 List<VertexActivity> vertexActivitiesRes2 = new ArrayList<>();
-                for (VertexActivity curActivity : vertexActivitiesRBT) {
-                    if (Integer.parseInt(curActivity.getTimestamp()) > endT) {
+
+                int len = vertexActivitiesPQ.size();
+                for(int i=0; i<len; i++){
+                    VertexActivity curActivity = vertexActivitiesPQ.poll();
+                    if(Integer.parseInt(curActivity.getTimestamp()) > endT){
                         break;
                     }
-                    if (Integer.parseInt(curActivity.getTimestamp()) > startT) {
+                    if(Integer.parseInt(curActivity.getTimestamp()) >= startT) {
                         vertexActivitiesRes2.add(curActivity);
                     }
                 }
                 return vertexActivitiesRes2;
             case 3:
-                int batchIndexStart = startT / EVENT_TIME_INTERVAL;
-                int batchIndexEnd = endT / EVENT_TIME_INTERVAL;
-                TreeMap<String, ArrayList<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
-                // vertexActivitiesBRBT.keySet().removeIf(key -> Integer.parseInt(key) > batchIndexEnd);
-                // vertexActivitiesBRBT.keySet().removeIf(key -> Integer.parseInt(key) < batchIndexStart);
-                // return vertexActivitiesBRBT.values().stream().flatMap(ArrayList::stream).collect(Collectors.toList());
+                int batchIndexStart = startT / eventTimeInterval;
+                int batchIndexEnd = endT / eventTimeInterval;
+                TreeMap<String, List<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
+
                 List<VertexActivity> vertexActivitiesRes3 = new ArrayList<>();
+                // just select out the buckets that the activities in the given time region belong to
                 for(int i=batchIndexStart; i<=batchIndexEnd; i++){
-                    vertexActivitiesRes3.addAll(vertexActivitiesBRBT.get(String.valueOf(i)));
+                    if(vertexActivitiesBRBT.containsKey(String.valueOf(i))){
+                        vertexActivitiesRes3.addAll(vertexActivitiesBRBT.get(String.valueOf(i)));
+                    }
                 }
+                // filter out the other activities that do not belong to the time region
+                vertexActivitiesRes3.removeIf(v -> Integer.parseInt(v.getTimestamp()) < startT || Integer.parseInt(v.getTimestamp()) > endT);
                 return vertexActivitiesRes3;
             default:
                 throw new IllegalArgumentException("[VertexStorageFn] Wrong storage paradigm index, please check property file!");
@@ -276,17 +278,17 @@ public class VertexStorageFn implements StatefulFunction {
                 context.storage().set(VERTEX_ACTIVITIES_LIST, vertexActivitiesList);
                 break;
             case 2:
-                TreeSet<VertexActivity> vertexActivitiesRBT = context.storage().get(VERTEX_ACTIVITIES_RBT).orElse(
-                        new TreeSet<>(Comparator.comparingInt(o -> Integer.parseInt(o.getTimestamp()))));
-                // append into rbt
-                vertexActivitiesRBT.add(new VertexActivity("add", temporalEdge.getSrcId(), temporalEdge.getDstId(), temporalEdge.getTimestamp()));
-                context.storage().set(VERTEX_ACTIVITIES_RBT, vertexActivitiesRBT);
+                PriorityQueue<VertexActivity> vertexActivitiesPQ = context.storage().get(VERTEX_ACTIVITIES_PQ).orElse(
+                        new PriorityQueue<>());
+                // append into pq
+                vertexActivitiesPQ.add(new VertexActivity("add", temporalEdge.getSrcId(), temporalEdge.getDstId(), temporalEdge.getTimestamp()));
+                context.storage().set(VERTEX_ACTIVITIES_PQ, vertexActivitiesPQ);
                 break;
             case 3:
-                TreeMap<String, ArrayList<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
+                TreeMap<String, List<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
                 int t = Integer.parseInt(temporalEdge.getTimestamp());
-                String batchIndex = String.valueOf(t / EVENT_TIME_INTERVAL);
-                ArrayList<VertexActivity> batchActivity = vertexActivitiesBRBT.getOrDefault(batchIndex, new ArrayList<>());
+                String batchIndex = String.valueOf(t / eventTimeInterval);
+                List<VertexActivity> batchActivity = vertexActivitiesBRBT.getOrDefault(batchIndex, new ArrayList<>());
                 batchActivity.add(
                         new VertexActivity("add",
                                 temporalEdge.getSrcId(), temporalEdge.getDstId(), temporalEdge.getTimestamp()));
@@ -297,20 +299,6 @@ public class VertexStorageFn implements StatefulFunction {
                 throw new IllegalArgumentException("[VertexStorageFn] Wrong storage paradigm index, please check property file!");
         }
     }
-
-    // deprecated
-//    private void storeActivity(Context context, TemporalWeightedEdge temporalWeightedEdge) {
-//        TreeMap<String, ArrayList<VertexActivity>> vertexActivities = context.storage().get(VERTEX_ACTIVITIES).orElse(new TreeMap<>());
-//        int batchIndex = Integer.parseInt(temporalWeightedEdge.getTimestamp()) / EVENT_TIME_INTERVAL;
-//        ArrayList<VertexActivity> batchActivity = vertexActivities.getOrDefault(String.valueOf(batchIndex), new ArrayList<>());
-//        // currently only addition of edges is considered
-//        batchActivity.add(
-//                new VertexActivity("add",
-//                        temporalWeightedEdge.getSrcId(), temporalWeightedEdge.getDstId(),
-//                        temporalWeightedEdge.getWeight(), temporalWeightedEdge.getTimestamp()));
-//        vertexActivities.put(String.valueOf(batchIndex), batchActivity);
-//        context.storage().set(VERTEX_ACTIVITIES, vertexActivities);
-//    }
 
     // send the buffered neighbours to the specified UNWEIGHTED applications
     private void sendBufferedNeighboursToApplications(Context context, HashSet<Integer> bufferedNeighbours) {
