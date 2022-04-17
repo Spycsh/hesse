@@ -15,7 +15,7 @@ A temporal graph library based on Flink Stateful Functions
 ## TODO
 
 - [x] User-configurable Implementation of different storage paradigms
-- [ ] Performance benchmarking for different storage paradigms
+- [x] Performance benchmarking for different storage paradigms
 - [ ] A unified User Defined Function interface
 - [ ] Hot Plugging Support
 - [ ] Query Concurrency investigation
@@ -51,13 +51,17 @@ python scenarios_config.py
 
 build the environment and start the containers
 
-```
+```shell
 docker-compose down
 docker-compose build
 docker-compose up
 ```
 
 Currently, two algorithms are implemented for queries, Stronly Connected Component algorithm and MiniBatch algorithm. Make sure to select the right ingress file and type.
+
+```shell
+docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic query-results --partition 0 --from-beginning --property print.key=true --property key.separator=" ** "
+```
 
 ## Advanced Tips
 

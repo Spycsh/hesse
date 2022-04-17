@@ -86,19 +86,6 @@ public class Types {
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, VertexComponentChange.class));
 
     @SuppressWarnings("unchecked")
-    public static final Type<HashSet<Integer>> BUFFERED_NEIGHBOURS_VALUE = SimpleType.simpleImmutableTypeFrom(
-            TypeName.typeNameOf(TYPES_NAMESPACE, "buffered_neighbours"),
-            JSON_OBJ_MAPPER::writeValueAsBytes,
-            bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
-
-
-    @SuppressWarnings("unchecked")
-    public static final Type<HashMap<Integer, Double>> BUFFERED_NEIGHBOURS_WEIGHTED_VALUE = SimpleType.simpleImmutableTypeFrom(
-            TypeName.typeNameOf(TYPES_NAMESPACE, "buffered_neighbours_weighted"),
-            JSON_OBJ_MAPPER::writeValueAsBytes,
-            bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashMap.class));
-
-    @SuppressWarnings("unchecked")
     public static final Type<HashMap<String, String>> SHORTEST_PATH_DISTANCES_TYPE = SimpleType.simpleImmutableTypeFrom(
             TypeName.typeNameOf(TYPES_NAMESPACE, "shortest_path_distances"),
             JSON_OBJ_MAPPER::writeValueAsBytes,

@@ -27,24 +27,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public class VertexStorageFn implements StatefulFunction {
 
-    private static final ValueSpec<HashSet<Integer>> BUFFERED_NEIGHBOURS_VALUE = ValueSpec.named("bufferedNeighbours").withCustomType(Types.BUFFERED_NEIGHBOURS_VALUE);
-    private static final ValueSpec<HashMap<Integer, Double>> BUFFERED_NEIGHBOURS_WEIGHTED_VALUE = ValueSpec.named("bufferedNeighboursWeighted").withCustomType(Types.BUFFERED_NEIGHBOURS_WEIGHTED_VALUE);
-
     private static final ValueSpec<Long> LAST_MESSAGE_TIME_VALUE = ValueSpec.named("lastMessageTime").withLongType();
-
-    int BUFFER_THRESHOLD_SIZE;
-    int BUFFER_THRESHOLD_TIME;
-
-    public void setBufferThresholdSize(int size){
-        this.BUFFER_THRESHOLD_SIZE = size;
-    }
-
-    public void setBufferThresholdTime(int time){
-        this.BUFFER_THRESHOLD_TIME = time;
-    }
-
-    List<String> unweightedAppNames = new ArrayList<>();
-    List<String> weightedAppNames = new ArrayList<>();
+    // record increment of activities
+    private static final ValueSpec<Long> ACTIVITY_INDEX = ValueSpec.named("activityIndex").withLongType();
 
     int storageParadigm = 2;    // default paradigm
 
@@ -74,11 +59,6 @@ public class VertexStorageFn implements StatefulFunction {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        setBufferThresholdSize(Integer.parseInt(prop.getProperty("BUFFER_THRESHOLD_SIZE")));
-        setBufferThresholdTime(Integer.parseInt(prop.getProperty("BUFFER_THRESHOLD_TIME")));
-
-        setUnWeightedAppNames(prop.getProperty("UNWEIGHTED_APP_NAMES"));
-        setWeightedAppNames(prop.getProperty("WEIGHTED_APP_NAMES"));
 
         setStorageParadigm(Integer.parseInt(prop.getProperty("STORAGE_PARADIGM")));
         setEventTimeInterval(Integer.parseInt(prop.getProperty("EVENT_TIME_INTERVAL")));
@@ -88,33 +68,19 @@ public class VertexStorageFn implements StatefulFunction {
 
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(VertexStorageFn::new)
-            .withValueSpecs(BUFFERED_NEIGHBOURS_VALUE, BUFFERED_NEIGHBOURS_WEIGHTED_VALUE, LAST_MESSAGE_TIME_VALUE,
-                    VERTEX_ACTIVITIES_LIST, VERTEX_ACTIVITIES_PQ, VERTEX_ACTIVITIES_BRBT)
+            .withValueSpecs(VERTEX_ACTIVITIES_LIST, VERTEX_ACTIVITIES_PQ, VERTEX_ACTIVITIES_BRBT, ACTIVITY_INDEX)
             .build();
 
 
     public void setStorageParadigm(int storageParadigm) {
         this.storageParadigm = storageParadigm;
     }
-
-    public void setUnWeightedAppNames(String appNames) {
-        this.unweightedAppNames.addAll(Arrays.asList(appNames.split(",")));
-    }
-
-    public void setWeightedAppNames(String appNames) {
-        this.weightedAppNames.addAll(Arrays.asList(appNames.split(",")));
-    }
-
     public void setEventTimeInterval(int eventTimeInterval) {
         this.eventTimeInterval = eventTimeInterval;
     }
 
-
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
-        HashMap<Integer, Double> bufferedNeighboursWeighted =
-                context.storage().get(BUFFERED_NEIGHBOURS_WEIGHTED_VALUE).orElse(new HashMap<>());
-        HashSet<Integer> bufferedNeighbours = context.storage().get(BUFFERED_NEIGHBOURS_VALUE).orElse(new HashSet<>());
 
         // read streaming temporal edges and convert them to adjacent list form
         if(message.is(Types.TEMPORAL_EDGE_TYPE)) {
@@ -122,21 +88,12 @@ public class VertexStorageFn implements StatefulFunction {
             // store the new activity of into specified batch one single vertex in its context
             // here the default activity type is add
             // should use this to recover to specified state and serve query
+            // TODO transaction here
             storeActivity(context, temporalEdge);
-            int neighbourId = Integer.parseInt(temporalEdge.getDstId());
-            bufferedNeighbours.add(neighbourId);
-        }
 
-        if(bufferedNeighbours.size() >= BUFFER_THRESHOLD_SIZE ||
-                (bufferedNeighbours.size() > 0 && getDiffTime(context) > BUFFER_THRESHOLD_TIME)){
-            sendBufferedNeighboursToApplications(context, bufferedNeighbours);
-            context.storage().set(BUFFERED_NEIGHBOURS_VALUE, new HashSet<>());   // clear the buffer
-        }
-
-        if(bufferedNeighboursWeighted.size() >= BUFFER_THRESHOLD_SIZE ||
-                (bufferedNeighboursWeighted.size() > 0 && getDiffTime(context) > BUFFER_THRESHOLD_TIME)){
-            sendBufferedNeighboursToApplications(context, bufferedNeighboursWeighted);
-            context.storage().set(BUFFERED_NEIGHBOURS_WEIGHTED_VALUE, new HashMap<>());   // clear buffer
+            long activityIndex = context.storage().get(ACTIVITY_INDEX).orElse(1L);
+            System.out.printf("[VertexStorage %s] process activity %s \n", context.self().id(), activityIndex);
+            context.storage().set(ACTIVITY_INDEX, activityIndex + 1);
         }
 
         // handle the queries of mini batch
@@ -300,30 +257,6 @@ public class VertexStorageFn implements StatefulFunction {
         }
     }
 
-    // send the buffered neighbours to the specified UNWEIGHTED applications
-    private void sendBufferedNeighboursToApplications(Context context, HashSet<Integer> bufferedNeighbours) {
-        for(String appName : unweightedAppNames){
-            context.send(MessageBuilder
-                    .forAddress(TypeName.typeNameOf("hesse.applications", appName), context.self().id())
-                    .withCustomType(
-                            Types.BUFFERED_NEIGHBOURS_VALUE,
-                            bufferedNeighbours)
-                    .build());
-        }
-    }
-
-    // send the buffered neighbours to the specified WEIGHTED applications
-    private void sendBufferedNeighboursToApplications(Context context, HashMap<Integer, Double> bufferedNeighboursWeighted) {
-        for(String appName : weightedAppNames){
-            context.send(MessageBuilder
-                    .forAddress(TypeName.typeNameOf("hesse.applications", appName), context.self().id())
-                    .withCustomType(
-                            Types.BUFFERED_NEIGHBOURS_WEIGHTED_VALUE,
-                            bufferedNeighboursWeighted)
-                    .build());
-        }
-    }
-
     private void sendQueryMiniBatchWithStateToApp(Context context, QueryMiniBatchWithState queryWithState) {
         context.send(MessageBuilder
                         .forAddress(TypeName.typeNameOf("hesse.applications", "mini-batch"), context.self().id())
@@ -378,6 +311,7 @@ public class VertexStorageFn implements StatefulFunction {
                 .build());
     }
 
+    @Deprecated
     private long getDiffTime(Context context) {
         long curUnixTime = System.currentTimeMillis();
         long lastMessageTime = context.storage().get(LAST_MESSAGE_TIME_VALUE).orElse(-1L);

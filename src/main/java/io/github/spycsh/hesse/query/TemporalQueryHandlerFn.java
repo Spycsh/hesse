@@ -7,6 +7,7 @@ import io.github.spycsh.hesse.types.scc.QuerySCC;
 import io.github.spycsh.hesse.types.minibatch.QueryMiniBatch;
 import io.github.spycsh.hesse.types.Types;
 import org.apache.flink.statefun.sdk.java.*;
+import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 
@@ -23,6 +24,7 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
 
     private static final ValueSpec<ArrayList<HistoryQuery>> QUERY_HISTORY = ValueSpec.named("queryHistory").withCustomType(Types.QUERY_HISTORY);
 
+    static final TypeName KAFKA_EGRESS = TypeName.typeNameOf("hesse.io", "query-results");
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.query", "temporal-query-handler");
 
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
@@ -107,6 +109,9 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
                     System.out.println(res.getResult());
                     long duration = System.currentTimeMillis() - hq.getQueryReceiveTime();
                     System.out.println("query process time: " + duration + "ms");
+                    // produce to Kafka
+                    outputResultToKafka(context, res.getQueryId(), res.getUserId(), res.getResult(), duration);
+
                     hq.setResult(res.getResult());
                 }
             }
@@ -115,6 +120,15 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
         }
 
         return context.done();
+    }
+
+    private void outputResultToKafka(Context context, String queryId, String userId, String result, long duration) {
+        context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
+                .withTopic("query-results")
+                .withUtf8Key(queryId + " " + userId)
+                .withUtf8Value(String.format("Result String: '%s', Duration: %s",
+                        result, duration))
+                .build());
     }
 
 
