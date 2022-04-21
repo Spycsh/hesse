@@ -16,9 +16,14 @@ A temporal graph library based on Flink Stateful Functions
 
 - [x] User-configurable Implementation of different storage paradigms
 - [x] Performance benchmarking for different storage paradigms
-- [ ] A unified User Defined Function interface
-- [ ] Hot Plugging Support
-- [ ] Query Concurrency investigation
+- [x] Measurement of time for queries of three algorithms
+- [ ] add Logger and set logger level to eliminate effect of print statements on time measurement
+- [ ] Measurement of time for ingestion of edges
+- [ ] Break storage TreeMap buckets into different ValueSpecs and see the performances 
+- [ ] Exploration on remote and local Statefun
+- [ ] Support of Single-Source-Shortest-Path algorithm and PageRank (optional)
+- [ ] Query Concurrency investigation on different concurrent applications
+- [ ] LRU cache of query and vertex state
 - [ ] Performance benchmarking comparing with other temporal graph engines
 
 ## Features
@@ -35,11 +40,11 @@ The basic architecture is shown as follows:
 
 ![arch old](doc/arch_hesse.png)
 
-After redesigning in version 2.0 (still in implementing), the new architecture will be as follows:
+[comment]: <> (After redesigning in version 2.0 &#40;still in implementing&#41;, the new architecture will be as follows:)
 
-![arch](doc/arch_hesse_new.png)
+[comment]: <> (![arch]&#40;doc/arch_hesse_new.png&#41;)
 
-Regarding the hesse sql and its usage, please refer to [hesse sql](https://github.com/Spycsh/hesse-sql)
+[comment]: <> (Regarding the hesse sql and its usage, please refer to [hesse sql]&#40;https://github.com/Spycsh/hesse-sql&#41;)
 
 ## How to use
 
@@ -57,7 +62,9 @@ docker-compose build
 docker-compose up
 ```
 
-Currently, two algorithms are implemented for queries, Stronly Connected Component algorithm and MiniBatch algorithm. Make sure to select the right ingress file and type.
+Currently, three algorithms are implemented for queries, Connected Component algorithm, Strongly Connected Component algorithm and MiniBatch algorithm. Make sure to select the right ingress file and type using `scenarios_config.py`.
+
+To see the results of query, you can execute the following command:
 
 ```shell
 docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic query-results --partition 0 --from-beginning --property print.key=true --property key.separator=" ** "
