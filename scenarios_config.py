@@ -35,6 +35,10 @@ index_q_type = input("select the query type:\n")
 query_type_name = QUERY_TYPES[int(index_q_type)]
 
 
+query_producer_delay_time = input("how long in seconds would you delay the start of query producer:\n")
+
+print("\n")
+
 graph_ingress_path = GRAPH_INGRESS_PATH + graph_ingress_file_name
 query_ingress_path = QUERY_PATH + query_file_name
 print(graph_ingress_path)
@@ -54,6 +58,8 @@ d['services']['hesse-producer']['volumes'][0] = "./" + graph_ingress_path + ":" 
 
 d['services']['hesse-query-producer']['environment']['APP_PATH'] = '/mnt/' + query_ingress_path
 d['services']['hesse-query-producer']['volumes'][0] = "./" + query_ingress_path + ":" + '/mnt/' + query_ingress_path
+d['services']['hesse-query-producer']['environment']['APP_DELAY_START_SECONDS'] = query_producer_delay_time
+
 
 idx = 4 # the index the query value type is located at
 for i in range(len(m_content)):

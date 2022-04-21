@@ -4,6 +4,7 @@ import io.github.spycsh.hesse.types.*;
 import io.github.spycsh.hesse.types.egress.Edge;
 import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.minibatch.*;
+import io.github.spycsh.hesse.util.Utils;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
@@ -41,8 +42,8 @@ public class MiniBatchFn implements StatefulFunction {
 
             QueryMiniBatchWithState q = message.as(Types.QUERY_MINI_BATCH_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-            int T = q.getT();
-            ArrayList<String> neighbourIds = recoverStateAtT(T, vertexActivities);
+
+            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
             int H = q.getH();
             int K = q.getK();
 
@@ -58,7 +59,7 @@ public class MiniBatchFn implements StatefulFunction {
             // it should collect H responses (when H is less than neighbour size, collect the neighbour size)
             int responseNumToCollect = Math.min(H, neighbourIds.size());
 
-            MiniBatchPathContext miniBatchPathContext = new MiniBatchPathContext(generateNewStackHash(firstStk), responseNumToCollect, new ArrayList<>());
+            MiniBatchPathContext miniBatchPathContext = new MiniBatchPathContext(Utils.generateNewStackHash(firstStk), responseNumToCollect, new ArrayList<>());
             queryMiniBatchContextList.add(new QueryMiniBatchContext(q.getQueryId(), q.getUserId(), new ArrayList<MiniBatchPathContext>(){{
                 add(miniBatchPathContext);
             }}));
@@ -66,10 +67,11 @@ public class MiniBatchFn implements StatefulFunction {
             context.storage().set(QUERY_MINI_BATCH_CONTEXT_LIST, queryMiniBatchContextList);
 
             // get randomized sample
-            shuffle(neighbourIds);
+            ArrayList<String> neighbourIdList = new ArrayList<>(neighbourIds);
+            shuffle(neighbourIdList);
             if(K > 0) {
                 int sampleCnt = H;
-                for (String neighbourId : neighbourIds) {
+                for (String neighbourId : neighbourIdList) {
                     if (sampleCnt <= 0) break;  // get H sample
                     sampleCnt -= 1;
 
@@ -91,8 +93,7 @@ public class MiniBatchFn implements StatefulFunction {
 
             ArrayList<QueryMiniBatchContext> queryMiniBatchContextList = context.storage().get(QUERY_MINI_BATCH_CONTEXT_LIST).orElse(new ArrayList<>());
 
-            int T = q.getT();
-            ArrayList<String> neighbourIds = recoverStateAtT(T, q.getVertexActivities());
+            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(q.getVertexActivities());
             int H = q.getH();
 
             ArrayDeque<String> stack = q.getStack();
@@ -127,13 +128,14 @@ public class MiniBatchFn implements StatefulFunction {
                         context.self().id());
 
                 // get randomized sample
-                shuffle(neighbourIds);
+                ArrayList<String> neighbourIdList = new ArrayList<>(neighbourIds);
+                shuffle(neighbourIdList);
 
                 stack.addFirst(context.self().id());
 
                 int sampleCnt = H;
 
-                for (String neighbourId : neighbourIds) {
+                for (String neighbourId : neighbourIdList) {
                     System.out.printf("[MiniBatchFn %s] forwarding to neighbour %s... \n",
                             context.self().id(), neighbourId);
                     if (sampleCnt <= 0) break;
@@ -155,13 +157,13 @@ public class MiniBatchFn implements StatefulFunction {
                 if(e == null){
                     ArrayList<MiniBatchPathContext> list = new ArrayList<>();
 
-                    list.add(new MiniBatchPathContext(generateNewStackHash(currentStack), responseNumToCollect, new ArrayList<>()));
+                    list.add(new MiniBatchPathContext(Utils.generateNewStackHash(currentStack), responseNumToCollect, new ArrayList<>()));
                     QueryMiniBatchContext qc = new QueryMiniBatchContext(q.getQueryId(), q.getUserId(),
                             list);
                     queryMiniBatchContextList.add(qc);
                 } else {
                     e.getMiniBatchPathContexts().add(
-                            new MiniBatchPathContext(generateNewStackHash(currentStack),
+                            new MiniBatchPathContext(Utils.generateNewStackHash(currentStack),
                                 responseNumToCollect,
                                 new ArrayList<>()));
                 }
@@ -186,7 +188,7 @@ public class MiniBatchFn implements StatefulFunction {
             QueryMiniBatchContext queryMiniBatchContext = findQueryMiniBatchContext(result.getQueryId(), result.getUserId(), queryMiniBatchContextList);
 
             ArrayDeque<String> stack = result.getStack();
-            int stackHash = generateNewStackHash(stack);
+            int stackHash = Utils.generateNewStackHash(stack);
 
             // find in context the current response num to collect by stackHash
             if(queryMiniBatchContext == null){
@@ -228,7 +230,7 @@ public class MiniBatchFn implements StatefulFunction {
 
                     StringBuilder sb = new StringBuilder();
                     for(Edge e: result.getAggregatedResults())
-                        sb.append(e.getSrcId()).append("->").append(e.getDstId()).append("\n");
+                        sb.append(e.getSrcId()).append("->").append(e.getDstId()).append(" ");
 
                     sendResult(context, result.getQueryId(), result.getUserId(), sb.toString());
 
@@ -294,38 +296,4 @@ public class MiniBatchFn implements StatefulFunction {
                 .build());
     }
 
-    private ArrayList<String> recoverStateAtT(int T, List<VertexActivity> activityLog){
-        return recoverStateByTimeRegion(0, T, activityLog);
-    }
-
-    private ArrayList<String> recoverStateByTimeRegion(int startT, int endT, List<VertexActivity> activityLog) {
-        activityLog.sort((o1, o2) -> Integer.parseInt(o2.getTimestamp()) - Integer.parseInt(o1.getTimestamp()));
-
-        ArrayList<String> neighbourIds = new ArrayList<>();
-
-        for(VertexActivity activity: activityLog){
-            // recover the state with all the ordered activities between startT and endT
-            if(Integer.parseInt(activity.getTimestamp()) >= startT && Integer.parseInt(activity.getTimestamp()) <= endT) {
-                if (activity.getActivityType().equals("add")) {
-                    // check whether has weight to decide which state to recover
-                    // has weight -> weight != 0 -> HashMap<Integer, Double> a hashmap of mapping from neighbour id to weight
-                    // no weight -> weight == 0 -> ArrayList<Integer> array of list of neighbour id
-                    // TODO now only do with unweighted graph, the state is all the neighbours at T
-                    if (activity.getWeight() == null) {
-                        neighbourIds.add(activity.getDstId());
-                    }
-                }
-            }
-        }
-
-        return neighbourIds;
-    }
-
-    private int generateNewStackHash(ArrayDeque<String> stack) {
-        StringBuilder sb = new StringBuilder();
-        for(String s:stack){
-            sb.append(s).append(" ");
-        }
-        return sb.toString().hashCode();
-    }
 }

@@ -19,8 +19,11 @@ public class QueryMiniBatchWithState {
     @JsonProperty("query_type")
     private String queryType;
 
-    @JsonProperty("t")
-    private int t;
+    @JsonProperty("start_t")
+    private int startT;
+
+    @JsonProperty("end_t")
+    private int endT;
 
     @JsonProperty("h")
     private int h;
@@ -34,12 +37,13 @@ public class QueryMiniBatchWithState {
     public QueryMiniBatchWithState() {
     }
 
-    public QueryMiniBatchWithState(String queryId, String userId, String vertexId, String queryType, int t, int h, int k, List<VertexActivity> vertexActivities) {
+    public QueryMiniBatchWithState(String queryId, String userId, String vertexId, String queryType, int startT, int endT, int h, int k, List<VertexActivity> vertexActivities) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
         this.queryType = queryType;
-        this.t = t;
+        this.startT = startT;
+        this.endT = endT;
         this.h = h;
         this.k = k;
         this.vertexActivities = vertexActivities;
@@ -50,7 +54,8 @@ public class QueryMiniBatchWithState {
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
-        this.t = q.getT();
+        this.startT = q.getStartT();
+        this.endT = q.getEndT();
         this.h = q.getH();
         this.k = q.getK();
         this.vertexActivities = vertexActivities;
@@ -76,8 +81,12 @@ public class QueryMiniBatchWithState {
         return vertexActivities;
     }
 
-    public int getT() {
-        return this.t;
+    public int getStartT() {
+        return startT;
+    }
+
+    public int getEndT() {
+        return endT;
     }
 
     public int getH() {

@@ -15,17 +15,21 @@ public class QuerySCC {
     @JsonProperty("query_type")
     private String queryType;
 
-    @JsonProperty("t")
-    private int t;
+    @JsonProperty("start_t")
+    private int startT;
+
+    @JsonProperty("end_t")
+    private int endT;
 
     public QuerySCC() { }
 
-    public QuerySCC(String queryId, String userId, String vertexId, String queryType, int t) {
+    public QuerySCC(String queryId, String userId, String vertexId, String queryType, int startT, int endT) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
         this.queryType = queryType;
-        this.t = t;
+        this.startT = startT;
+        this.endT = endT;
     }
 
     public String getQueryId() {
@@ -44,7 +48,11 @@ public class QuerySCC {
         return queryType;
     }
 
-    public int getT() {
-        return t;
+    public int getStartT() {
+        return startT;
+    }
+
+    public int getEndT() {
+        return endT;
     }
 }

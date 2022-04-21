@@ -122,6 +122,9 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
         return context.done();
     }
 
+    /**
+     * egress the result string and the duration the query takes to Kafka topic
+     */
     private void outputResultToKafka(Context context, String queryId, String userId, String result, long duration) {
         context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
                 .withTopic("query-results")

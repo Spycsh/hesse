@@ -23,8 +23,11 @@ public class ForwardQueryMiniBatchWithState {
     @JsonProperty("query_type")
     private String queryType;
 
-    @JsonProperty("t")
-    private int t;
+    @JsonProperty("start_t")
+    private int startT;
+
+    @JsonProperty("end_t")
+    private int endT;
 
     @JsonProperty("h")
     private int h;
@@ -47,7 +50,8 @@ public class ForwardQueryMiniBatchWithState {
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
-        this.t = q.getT();
+        this.startT = q.getStartT();
+        this.endT = q.getEndT();
         this.h = q.getH();
         this.k = q.getK();
         this.stack = q.getStack();
@@ -78,9 +82,12 @@ public class ForwardQueryMiniBatchWithState {
         return source;
     }
 
+    public int getStartT() {
+        return startT;
+    }
 
-    public int getT() {
-        return t;
+    public int getEndT() {
+        return endT;
     }
 
     public int getH() {

@@ -19,8 +19,11 @@ public class QuerySCCWithState {
     @JsonProperty("query_type")
     private String queryType;
 
-    @JsonProperty("t")
-    private int t;
+    @JsonProperty("start_t")
+    private int startT;
+
+    @JsonProperty("end_t")
+    private int endT;
 
     @JsonProperty("vertex_activities")
     List<VertexActivity> vertexActivities = new ArrayList<>();
@@ -32,7 +35,8 @@ public class QuerySCCWithState {
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
-        this.t = q.getT();
+        this.startT = q.getStartT();
+        this.endT = q.getEndT();
         this.vertexActivities = vertexActivities;
     }
 
@@ -52,8 +56,12 @@ public class QuerySCCWithState {
         return queryType;
     }
 
-    public int getT() {
-        return t;
+    public int getStartT() {
+        return startT;
+    }
+
+    public int getEndT() {
+        return endT;
     }
 
     public List<VertexActivity> getVertexActivities() {

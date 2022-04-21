@@ -104,7 +104,7 @@ public class VertexStorageFn implements StatefulFunction {
             // only send the needed log
             // namely from the beginning to the batch which time T is in
             // remove all the log that is later than the time region that the batch index corresponding to
-            List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
+            List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
 
             QueryMiniBatchWithState queryWithState = new QueryMiniBatchWithState(
                     q,
@@ -118,7 +118,7 @@ public class VertexStorageFn implements StatefulFunction {
             QuerySCC q = message.as(Types.QUERY_SCC_TYPE);
             System.out.printf("[VertexStorageFn %s] QueryStronglyConnectedComponent received\n", context.self().id());
 
-            List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
+            List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             QuerySCCWithState queryWithState = new QuerySCCWithState(
                     q,
                     filteredActivityList
@@ -141,7 +141,7 @@ public class VertexStorageFn implements StatefulFunction {
         if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
             ForwardQueryMiniBatch q = message.as(Types.FORWARD_QUERY_MINI_BATCH_TYPE);
             System.out.printf("[VertexStorageFn %s] ForwardQueryMiniBatch received\n", context.self().id());
-            List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
+            List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             ForwardQueryMiniBatchWithState queryWithState = new ForwardQueryMiniBatchWithState(
                      q,
                      filteredActivityList
@@ -152,7 +152,7 @@ public class VertexStorageFn implements StatefulFunction {
         if(message.is(Types.FORWARD_QUERY_SCC_TYPE)){
             ForwardQuerySCC q = message.as(Types.FORWARD_QUERY_SCC_TYPE);
             System.out.printf("[VertexStorageFn %s] ForwardQuerySCC received\n", context.self().id());
-            List<VertexActivity> filteredActivityList = filterActivityListFromBeginningToT(context, q.getT());
+            List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             ForwardQuerySCCWithState queryWithState = new ForwardQuerySCCWithState(
                     q,
                     filteredActivityList
@@ -222,6 +222,7 @@ public class VertexStorageFn implements StatefulFunction {
         }
     }
 
+    @Deprecated
     private List<VertexActivity> filterActivityListFromBeginningToT(Context context, int T) {
         return filterActivityListByTimeRegion(context, 0, T);
     }

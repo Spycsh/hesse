@@ -3,6 +3,7 @@ package io.github.spycsh.hesse.applications;
 import io.github.spycsh.hesse.types.*;
 import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.scc.*;
+import io.github.spycsh.hesse.util.Utils;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
@@ -12,7 +13,8 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * this function serves the temporal query of the graph about the strongly connected component
- * e.g. it can answer at time T the vertex's connected component
+ * e.g. it can answer the vertex's strongly connected component id and all ids including in the SCC
+ * in a time interval [startT, endT]
  */
 public class StronglyConnectedComponentsFn implements StatefulFunction {
     /**
@@ -34,8 +36,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
             QuerySCCWithState q = message.as(Types.QUERY_SCC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-            int T = q.getT();
-            ArrayList<String> neighbourIds = recoverStateAtT(T, vertexActivities);
+
+            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
 
             ArrayList<QuerySCCContext> querySCCContexts = context.storage().get(QUERY_SCC_CONTEXT_LIST).orElse(new ArrayList<>());
             /*
@@ -69,7 +71,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
             ForwardQuerySCCWithState q = message.as(Types.FORWARD_QUERY_SCC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-            ArrayList<String> neighbourIds = recoverStateAtT(q.getT(), vertexActivities);
+            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
 
             ArrayDeque<String> stack = q.getStack();
 
@@ -298,32 +300,6 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             sb.append(s).append(" ");
         }
         return sb.toString().hashCode();
-    }
-
-    private ArrayList<String> recoverStateAtT(int T, List<VertexActivity> activityLog){
-        return recoverStateByTimeRegion(0, T, activityLog);
-    }
-
-    private ArrayList<String> recoverStateByTimeRegion(int startT, int endT, List<VertexActivity> activityLog) {
-        activityLog.sort((o1, o2) -> Integer.parseInt(o2.getTimestamp()) - Integer.parseInt(o1.getTimestamp()));
-
-        ArrayList<String> neighbourIds = new ArrayList<>();
-
-        for(VertexActivity activity: activityLog){
-            // recover the state with all the ordered activities between startT and endT
-            if(Integer.parseInt(activity.getTimestamp()) >= startT && Integer.parseInt(activity.getTimestamp()) <= endT) {
-                if (activity.getActivityType().equals("add")) {
-                    // check whether has weight to decide which state to recover
-                    // has weight -> weight != 0 -> HashMap<Integer, Double> a hashmap of mapping from neighbour id to weight
-                    // no weight -> weight == 0 -> ArrayList<Integer> array of list of neighbour id
-                    // TODO now only do with unweighted graph, the state is all the neighbours at T
-                    if (activity.getWeight() == null) {
-                        neighbourIds.add(activity.getDstId());
-                    }
-                }
-            }
-        }
-        return neighbourIds;
     }
 
     private void sendResult(Context context, String queryId, String userId, String resultStr) {

@@ -3,6 +3,7 @@ package io.github.spycsh.hesse.applications;
 import io.github.spycsh.hesse.types.*;
 import io.github.spycsh.hesse.types.cc.*;
 import io.github.spycsh.hesse.types.egress.QueryResult;
+import io.github.spycsh.hesse.util.Utils;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
@@ -32,13 +33,13 @@ public class ConnectedComponentsFn implements StatefulFunction {
             QueryCCWithState q = message.as(Types.QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
 
-            HashSet<String> neighbourIds = recoverStateByTimeRegion(vertexActivities);
+            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
 
             ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
                 add(context.self().id());
             }};
-            CCPathContext ccPathContext = new CCPathContext(generateNewStackHash(firstStk), context.self().id(), neighbourIds.size(), new HashSet<>());
+            CCPathContext ccPathContext = new CCPathContext(Utils.generateNewStackHash(firstStk), context.self().id(), neighbourIds.size(), new HashSet<>());
             queryCCContexts.add(new QueryCCContext(q.getQueryId(), q.getUserId(),
                     new ArrayList<CCPathContext>(){{add(ccPathContext);}}));
 
@@ -63,7 +64,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
             ForwardQueryCCWithState q = message.as(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-            HashSet<String> neighbourIds = recoverStateByTimeRegion(vertexActivities);
+            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
 
             ArrayDeque<String> stack = q.getStack();
 
@@ -97,7 +98,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
                         " is not on the stack, continue forwarding\n", context.self().id());
 
                 stack.addFirst(context.self().id());    // add itself in the stack
-                int newStackHash = generateNewStackHash(stack);
+                int newStackHash = Utils.generateNewStackHash(stack);
 
                 if(queryCCContext == null){ // first path context
                     CCPathContext ccPathContext = new CCPathContext(newStackHash, context.self().id(),  neighbourIds.size(), new HashSet<>());
@@ -133,7 +134,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
             }
 
             ArrayDeque<String> stack = result.getStack();
-            int stackHash = generateNewStackHash(stack);
+            int stackHash = Utils.generateNewStackHash(stack);
 
             // find in context the current response num to collect by stackHash
             ArrayList<CCPathContext> ccPathContexts = queryCCContext.getCcPathContexts();
@@ -226,30 +227,6 @@ public class ConnectedComponentsFn implements StatefulFunction {
                         Types.QUERY_RESULT_TYPE,
                         new QueryResult(queryId, userId, resultStr))
                 .build());
-    }
-
-    private HashSet<String> recoverStateByTimeRegion(List<VertexActivity> activityLog) {
-
-        HashSet<String> neighbourIds = new HashSet<>();
-
-        for(VertexActivity activity:activityLog){
-            if(activity.getActivityType().equals("add")) {
-                // TODO now only do with unweighted graph, the state is all the neighbours at T
-                if(activity.getWeight() == null){
-                    neighbourIds.add(activity.getDstId());
-                }
-            }
-        }
-
-        return neighbourIds;
-    }
-
-    private int generateNewStackHash(ArrayDeque<String> stack) {
-        StringBuilder sb = new StringBuilder();
-        for(String s:stack){
-            sb.append(s).append(" ");
-        }
-        return sb.toString().hashCode();
     }
 
     private QueryCCContext findCCContext(String queryId, String userId, ArrayList<QueryCCContext> list) {

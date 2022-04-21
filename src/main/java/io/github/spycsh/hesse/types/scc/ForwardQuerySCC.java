@@ -23,8 +23,11 @@ public class ForwardQuerySCC {
     @JsonProperty("query_type")
     private String queryType;
 
-    @JsonProperty("t")
-    private int t;
+    @JsonProperty("start_t")
+    private int startT;
+
+    @JsonProperty("end_t")
+    private int endT;
 
     @JsonProperty("stack")
     private ArrayDeque<String> stack;
@@ -38,7 +41,8 @@ public class ForwardQuerySCC {
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
-        this.t = q.getT();
+        this.startT = q.getStartT();
+        this.endT = q.getEndT();
         this.stack = stack;
     }
 
@@ -49,7 +53,8 @@ public class ForwardQuerySCC {
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
-        this.t = q.getT();
+        this.startT = q.getStartT();
+        this.endT = q.getEndT();
         this.stack = stack;
     }
 
@@ -69,8 +74,12 @@ public class ForwardQuerySCC {
         return queryType;
     }
 
-    public int getT() {
-        return t;
+    public int getStartT() {
+        return startT;
+    }
+
+    public int getEndT() {
+        return endT;
     }
 
     public String getSource() {
