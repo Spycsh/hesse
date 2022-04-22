@@ -55,21 +55,23 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
   hesse-producer:
-    image: ververica/statefun-playground-producer:latest
+    image: spycsh/edge-producer:latest
     depends_on:
     - kafka
     - statefun-worker
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/graph/example_scc_edges_1.txt
+      APP_PATH: /mnt/datasets/graph/email_mini_edges_undirected.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: example-temporal-graph1
       APP_DELAY_SECONDS: 0
       APP_LOOP: 'false'
       APP_JSON_PATH: src_id
+      APP_FILE_START_SIG: 'true'
+      APP_FILE_END_SIG: 'true'
     volumes:
-    - ./datasets/graph/example_scc_edges_1.txt:/mnt/datasets/graph/example_scc_edges_1.txt
+    - ./datasets/graph/email_mini_edges_undirected.txt:/mnt/datasets/graph/email_mini_edges_undirected.txt
   hesse-query-producer:
     image: spycsh/query-producer:latest
     depends_on:
@@ -78,12 +80,12 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/query/query_scc_1.txt
+      APP_PATH: /mnt/datasets/query/query_cc_email.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: query
       APP_DELAY_SECONDS: 0
-      APP_DELAY_START_SECONDS: '30'
+      APP_DELAY_START_SECONDS: '50'
       APP_LOOP: 'false'
       APP_JSON_PATH: query_id
     volumes:
-    - ./datasets/query/query_scc_1.txt:/mnt/datasets/query/query_scc_1.txt
+    - ./datasets/query/query_cc_email.txt:/mnt/datasets/query/query_cc_email.txt

@@ -41,7 +41,7 @@ spec:
     type: earliest
   topics:
   - topic: query
-    valueType: hesse.types/query_strongly_connected_component
+    valueType: hesse.types/query_connected_component
     targets:
     - hesse.query/temporal-query-handler
 ---
@@ -69,6 +69,13 @@ spec:
 kind: io.statefun.kafka.v1/egress
 spec:
   id: hesse.io/query-results
+  address: kafka:9092
+  deliverySemantic:
+    type: at-least-once
+---
+kind: io.statefun.kafka.v1/egress
+spec:
+  id: hesse.io/processing-time
   address: kafka:9092
   deliverySemantic:
     type: at-least-once

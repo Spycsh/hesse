@@ -17,6 +17,7 @@ import io.github.spycsh.hesse.types.scc.QuerySCC;
 import io.github.spycsh.hesse.types.scc.QuerySCCWithState;
 import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
+import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ public class VertexStorageFn implements StatefulFunction {
     private static final ValueSpec<Long> LAST_MESSAGE_TIME_VALUE = ValueSpec.named("lastMessageTime").withLongType();
     // record increment of activities
     private static final ValueSpec<Long> ACTIVITY_INDEX = ValueSpec.named("activityIndex").withLongType();
+    private static final TypeName KAFKA_EGRESS = TypeName.typeNameOf("hesse.io", "processing-time");;
 
     int storageParadigm = 2;    // default paradigm
 
@@ -89,15 +91,36 @@ public class VertexStorageFn implements StatefulFunction {
         // read streaming temporal edges and convert them to adjacent list form
         if(message.is(Types.TEMPORAL_EDGE_TYPE)) {
             TemporalEdge temporalEdge = message.as(Types.TEMPORAL_EDGE_TYPE);
-            // store the new activity of into specified batch one single vertex in its context
-            // here the default activity type is add
-            // should use this to recover to specified state and serve query
-            // TODO transaction here
-            storeActivity(context, temporalEdge);
 
-            long activityIndex = context.storage().get(ACTIVITY_INDEX).orElse(1L);
-            LOGGER.debug("[VertexStorageFn {}] process activity {}", context.self().id(), activityIndex);
-            context.storage().set(ACTIVITY_INDEX, activityIndex + 1);
+            // hesse sets the start signature record (key: '-1', value: {'src_id': '-1', 'dst_id': '-1', 'timestamp': '-1'})
+            // and the end signature record (key: '-2', value: {'src_id': '-2', 'dst_id': '-2', 'timestamp': '-2'})
+            // for measurement of producing time
+            if(context.self().id().equals("-1") && temporalEdge.getDstId().equals("-1") && temporalEdge.getTimestamp().equals("-1")){
+                LOGGER.info("time that the first temporal edge arrives: "+ System.currentTimeMillis());
+            }
+            if(context.self().id().equals("-2") && temporalEdge.getDstId().equals("-2") && temporalEdge.getTimestamp().equals("-2")){
+                LOGGER.info("time that the last temporal edge arrives: "+ System.currentTimeMillis());
+            }
+
+            if(!context.self().id().equals("-1") && !context.self().id().equals("-2")){
+                // store the new activity of into specified batch one single vertex in its context
+                // here the default activity type is add
+                // should use this to recover to specified state and serve query
+                // TODO transaction here
+                storeActivity(context, temporalEdge);
+
+                // egress current time to Kafka topic
+                context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
+                        .withTopic("processing-time")
+                        // .withUtf8Key("edge")
+                        .withUtf8Value(String.valueOf(System.currentTimeMillis()))
+                        .build());
+
+                long activityIndex = context.storage().get(ACTIVITY_INDEX).orElse(1L);
+                LOGGER.debug("[VertexStorageFn {}] process activity {}", context.self().id(), activityIndex);
+                context.storage().set(ACTIVITY_INDEX, activityIndex + 1);
+            }
+
         }
 
         // handle the queries of mini batch
