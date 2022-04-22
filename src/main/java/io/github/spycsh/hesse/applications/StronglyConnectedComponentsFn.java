@@ -7,6 +7,7 @@ import io.github.spycsh.hesse.util.Utils;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -29,10 +30,12 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             .withValueSpecs(QUERY_SCC_CONTEXT_LIST)
             .build();
 
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedComponentsFn.class);
+
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
         if(message.is(Types.QUERY_SCC_WITH_STATE_TYPE)){
-            System.out.printf("[StronglyConnectedComponentsFn %s] QuerySCCWithState received\n", context.self().id());
+            LOGGER.debug("[StronglyConnectedComponentsFn {}] QuerySCCWithState received", context.self().id());
 
             QuerySCCWithState q = message.as(Types.QUERY_SCC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
@@ -67,7 +70,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
         }
 
         if(message.is(Types.FORWARD_QUERY_SCC_WITH_STATE_TYPE)){
-            System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received\n", context.self().id());
+            LOGGER.debug("[StronglyConnectedComponentsFn {}] ForwardQuerySCCWithState received", context.self().id());
 
             ForwardQuerySCCWithState q = message.as(Types.FORWARD_QUERY_SCC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
@@ -81,8 +84,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             // if there is a cycle back to the queried vertex, then there is a strongly connected component
             // do backtracking
             if(q.getVertexId().equals(context.self().id())){
-                System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received and there is" +
-                        " a SCC back to source node\n", context.self().id());
+                LOGGER.debug("[StronglyConnectedComponentsFn {}] ForwardQuerySCCWithState received and there is" +
+                        " a SCC back to source node", context.self().id());
                 // if there exists a path back to the original source
                 // start to aggregate low link values returned back to the original source
                 if(querySCCContext == null){
@@ -112,8 +115,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                 // set sccFlag false
                 // see query_scc_3.txt, node 2
                 // namely send QuerySCCResult with the scc flag false
-                System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received and " +
-                        "fail to find a SCC\n", context.self().id());
+                LOGGER.debug("[StronglyConnectedComponentsFn {}] ForwardQuerySCCWithState received and " +
+                        "fail to find a SCC", context.self().id());
 
                 // just send the result back to its source with the sccFlag false
                 context.send(MessageBuilder
@@ -128,8 +131,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             } else {
                 // if it has not been on the stack, or has no two consecutive duplicated cycles
                 // pushes self into the stack and continues to forward to neighbours
-                System.out.printf("[StronglyConnectedComponentsFn %s] ForwardQuerySCCWithState received " +
-                                "and the node has neighbours and is not on the stack\n", context.self().id());
+                LOGGER.debug("[StronglyConnectedComponentsFn {}] ForwardQuerySCCWithState received " +
+                        "and the node has neighbours and is not on the stack", context.self().id());
 
                 stack.addFirst(context.self().id());    // add itself in the stack
 
@@ -165,12 +168,13 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
         }
 
         if(message.is(Types.QUERY_SCC_RESULT_TYPE)) {
-            System.out.printf("[StronglyConnectedComponentsFn %s] QuerySCCResult received\n", context.self().id());
+            LOGGER.debug("[StronglyConnectedComponentsFn {}}] QuerySCCResult received", context.self().id());
             QuerySCCResult result = message.as(Types.QUERY_SCC_RESULT_TYPE);
 
             ArrayList<QuerySCCContext> querySCCContexts = context.storage().get(QUERY_SCC_CONTEXT_LIST).orElse(new ArrayList<>());
             QuerySCCContext querySCCContext = findSCCContext(result.getQueryId(), result.getUserId(), querySCCContexts);
             if(querySCCContext == null){
+                LOGGER.error("querySCCContext should not be null because the result is sent back from children nodes");
                 throw new IllegalStateException("querySCCContext should not be null because the result is sent back from children nodes\n");
             }
 
@@ -182,6 +186,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             SCCPathContext sccContextByPathHash = findSCCContextByPathHash(sccPathContexts, stackHash);
 
             if(sccContextByPathHash == null){
+                LOGGER.error("sccContextByPathHash should not be null because the result is sent back from children nodes");
                 throw new IllegalStateException("sccContextByPathHash should not be null because the result is sent back from children nodes\n");
             }
             int n = sccContextByPathHash.getResponseNum();
@@ -205,17 +210,17 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
             // all responses are collected for one path
             if(n - 1 == 0){
-                System.out.printf("[StronglyConnectedComponentsFn %s] QuerySCCResult received " +
-                        "and all responses are collected for one path\n", context.self().id());
+                LOGGER.debug("[StronglyConnectedComponentsFn {}] QuerySCCResult received " +
+                        "and all responses are collected for one path", context.self().id());
 
                 // if it is the source node, just egress
                 if(context.self().id().equals(result.getVertexId())){
-                    System.out.printf("[StronglyConnectedComponentsFn %s] is source node, success!\n", context.self().id());
-                    String str1 = String.format("[StronglyConnectedComponentsFn %s] Result of query %s by user %s: Strongly connected component id of node %s is %s \n",
-                            context.self().id(), result.getQueryId(), result.getUserId(), context.self().id(), updatedLowLinkId);
+                    LOGGER.info("[StronglyConnectedComponentsFn {}] Success! qid: {}, uid: {}",
+                            context.self().id(), result.getQueryId(), result.getUserId());
+                    String str1 = String.format("Result of query %s by user %s: Strongly connected component id of node %s is %s. ",
+                            result.getQueryId(), result.getUserId(), context.self().id(), updatedLowLinkId);
 
-                    String str2 = String.format("[StronglyConnectedComponentsFn %s] Other node ids that contain in the same component are: ",
-                            context.self().id());
+                    String str2 = "Other node ids that contain in the same component are: ";
                     // merge all ids
                     List<String> aggregatedSCCIds = new ArrayList<>();
                     for(SCCPathContext c: sccPathContexts){
@@ -230,7 +235,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                     sendResult(context, result.getQueryId(), result.getUserId(), resultStr);
                 } else {
                     // not source node, send to its parents the aggregated low link id
-                    System.out.printf("[StronglyConnectedComponentsFn %s] not the source node\n", context.self().id());
+                    LOGGER.debug("[StronglyConnectedComponentsFn {}] not the source node", context.self().id());
 
                     // merge all the cc ids, send to parent
                     Set<String> aggregatedSCCIds = new HashSet<>();
@@ -260,8 +265,8 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
                     querySCCContexts.remove(querySCCContext);
                 }
             } else {  // not the last result to collect
-                System.out.printf("[StronglyConnectedComponentsFn %s] QuerySCCResult received " +
-                        "but not all responses of one path are collected\n", context.self().id());
+                LOGGER.debug("[StronglyConnectedComponentsFn {}] QuerySCCResult received " +
+                        "but not all responses of one path are collected", context.self().id());
                 sccContextByPathHash.setResponseNum(n - 1);
             }
             context.storage().set(QUERY_SCC_CONTEXT_LIST, querySCCContexts);

@@ -1,5 +1,6 @@
 package io.github.spycsh.hesse.storage;
 
+import io.github.spycsh.hesse.applications.ConnectedComponentsFn;
 import io.github.spycsh.hesse.types.*;
 import io.github.spycsh.hesse.types.cc.ForwardQueryCC;
 import io.github.spycsh.hesse.types.cc.ForwardQueryCCWithState;
@@ -18,6 +19,7 @@ import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -79,6 +81,8 @@ public class VertexStorageFn implements StatefulFunction {
         this.eventTimeInterval = eventTimeInterval;
     }
 
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedComponentsFn.class);
+
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
 
@@ -92,14 +96,14 @@ public class VertexStorageFn implements StatefulFunction {
             storeActivity(context, temporalEdge);
 
             long activityIndex = context.storage().get(ACTIVITY_INDEX).orElse(1L);
-            System.out.printf("[VertexStorage %s] process activity %s \n", context.self().id(), activityIndex);
+            LOGGER.debug("[VertexStorageFn {}] process activity {}", context.self().id(), activityIndex);
             context.storage().set(ACTIVITY_INDEX, activityIndex + 1);
         }
 
         // handle the queries of mini batch
         if(message.is(Types.QUERY_MINI_BATCH_TYPE)){
             QueryMiniBatch q = message.as(Types.QUERY_MINI_BATCH_TYPE);
-            System.out.printf("[VertexStorageFn %s] QueryMiniBatch received\n", context.self().id());
+            LOGGER.info("[VertexStorageFn {}] QueryMiniBatch received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
 
             // only send the needed log
             // namely from the beginning to the batch which time T is in
@@ -116,7 +120,8 @@ public class VertexStorageFn implements StatefulFunction {
         // handle the queries of connected component
         if(message.is(Types.QUERY_SCC_TYPE)){
             QuerySCC q = message.as(Types.QUERY_SCC_TYPE);
-            System.out.printf("[VertexStorageFn %s] QueryStronglyConnectedComponent received\n", context.self().id());
+            LOGGER.info("[VertexStorageFn {}] QueryStronglyConnectedComponent received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
+
 
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             QuerySCCWithState queryWithState = new QuerySCCWithState(
@@ -128,7 +133,7 @@ public class VertexStorageFn implements StatefulFunction {
 
         if(message.is(Types.QUERY_CC_TYPE)){
             QueryCC q = message.as(Types.QUERY_CC_TYPE);
-            System.out.printf("[VertexStorageFn %s] QueryConnectedComponent received with startT:%s, endT:%s\n", context.self().id(), q.getStartT(), q.getEndT());
+            LOGGER.info("[VertexStorageFn {}] QueryConnectedComponent received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
 
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             QueryCCWithState queryWithState = new QueryCCWithState(
@@ -140,7 +145,8 @@ public class VertexStorageFn implements StatefulFunction {
 
         if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
             ForwardQueryMiniBatch q = message.as(Types.FORWARD_QUERY_MINI_BATCH_TYPE);
-            System.out.printf("[VertexStorageFn %s] ForwardQueryMiniBatch received\n", context.self().id());
+            LOGGER.info("[VertexStorageFn {}] ForwardQueryMiniBatch received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
+
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             ForwardQueryMiniBatchWithState queryWithState = new ForwardQueryMiniBatchWithState(
                      q,
@@ -151,7 +157,7 @@ public class VertexStorageFn implements StatefulFunction {
 
         if(message.is(Types.FORWARD_QUERY_SCC_TYPE)){
             ForwardQuerySCC q = message.as(Types.FORWARD_QUERY_SCC_TYPE);
-            System.out.printf("[VertexStorageFn %s] ForwardQuerySCC received\n", context.self().id());
+            LOGGER.debug("[VertexStorageFn {}] ForwardQuerySCC received", context.self().id());
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             ForwardQuerySCCWithState queryWithState = new ForwardQuerySCCWithState(
                     q,
@@ -162,7 +168,7 @@ public class VertexStorageFn implements StatefulFunction {
 
         if(message.is(Types.FORWARD_QUERY_CC_TYPE)){
             ForwardQueryCC q = message.as(Types.FORWARD_QUERY_CC_TYPE);
-            System.out.printf("[VertexStorageFn %s] ForwardQueryCC received with startT:%s, endT:%s\n", context.self().id(),q.getStartT(),q.getEndT());
+            LOGGER.debug("[VertexStorageFn {}] ForwardQueryCC received", context.self().id());
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             ForwardQueryCCWithState queryWithState = new ForwardQueryCCWithState(
                     q,
@@ -254,6 +260,7 @@ public class VertexStorageFn implements StatefulFunction {
                 context.storage().set(VERTEX_ACTIVITIES_BRBT, vertexActivitiesBRBT);
                 break;
             default:
+                LOGGER.error("[VertexStorageFn] Wrong storage paradigm index, please check property file!");
                 throw new IllegalArgumentException("[VertexStorageFn] Wrong storage paradigm index, please check property file!");
         }
     }

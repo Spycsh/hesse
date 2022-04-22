@@ -17,7 +17,7 @@ A temporal graph library based on Flink Stateful Functions
 - [x] User-configurable Implementation of different storage paradigms
 - [x] Performance benchmarking for different storage paradigms
 - [x] Measurement of time for queries of three algorithms
-- [ ] add Logger and set logger level to eliminate effect of print statements on time measurement
+- [x] add Logger and set logger level to eliminate effect of print statements on time measurement
 - [ ] Measurement of time for ingestion of edges
 - [ ] Break storage TreeMap buckets into different ValueSpecs and see the performances 
 - [ ] Exploration on remote and local Statefun

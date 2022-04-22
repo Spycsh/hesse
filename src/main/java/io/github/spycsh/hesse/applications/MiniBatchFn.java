@@ -8,6 +8,7 @@ import io.github.spycsh.hesse.util.Utils;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -34,11 +35,13 @@ public class MiniBatchFn implements StatefulFunction {
             .withValueSpecs(QUERY_MINI_BATCH_CONTEXT_LIST)
             .build();
 
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedComponentsFn.class);
+
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
 
         if(message.is(Types.QUERY_MINI_BATCH_WITH_STATE_TYPE)){
-            System.out.printf("[MiniBatchFn %s] QueryMiniBatchWithState received\n", context.self().id());
+            LOGGER.debug("[MiniBatchFn {}] QueryMiniBatchWithState received", context.self().id());
 
             QueryMiniBatchWithState q = message.as(Types.QUERY_MINI_BATCH_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
@@ -85,7 +88,7 @@ public class MiniBatchFn implements StatefulFunction {
                 }
             }
         } else if(message.is(Types.FORWARD_QUERY_MINI_BATCH_WITH_STATE_TYPE)){
-            System.out.printf("[MiniBatchFn %s] ForwardQueryMiniBatchWithState received\n", context.self().id());
+            LOGGER.debug("[MiniBatchFn {}] ForwardQueryMiniBatchWithState received", context.self().id());
 
             ForwardQueryMiniBatchWithState q = message.as(Types.FORWARD_QUERY_MINI_BATCH_WITH_STATE_TYPE);
             int K = q.getK();
@@ -102,13 +105,10 @@ public class MiniBatchFn implements StatefulFunction {
                 // if already is the last hop or the vertex has no more neighbours
                 // do not need to set source ids, just send back the result
                 if(K==0){
-                    System.out.printf("[MiniBatchFn %s] ForwardQueryMiniBatchWithState K is 0, send back the queryMiniBatchResult\n",
-                            context.self().id());
+                    LOGGER.debug("[MiniBatchFn {}] ForwardQueryMiniBatchWithState K is 0, send back the queryMiniBatchResult", context.self().id());
                 }else{
-                    System.out.printf("[MiniBatchFn %s] ForwardQueryMiniBatchWithState neighbour size is 0, send back the queryMiniBatchResult\n",
-                            context.self().id());
+                    LOGGER.debug("[MiniBatchFn {}] ForwardQueryMiniBatchWithState neighbour size is 0, send back the queryMiniBatchResult", context.self().id());
                 }
-
 
                 ArrayList<Edge> aggregatedResults = new ArrayList<>();
                 aggregatedResults.add(new Edge(sourceId, context.self().id()));
@@ -123,8 +123,7 @@ public class MiniBatchFn implements StatefulFunction {
                         )
                         .build());
             }else if(K > 0){
-
-                System.out.printf("[MiniBatchFn %s] ForwardQueryMiniBatchWithState K > 0, continue forwarding to neighbours\n",
+                LOGGER.debug("[MiniBatchFn {}] ForwardQueryMiniBatchWithState K > 0, continue forwarding to neighbours",
                         context.self().id());
 
                 // get randomized sample
@@ -136,8 +135,8 @@ public class MiniBatchFn implements StatefulFunction {
                 int sampleCnt = H;
 
                 for (String neighbourId : neighbourIdList) {
-                    System.out.printf("[MiniBatchFn %s] forwarding to neighbour %s... \n",
-                            context.self().id(), neighbourId);
+
+                    LOGGER.debug("[MiniBatchFn {}] forwarding to neighbour {}...", context.self().id(), neighbourId);
                     if (sampleCnt <= 0) break;
                     sampleCnt -= 1;
                     context.send(MessageBuilder
@@ -176,7 +175,7 @@ public class MiniBatchFn implements StatefulFunction {
         // must receive Math.min(neighbour.size, H) responses, can the vertex send the query result
         // back to its parent (source)
         if (message.is(Types.QUERY_MINI_BATCH_RESULT_TYPE)){
-            System.out.printf("[MiniBatchFn %s] QueryMiniBatchResult received\n", context.self().id());
+            LOGGER.debug("[MiniBatchFn {}}] QueryMiniBatchResult received", context.self().id());
 
             // jackson has no idea what type of elements should be in the ArrayList object.
             // so it will parse to ArrayList<LinkedHashMap>
@@ -192,6 +191,7 @@ public class MiniBatchFn implements StatefulFunction {
 
             // find in context the current response num to collect by stackHash
             if(queryMiniBatchContext == null){
+                LOGGER.error("queryMiniBatchContext should not be null!");
                 throw new IllegalStateException("queryMiniBatchContext should not be null!");
             }
             ArrayList<MiniBatchPathContext> miniBatchPathContext = queryMiniBatchContext.getMiniBatchPathContexts();
@@ -200,11 +200,12 @@ public class MiniBatchFn implements StatefulFunction {
             stack.removeFirst();
 
             if(miniBatchContextByPathHash == null){
+                LOGGER.error("miniBatchContextByPathHash should not be null!");
                 throw new IllegalStateException("miniBatchContextByPathHash should not be null!");
             }
             if(miniBatchContextByPathHash.getResponseNum() > 1){
-                System.out.printf("[MiniBatchFn %s] queryMiniBatchContext not collects all the results, still %s " +
-                        " result(s) to collect\n", context.self().id(), miniBatchContextByPathHash.getResponseNum() - 1);
+                LOGGER.debug("[MiniBatchFn {}] queryMiniBatchContext not collects all the results, still {} " +
+                        " result(s) to collect", context.self().id(), miniBatchContextByPathHash.getResponseNum() - 1);
 
                 // after collecting this result, still not collect all results,
                 // so just aggregate the new result, not send or egress, because not received all the excepted results
@@ -221,21 +222,21 @@ public class MiniBatchFn implements StatefulFunction {
                 // and send to its the parent
                 // finally delete the context of this vertex to this query
                 if(context.self().id().equals(result.getVertexId())){
-                    System.out.printf("[MiniBatchFn %s] queryMiniBatchContext collects all the results and is the source\n",
-                            context.self().id());
+                    // queryMiniBatchContext collects all the results and is the source
+                    LOGGER.info("[MiniBatchFn {}] Success! qid: {}, uid: {}",
+                            context.self().id(), result.getQueryId(), result.getUserId());
 
-                    // this is the original source, egress
-                    System.out.println("success!!");
                     result.getAggregatedResults().addAll(miniBatchContextByPathHash.getAggregatedMiniBatchEdges());
 
                     StringBuilder sb = new StringBuilder();
+                    sb.append(String.format("Result of query %s by user %s, edges including in the mini-batch are: ", result.getQueryId(), result.getUserId()));
                     for(Edge e: result.getAggregatedResults())
                         sb.append(e.getSrcId()).append("->").append(e.getDstId()).append(" ");
 
                     sendResult(context, result.getQueryId(), result.getUserId(), sb.toString());
 
                 } else {
-                    System.out.printf("[MiniBatchFn %s] queryMiniBatchContext collects all the results but not the source\n", context.self().id());
+                    LOGGER.debug("[MiniBatchFn {}] queryMiniBatchContext collects all the results but not the source", context.self().id());
 
                     // add the buffered minibatch results to the result and sent back to its parent node
                     result.getAggregatedResults().addAll(miniBatchContextByPathHash.getAggregatedMiniBatchEdges());

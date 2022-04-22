@@ -11,6 +11,9 @@ import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * this function serves the temporal query of the vertex's connected component id
  * and all ids in the same connected component in any arbitrary time window
@@ -25,11 +28,13 @@ public class ConnectedComponentsFn implements StatefulFunction {
             .withValueSpecs(QUERY_CC_CONTEXT_LIST)
             .build();
 
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedComponentsFn.class);
+
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
-        if(message.is(Types.QUERY_CC_WITH_STATE_TYPE)){
-            System.out.printf("[ConnectedComponentsFn %s] QueryCCWithState received\n", context.self().id());
 
+        if(message.is(Types.QUERY_CC_WITH_STATE_TYPE)){
+            LOGGER.debug("[ConnectedComponentsFn {}] QueryCCWithState received", context.self().id());
             QueryCCWithState q = message.as(Types.QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
 
@@ -60,7 +65,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
         }
 
         if(message.is(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE)){
-            System.out.printf("[ConnectedComponentsFn %s] ForwardQueryCCWithState received\n", context.self().id());
+            LOGGER.debug("[ConnectedComponentsFn {}] ForwardQueryCCWithState received", context.self().id());
 
             ForwardQueryCCWithState q = message.as(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
@@ -75,8 +80,8 @@ public class ConnectedComponentsFn implements StatefulFunction {
             // then return response
             // otherwise, continue forwarding
             if(stack.contains(context.self().id()) || neighbourIds.size() == 0){
-                System.out.printf("[ConnectedComponentsFn %s] ForwardQueryCCWithState received and self" +
-                        " is already on the stack or has no more neighbours\n", context.self().id());
+                LOGGER.debug("[ConnectedComponentsFn {}] ForwardQueryCCWithState received and self " +
+                        "is already on the stack or has no more neighbours", context.self().id());
 
                 Set<String> aggregatedCCIds = new HashSet<>();
 
@@ -94,8 +99,8 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
             } else {
                 // continue forwarding and also keep the path context in self
-                System.out.printf("[ConnectedComponentsFn %s] ForwardQueryCCWithState received and self" +
-                        " is not on the stack, continue forwarding\n", context.self().id());
+                LOGGER.debug("[ConnectedComponentsFn {}] ForwardQueryCCWithState received and self " +
+                        "is not on the stack, continue forwarding", context.self().id());
 
                 stack.addFirst(context.self().id());    // add itself in the stack
                 int newStackHash = Utils.generateNewStackHash(stack);
@@ -124,12 +129,13 @@ public class ConnectedComponentsFn implements StatefulFunction {
         }
 
         if(message.is(Types.QUERY_CC_RESULT_TYPE)){
-            System.out.printf("[ConnectedComponentsFn %s] QueryCCResult received\n", context.self().id());
+            LOGGER.debug("[ConnectedComponentsFn {}] QueryCCResult received", context.self().id());
             QueryCCResult result = message.as(Types.QUERY_CC_RESULT_TYPE);
 
             ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
             QueryCCContext queryCCContext = findCCContext(result.getQueryId(), result.getUserId(), queryCCContexts);
             if(queryCCContext == null){
+                LOGGER.error("[ConnectedComponentsFn {}] queryCCContext should not be null because the result is sent back from children nodes", context.self().id());
                 throw new IllegalStateException("queryCCContext should not be null because the result is sent back from children nodes\n");
             }
 
@@ -142,6 +148,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
             // add all the aggregated cc ids for one path from descendants
             if(ccContextByPathHash == null){
+                LOGGER.error("[ConnectedComponentsFn {}] ccContextByPathHash should not be null!", context.self().id());
                 throw new IllegalStateException("ccContextByPathHash should not be null!");
             }
             ccContextByPathHash.getAggregatedCCIds().addAll(result.getAggregatedCCIds());
@@ -158,16 +165,16 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
             // all responses are collected for one path
             if(n - 1 == 0){
-                System.out.printf("[ConnectedComponentsFn %s] QueryCCResult received " +
-                        "and all responses are collected for one path\n", context.self().id());
+                LOGGER.debug("[ConnectedComponentsFn {}] QueryCCResult received " +
+                                "and all responses are collected for one path", context.self().id());
 
                 // if it is the source node, just egress
                 if(context.self().id().equals(result.getVertexId())){
-                    System.out.printf("[ConnectedComponentsFn %s] is source node, success!\n", context.self().id());
-                    String str1 = String.format("[ConnectedComponentsFn %s] Result of query %s by user %s: connected component id of node %s is %s \n",
-                            context.self().id(), result.getQueryId(), result.getUserId(), context.self().id(), updatedLowLinkId);
-                    String str2 = String.format("[ConnectedComponentsFn %s] Other node ids that contain in the same component are:",
-                            context.self().id());
+                    LOGGER.info("[ConnectedComponentsFn {}] Success! qid: {}, uid: {}",
+                            context.self().id(), result.getQueryId(), result.getUserId());
+                    String str1 = String.format("Result of query %s by user %s: connected component id of node %s is %s. ",
+                            result.getQueryId(), result.getUserId(), context.self().id(), updatedLowLinkId);
+                    String str2 = "Other node ids that contain in the same component are:";
 
                     StringBuilder sb = new StringBuilder();
                     for(String id : ccContextByPathHash.getAggregatedCCIds())
@@ -179,8 +186,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
                 } else {
                     // not source node, send to its parents the aggregated low link id
-                    System.out.printf("[ConnectedComponentsFn %s] not the source node\n", context.self().id());
-
+                    LOGGER.debug("[ConnectedComponentsFn {}}] not the source node", context.self().id());
                     // merge all the cc ids, send to parent
                     Set<String> aggregatedCCIds = new HashSet<>();
                     for(CCPathContext c: ccPathContexts){
@@ -210,8 +216,8 @@ public class ConnectedComponentsFn implements StatefulFunction {
                 }
 
             } else {  // not the last result to collect
-                System.out.printf("[ConnectedComponentsFn %s] QueryCCResult received " +
-                        "but not all responses of one path are collected\n", context.self().id());
+                LOGGER.debug("[ConnectedComponentsFn {}] QueryCCResult received " +
+                                "but not all responses of one path are collected", context.self().id());
                 ccContextByPathHash.setResponseNum(n - 1);
             }
             context.storage().set(QUERY_CC_CONTEXT_LIST, queryCCContexts);
