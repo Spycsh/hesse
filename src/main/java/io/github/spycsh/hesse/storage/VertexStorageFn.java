@@ -81,7 +81,7 @@ public class VertexStorageFn implements StatefulFunction {
         this.eventTimeInterval = eventTimeInterval;
     }
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedComponentsFn.class);
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(VertexStorageFn.class);
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {

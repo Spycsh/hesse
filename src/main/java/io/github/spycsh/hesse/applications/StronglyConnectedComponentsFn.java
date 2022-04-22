@@ -30,7 +30,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             .withValueSpecs(QUERY_SCC_CONTEXT_LIST)
             .build();
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedComponentsFn.class);
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(StronglyConnectedComponentsFn.class);
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {

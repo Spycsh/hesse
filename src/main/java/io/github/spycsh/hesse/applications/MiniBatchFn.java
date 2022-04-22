@@ -35,7 +35,7 @@ public class MiniBatchFn implements StatefulFunction {
             .withValueSpecs(QUERY_MINI_BATCH_CONTEXT_LIST)
             .build();
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedComponentsFn.class);
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MiniBatchFn.class);
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
