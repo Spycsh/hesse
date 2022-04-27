@@ -45,49 +45,64 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
             // the indirect neighbours do not have an entry and will be dynamically added
             Map<String, String> neighbourIdsWithWeight = Utils.recoverWeightedStateByLog(vertexActivities);
 
-            // initialize the map of shortest path information for each vertex
-            Map<String, List<String>> paths = new HashMap<>();
-            // only add the minimum weight path
-            double minimumWeight = Double.MAX_VALUE;
-            StringBuilder minimumWeightId = new StringBuilder();
-
-            ArrayList<QuerySSSPContext> querySSSPContexts = context.storage().get(QUERY_SSSP_CONTEXT_LIST).orElse(new ArrayList<>());
-
-            neighbourIdsWithWeight.put(context.self().id(), "0.0");
-            querySSSPContexts.add(new QuerySSSPContext(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), vertexSet, neighbourIdsWithWeight, paths));
-
-            context.storage().set(QUERY_SSSP_CONTEXT_LIST, querySSSPContexts);
-
             for(Map.Entry<String, String> e:neighbourIdsWithWeight.entrySet()){
-                String id = e.getKey();
-                if(id.equals(context.self().id())){
-                    continue;
-                }
-                String weight = e.getValue();
-                if(Double.parseDouble(weight) < minimumWeight){
-                    minimumWeight = Double.parseDouble(weight);
-                    minimumWeightId = new StringBuilder(id);
-                }
-
-                paths.put(id, new LinkedList<String>(){{
-                    add(context.self().id());
-                    add(String.valueOf(id));
-                }});
+                System.out.println(e.getKey() +":"+e.getValue());
             }
 
-            String minimumWeightIdStr = minimumWeightId.toString();
+            System.out.println(neighbourIdsWithWeight.size());
 
-            // persist state
-            context.storage().set(QUERY_SSSP_CONTEXT_LIST, querySSSPContexts);
+            // if there are no outer edges, directly egress
+            if(neighbourIdsWithWeight.size() == 0){
+                StringBuilder result = new StringBuilder();
+                String str1 = String.format("Result of query %s by user %s: no shortest path from node %s because there are no outgoing edge from it!\n",
+                        q.getQueryId(), q.getUserId(), context.self().id());
+                result.append(str1);
+                sendResult(context, q.getQueryId(), q.getUserId(), result.toString());
+            } else{
+                // initialize the map of shortest path information for each vertex
+                Map<String, List<String>> paths = new HashMap<>();
+                // only add the minimum weight path
+                double minimumWeight = Double.MAX_VALUE;
+                StringBuilder minimumWeightId = new StringBuilder();
 
-            // send to the vertex minimumWeightId the request of neighbours of it
-            context.send(MessageBuilder
-                    .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), minimumWeightIdStr)
-                    .withCustomType(
-                            Types.QUERY_STATE_REQUEST_TYPE,
-                            new QueryStateRequest(q.getQueryId(), q.getUserId(), q.getVertexId(), q.getStartT(), q.getEndT())
-                    )
-                    .build());
+                ArrayList<QuerySSSPContext> querySSSPContexts = context.storage().get(QUERY_SSSP_CONTEXT_LIST).orElse(new ArrayList<>());
+
+                neighbourIdsWithWeight.put(context.self().id(), "0.0");
+                querySSSPContexts.add(new QuerySSSPContext(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), vertexSet, neighbourIdsWithWeight, paths));
+
+                context.storage().set(QUERY_SSSP_CONTEXT_LIST, querySSSPContexts);
+
+                for(Map.Entry<String, String> e:neighbourIdsWithWeight.entrySet()){
+                    String id = e.getKey();
+                    if(id.equals(context.self().id())){
+                        continue;
+                    }
+                    String weight = e.getValue();
+                    if(Double.parseDouble(weight) < minimumWeight){
+                        minimumWeight = Double.parseDouble(weight);
+                        minimumWeightId = new StringBuilder(id);
+                    }
+
+                    paths.put(id, new LinkedList<String>(){{
+                        add(context.self().id());
+                        add(String.valueOf(id));
+                    }});
+                }
+
+                String minimumWeightIdStr = minimumWeightId.toString();
+
+                // persist state
+                context.storage().set(QUERY_SSSP_CONTEXT_LIST, querySSSPContexts);
+
+                // send to the vertex minimumWeightId the request of neighbours of it
+                context.send(MessageBuilder
+                        .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), minimumWeightIdStr)
+                        .withCustomType(
+                                Types.QUERY_STATE_REQUEST_TYPE,
+                                new QueryStateRequest(q.getQueryId(), q.getUserId(), q.getVertexId(), q.getStartT(), q.getEndT())
+                        )
+                        .build());
+            }
 
         }
 
@@ -157,7 +172,7 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
             // if all neighbour ids equals to vertexSet, it means all the approachable nodes find shortest path, egress
             if(neighbourIdsWithWeight.keySet().equals(vertexSet)){
                 StringBuilder result = new StringBuilder();
-                String str1 = String.format("Result of query %s by user %s: shortest path to node %s is:\n",
+                String str1 = String.format("Result of query %s by user %s: shortest path(s) from node %s to others:\n",
                         q.getQueryId(), q.getUserId(), context.self().id());
                 result.append(str1);
                 for(Map.Entry<String, String> e:neighbourIdsWithWeight.entrySet()){

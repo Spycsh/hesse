@@ -62,7 +62,7 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/graph/example_sssp_edges_1.txt
+      APP_PATH: /mnt/datasets/graph/example_cc_edges_1.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: example-temporal-graph1
       APP_DELAY_SECONDS: 0
@@ -71,7 +71,7 @@ services:
       APP_FILE_START_SIG: 'true'
       APP_FILE_END_SIG: 'true'
     volumes:
-    - ./datasets/graph/example_sssp_edges_1.txt:/mnt/datasets/graph/example_sssp_edges_1.txt
+    - ./datasets/graph/example_cc_edges_1.txt:/mnt/datasets/graph/example_cc_edges_1.txt
   hesse-query-producer:
     image: spycsh/query-producer:latest
     depends_on:

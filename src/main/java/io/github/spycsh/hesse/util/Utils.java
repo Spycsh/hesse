@@ -22,12 +22,15 @@ public class Utils {
     }
 
     // recover direct neighbours with weight of a vertex by using its filtered activity log
+    // if the input vertex activities do not have weights, let the weight of every edge be 1.0
     public static HashMap<String, String> recoverWeightedStateByLog(List<VertexActivity> activityLog) {
         HashMap<String, String> neighbourIdsWithWeight = new HashMap<>();
         for(VertexActivity activity:activityLog){
             if(activity.getActivityType().equals("add")) {
                 if(activity.getWeight() != null){
                     neighbourIdsWithWeight.put(activity.getDstId(), activity.getWeight());
+                }else{
+                    neighbourIdsWithWeight.put(activity.getDstId(), "1.0");
                 }
             }
         }
