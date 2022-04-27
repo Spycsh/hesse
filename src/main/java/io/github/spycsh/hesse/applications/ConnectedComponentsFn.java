@@ -11,7 +11,6 @@ import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -38,7 +37,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
             QueryCCWithState q = message.as(Types.QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
 
-            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
+            HashSet<String> neighbourIds = Utils.recoverStateByLog(vertexActivities);
 
             ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
             ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
@@ -69,7 +68,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
 
             ForwardQueryCCWithState q = message.as(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
+            HashSet<String> neighbourIds = Utils.recoverStateByLog(vertexActivities);
 
             ArrayDeque<String> stack = q.getStack();
 

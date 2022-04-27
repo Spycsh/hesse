@@ -46,7 +46,7 @@ public class MiniBatchFn implements StatefulFunction {
             QueryMiniBatchWithState q = message.as(Types.QUERY_MINI_BATCH_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
 
-            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
+            HashSet<String> neighbourIds = Utils.recoverStateByLog(vertexActivities);
             int H = q.getH();
             int K = q.getK();
 
@@ -96,7 +96,7 @@ public class MiniBatchFn implements StatefulFunction {
 
             ArrayList<QueryMiniBatchContext> queryMiniBatchContextList = context.storage().get(QUERY_MINI_BATCH_CONTEXT_LIST).orElse(new ArrayList<>());
 
-            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(q.getVertexActivities());
+            HashSet<String> neighbourIds = Utils.recoverStateByLog(q.getVertexActivities());
             int H = q.getH();
 
             ArrayDeque<String> stack = q.getStack();

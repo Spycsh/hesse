@@ -1,6 +1,5 @@
 package io.github.spycsh.hesse.storage;
 
-import io.github.spycsh.hesse.applications.ConnectedComponentsFn;
 import io.github.spycsh.hesse.types.*;
 import io.github.spycsh.hesse.types.cc.ForwardQueryCC;
 import io.github.spycsh.hesse.types.cc.ForwardQueryCCWithState;
@@ -15,6 +14,10 @@ import io.github.spycsh.hesse.types.scc.ForwardQuerySCC;
 import io.github.spycsh.hesse.types.scc.ForwardQuerySCCWithState;
 import io.github.spycsh.hesse.types.scc.QuerySCC;
 import io.github.spycsh.hesse.types.scc.QuerySCCWithState;
+import io.github.spycsh.hesse.types.sssp.QuerySSSP;
+import io.github.spycsh.hesse.types.sssp.QuerySSSPWithState;
+import io.github.spycsh.hesse.types.sssp.QueryState;
+import io.github.spycsh.hesse.types.sssp.QueryStateRequest;
 import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
@@ -145,7 +148,6 @@ public class VertexStorageFn implements StatefulFunction {
             QuerySCC q = message.as(Types.QUERY_SCC_TYPE);
             LOGGER.info("[VertexStorageFn {}] QueryStronglyConnectedComponent received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
 
-
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
             QuerySCCWithState queryWithState = new QuerySCCWithState(
                     q,
@@ -164,6 +166,18 @@ public class VertexStorageFn implements StatefulFunction {
                     filteredActivityList
             );
             sendQueryConnectedComponentWithStateToApp(context, queryWithState);
+        }
+
+        if(message.is(Types.QUERY_SSSP_TYPE)) {
+            QuerySSSP q = message.as(Types.QUERY_SSSP_TYPE);
+            LOGGER.info("[VertexStorageFn {}] QuerySingleSourceShortestPath received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
+
+            List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
+            QuerySSSPWithState queryWithState = new QuerySSSPWithState(
+                    q,
+                    filteredActivityList
+            );
+            sendQuerySingleSourceShortestPathWithStateToApp(context, queryWithState);
         }
 
         if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
@@ -200,9 +214,17 @@ public class VertexStorageFn implements StatefulFunction {
             sendQueryConnectedComponentWithStateToApp(context, queryWithState);
         }
 
+        if(message.is(Types.QUERY_STATE_REQUEST_TYPE)){
+            QueryStateRequest q = message.as(Types.QUERY_STATE_REQUEST_TYPE);
+            LOGGER.debug("[VertexStorageFn {}] QueryWeightedStateRequest received", context.self().id());
+            List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
+
+            QueryState state = new QueryState(q.getQueryId(), q.getUserId(), q.getVertexId(), q.getStartT(), q.getEndT(), filteredActivityList);
+            sendQueryStateToApp(context, state);
+        }
+
         return context.done();
     }
-
 
     private List<VertexActivity> filterActivityListByTimeRegion(Context context, int startT, int endT) {
         switch (storageParadigm){
@@ -261,14 +283,14 @@ public class VertexStorageFn implements StatefulFunction {
             case 1:
                 List<VertexActivity> vertexActivitiesList = context.storage().get(VERTEX_ACTIVITIES_LIST).orElse(new ArrayList<>());
                 // append into list
-                vertexActivitiesList.add(new VertexActivity("add", temporalEdge.getSrcId(), temporalEdge.getDstId(), temporalEdge.getTimestamp()));
+                vertexActivitiesList.add(new VertexActivity("add", temporalEdge));
                 context.storage().set(VERTEX_ACTIVITIES_LIST, vertexActivitiesList);
                 break;
             case 2:
                 PriorityQueue<VertexActivity> vertexActivitiesPQ = context.storage().get(VERTEX_ACTIVITIES_PQ).orElse(
                         new PriorityQueue<>());
                 // append into pq
-                vertexActivitiesPQ.add(new VertexActivity("add", temporalEdge.getSrcId(), temporalEdge.getDstId(), temporalEdge.getTimestamp()));
+                vertexActivitiesPQ.add(new VertexActivity("add", temporalEdge));
                 context.storage().set(VERTEX_ACTIVITIES_PQ, vertexActivitiesPQ);
                 break;
             case 3:
@@ -278,7 +300,7 @@ public class VertexStorageFn implements StatefulFunction {
                 List<VertexActivity> batchActivity = vertexActivitiesBRBT.getOrDefault(batchIndex, new ArrayList<>());
                 batchActivity.add(
                         new VertexActivity("add",
-                                temporalEdge.getSrcId(), temporalEdge.getDstId(), temporalEdge.getTimestamp()));
+                                temporalEdge));
                 vertexActivitiesBRBT.put(batchIndex, batchActivity);
                 context.storage().set(VERTEX_ACTIVITIES_BRBT, vertexActivitiesBRBT);
                 break;
@@ -339,6 +361,24 @@ public class VertexStorageFn implements StatefulFunction {
                 .withCustomType(
                         Types.FORWARD_QUERY_CC_WITH_STATE_TYPE,
                         queryWithState)
+                .build());
+    }
+
+    private void sendQuerySingleSourceShortestPathWithStateToApp(Context context, QuerySSSPWithState queryWithState) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.applications", "single-source-shortest-path"), context.self().id())
+                .withCustomType(
+                        Types.QUERY_SSSP_WITH_STATE_TYPE,
+                        queryWithState)
+                .build());
+    }
+
+    private void sendQueryStateToApp(Context context, QueryState state) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.applications", "single-source-shortest-path"), context.self().id())
+                .withCustomType(
+                        Types.QUERY_STATE_TYPE,
+                        state)
                 .build());
     }
 

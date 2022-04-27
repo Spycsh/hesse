@@ -7,6 +7,7 @@ import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.scc.QuerySCC;
 import io.github.spycsh.hesse.types.minibatch.QueryMiniBatch;
 import io.github.spycsh.hesse.types.Types;
+import io.github.spycsh.hesse.types.sssp.QuerySSSP;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
 import org.apache.flink.statefun.sdk.java.message.Message;
@@ -114,6 +115,31 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
                         .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
                         .withCustomType(
                                 Types.QUERY_CC_TYPE,
+                                q)
+                        .build());
+            }
+        } else if(message.is(Types.QUERY_SSSP_TYPE)) {
+            QuerySSSP q = message.as(Types.QUERY_SSSP_TYPE);
+            String vertexId = q.getVertexId();
+
+            LOGGER.info("[TemporalQueryHandler {}] Received Query {} from User {} of vertex {} with query type {}",
+                    context.self().id(), q.getQueryId(), q.getUserId(), vertexId, q.getQueryType());
+
+            // check whether in cache the query exist
+            long queryReceiveTime = System.currentTimeMillis();
+            boolean queryExist = checkCache(context, q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(), queryReceiveTime);
+
+            if (!q.getQueryType().equals("single-source-shortest-path")) {
+                LOGGER.error("[TemporalQueryHandler {}] query type should be single-source-shortest-path but receive" +
+                        "wrong type, check module.yaml or query ingress", context.self().id());
+                throw new IllegalArgumentException("[TemporalQueryHandler] query type should be single-source-shortest-path but receive" +
+                        "wrong type, check module.yaml or query ingress\n");
+            }
+            if (!queryExist) {
+                context.send(MessageBuilder
+                        .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
+                        .withCustomType(
+                                Types.QUERY_SSSP_TYPE,
                                 q)
                         .build());
             }

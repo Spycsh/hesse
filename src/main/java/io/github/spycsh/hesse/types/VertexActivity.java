@@ -1,5 +1,7 @@
 package io.github.spycsh.hesse.types;
 
+import io.github.spycsh.hesse.types.ingress.TemporalEdge;
+
 public class VertexActivity implements Comparable<VertexActivity>{
     private String activityType;
 
@@ -23,6 +25,14 @@ public class VertexActivity implements Comparable<VertexActivity>{
         this.dstId = dstId;
         this.weight = weight;
         this.timestamp = timestamp;
+    }
+
+    public VertexActivity(String activityType, TemporalEdge temporalEdge) {
+        this.activityType = activityType;
+        this.srcId = temporalEdge.getSrcId();
+        this.dstId = temporalEdge.getDstId();
+        this.weight = temporalEdge.getWeight();
+        this.timestamp = temporalEdge.getTimestamp();
     }
 
     public void setWeight(String weight) {

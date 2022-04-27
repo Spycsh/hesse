@@ -3,22 +3,35 @@ package io.github.spycsh.hesse.util;
 import io.github.spycsh.hesse.types.VertexActivity;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
 public class Utils {
-    public static HashSet<String> recoverStateByTimeRegion(List<VertexActivity> activityLog) {
+    // recover direct neighbours without weight of a vertex by using its filtered activity log
+    public static HashSet<String> recoverStateByLog(List<VertexActivity> activityLog) {
         HashSet<String> neighbourIds = new HashSet<>();
         for(VertexActivity activity:activityLog){
             if(activity.getActivityType().equals("add")) {
-                // TODO now only do with unweighted graph, the state is all the neighbours at T
                 if(activity.getWeight() == null){
                     neighbourIds.add(activity.getDstId());
                 }
             }
         }
         return neighbourIds;
+    }
+
+    // recover direct neighbours with weight of a vertex by using its filtered activity log
+    public static HashMap<String, String> recoverWeightedStateByLog(List<VertexActivity> activityLog) {
+        HashMap<String, String> neighbourIdsWithWeight = new HashMap<>();
+        for(VertexActivity activity:activityLog){
+            if(activity.getActivityType().equals("add")) {
+                if(activity.getWeight() != null){
+                    neighbourIdsWithWeight.put(activity.getDstId(), activity.getWeight());
+                }
+            }
+        }
+        return neighbourIdsWithWeight;
     }
 
     public static int generateNewStackHash(ArrayDeque<String> stack) {

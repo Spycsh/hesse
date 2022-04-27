@@ -99,3 +99,8 @@ This can also be configured in module.yaml with the ingress targets field
 docker exec hesse_kafka_1 kafka-topics --list --zookeeper zookeeper:2181
 docker exec hesse_kafka_1 kafka-topics --delete --zookeeper zookeeper:2181 --topic example-temporal-graph
 ```
+
+* use curl to query
+```shell
+curl -X PUT -H "Content-Type: application/vnd.connected-components.types/vertex" -d '{"vertex_id": "1", "neighbours": ["2", "3"]}' localhost:8090/connected-components.fns/vertex/1
+```

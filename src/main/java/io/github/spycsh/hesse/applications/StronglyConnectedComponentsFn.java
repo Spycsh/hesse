@@ -40,7 +40,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
             QuerySCCWithState q = message.as(Types.QUERY_SCC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
 
-            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
+            HashSet<String> neighbourIds = Utils.recoverStateByLog(vertexActivities);
 
             ArrayList<QuerySCCContext> querySCCContexts = context.storage().get(QUERY_SCC_CONTEXT_LIST).orElse(new ArrayList<>());
             /*
@@ -74,7 +74,7 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
             ForwardQuerySCCWithState q = message.as(Types.FORWARD_QUERY_SCC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-            HashSet<String> neighbourIds = Utils.recoverStateByTimeRegion(vertexActivities);
+            HashSet<String> neighbourIds = Utils.recoverStateByLog(vertexActivities);
 
             ArrayDeque<String> stack = q.getStack();
 

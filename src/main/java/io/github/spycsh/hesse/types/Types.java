@@ -11,6 +11,7 @@ import io.github.spycsh.hesse.types.ingress.TemporalEdge;
 import io.github.spycsh.hesse.types.ingress.TemporalWeightedEdge;
 import io.github.spycsh.hesse.types.minibatch.*;
 import io.github.spycsh.hesse.types.scc.*;
+import io.github.spycsh.hesse.types.sssp.*;
 import org.apache.flink.statefun.sdk.java.TypeName;
 import org.apache.flink.statefun.sdk.java.types.SimpleType;
 import org.apache.flink.statefun.sdk.java.types.Type;
@@ -124,6 +125,16 @@ public class Types {
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySCC.class));
 
     /**
+     * Type denoting a query of single source shortest path
+     * that is sent from ingress to storage
+     */
+    public static final Type<QuerySSSP> QUERY_SSSP_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_single_source_shortest_path"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySSSP.class));
+
+    /**
      * Type denoting a query of connected component
      * that is sent from ingress to storage
      */
@@ -158,6 +169,13 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_connected_component_with_state"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryCCWithState.class));
+
+    public static final Type<QuerySSSPWithState> QUERY_SSSP_WITH_STATE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_single_source_shortest_path_with_state"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySSSPWithState.class));
+
     /**
      * MiniBatchFn -> neighbours' VertexStorageFn
      */
@@ -246,6 +264,13 @@ public class Types {
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QueryCCContext>>() {
                     }));
 
+    public static final Type<ArrayList<QuerySSSPContext>> QUERY_SSSP_CONTEXT_LIST_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_sssp_context_list"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QuerySSSPContext>>() {
+                    }));
+
     public static final Type<QueryResult> QUERY_RESULT_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_result"),
@@ -280,5 +305,23 @@ public class Types {
             JSON_OBJ_MAPPER::writeValueAsBytes,
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<TreeMap<String, List<VertexActivity>>>() {
             }));
+
+    public static final Type<QueryStateRequest> QUERY_STATE_REQUEST_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_state_request"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryStateRequest.class));
+
+    public static final Type<QueryState> QUERY_STATE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_state"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryState.class));
+
+    public static final Type<QueryNextNeighboursInfo> QUERY_NEXT_NEIGHBOURS_INFO =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_next_neighbours_info_state"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryNextNeighboursInfo.class));
 
 }

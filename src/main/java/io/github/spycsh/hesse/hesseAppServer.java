@@ -29,6 +29,7 @@ public class hesseAppServer {
         functions.withStatefulFunction(MiniBatchFn.SPEC);
         functions.withStatefulFunction(ConnectedComponentsFn.SPEC);
         functions.withStatefulFunction(StronglyConnectedComponentsFn.SPEC);
+        functions.withStatefulFunction(SingleSourceShortestPathFn.SPEC);
 
         final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
 
