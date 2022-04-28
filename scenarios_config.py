@@ -62,7 +62,7 @@ d['services']['hesse-query-producer']['volumes'][0] = "./" + query_ingress_path 
 d['services']['hesse-query-producer']['environment']['APP_DELAY_START_SECONDS'] = query_producer_delay_time
 
 
-idx = 4 # the index the query value type is located at
+idx = 5 # the index the query value type is located at
 for i in range(len(m_content)):
     if i == idx:
         m_content[i]['spec']['topics'][0]['valueType'] = query_type_name

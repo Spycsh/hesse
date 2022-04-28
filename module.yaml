@@ -19,6 +19,13 @@ spec:
   transport:
     type: io.statefun.transports.v1/async
 ---
+kind: io.statefun.endpoints.v2/http
+spec:
+  functions: hesse.benchmarks/*
+  urlPathTemplate: http://hesse:1108/
+  transport:
+    type: io.statefun.transports.v1/async
+---
 kind: io.statefun.kafka.v1/ingress
 spec:
   id: hesse.io/example-temporal-graph1
@@ -41,7 +48,7 @@ spec:
     type: earliest
   topics:
   - topic: query
-    valueType: hesse.types/query_single_source_shortest_path
+    valueType: hesse.types/query_connected_component
     targets:
     - hesse.query/temporal-query-handler
 ---

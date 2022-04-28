@@ -35,7 +35,7 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
             .withValueSpecs(QUERY_HISTORY)
             .build();
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ConnectedComponentsFn.class);
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(TemporalQueryHandlerFn.class);
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {

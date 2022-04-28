@@ -110,7 +110,13 @@ public class VertexStorageFn implements StatefulFunction {
                 // here the default activity type is add
                 // should use this to recover to specified state and serve query
                 // TODO transaction here
+                long storageStartTime = System.nanoTime();
                 storeActivity(context, temporalEdge);
+                long storageEndTime = System.nanoTime();
+                context.send(MessageBuilder
+                        .forAddress(TypeName.typeNameOf("hesse.benchmarks", "benchmark-storage-time"), "1")
+                        .withValue(storageEndTime - storageStartTime)
+                        .build());
 
                 // egress current time to Kafka topic
                 context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
@@ -229,8 +235,8 @@ public class VertexStorageFn implements StatefulFunction {
     private List<VertexActivity> filterActivityListByTimeRegion(Context context, int startT, int endT) {
         switch (storageParadigm){
             case 1:
-                List<VertexActivity> vertexActivitiesList = context.storage().get(VERTEX_ACTIVITIES_LIST).orElse(new ArrayList<>());
-                List<VertexActivity> vertexActivitiesRes1 = new ArrayList<>();
+                List<VertexActivity> vertexActivitiesList = context.storage().get(VERTEX_ACTIVITIES_LIST).orElse(new LinkedList<>());
+                List<VertexActivity> vertexActivitiesRes1 = new LinkedList<>();
                 for (VertexActivity curActivity : vertexActivitiesList) {
                     if (Integer.parseInt(curActivity.getTimestamp()) <= endT && Integer.parseInt(curActivity.getTimestamp()) >= startT) {
                         vertexActivitiesRes1.add(curActivity);
@@ -240,7 +246,7 @@ public class VertexStorageFn implements StatefulFunction {
             case 2:
                 PriorityQueue<VertexActivity> vertexActivitiesPQ = context.storage().get(VERTEX_ACTIVITIES_PQ).orElse(
                         new PriorityQueue<>());
-                List<VertexActivity> vertexActivitiesRes2 = new ArrayList<>();
+                List<VertexActivity> vertexActivitiesRes2 = new LinkedList<>();
 
                 int len = vertexActivitiesPQ.size();
                 for(int i=0; i<len; i++){
@@ -258,7 +264,7 @@ public class VertexStorageFn implements StatefulFunction {
                 int batchIndexEnd = endT / eventTimeInterval;
                 TreeMap<String, List<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
 
-                List<VertexActivity> vertexActivitiesRes3 = new ArrayList<>();
+                List<VertexActivity> vertexActivitiesRes3 = new LinkedList<>();
                 // just select out the buckets that the activities in the given time region belong to
                 for(int i=batchIndexStart; i<=batchIndexEnd; i++){
                     if(vertexActivitiesBRBT.containsKey(String.valueOf(i))){
@@ -281,7 +287,7 @@ public class VertexStorageFn implements StatefulFunction {
     private void storeActivity(Context context, TemporalEdge temporalEdge) {
         switch (storageParadigm){
             case 1:
-                List<VertexActivity> vertexActivitiesList = context.storage().get(VERTEX_ACTIVITIES_LIST).orElse(new ArrayList<>());
+                List<VertexActivity> vertexActivitiesList = context.storage().get(VERTEX_ACTIVITIES_LIST).orElse(new LinkedList<>());
                 // append into list
                 vertexActivitiesList.add(new VertexActivity("add", temporalEdge));
                 context.storage().set(VERTEX_ACTIVITIES_LIST, vertexActivitiesList);
@@ -297,7 +303,7 @@ public class VertexStorageFn implements StatefulFunction {
                 TreeMap<String, List<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
                 int t = Integer.parseInt(temporalEdge.getTimestamp());
                 String batchIndex = String.valueOf(t / eventTimeInterval);
-                List<VertexActivity> batchActivity = vertexActivitiesBRBT.getOrDefault(batchIndex, new ArrayList<>());
+                List<VertexActivity> batchActivity = vertexActivitiesBRBT.getOrDefault(batchIndex, new LinkedList<>());
                 batchActivity.add(
                         new VertexActivity("add",
                                 temporalEdge));
