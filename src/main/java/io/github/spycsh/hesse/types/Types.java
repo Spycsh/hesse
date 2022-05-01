@@ -306,6 +306,13 @@ public class Types {
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<TreeMap<String, List<VertexActivity>>>() {
             }));
 
+    // list
+    public static final Type<List<VertexActivity>> BUCKET_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities_bucket"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<List<VertexActivity>>() {
+            }));
+
     public static final Type<QueryStateRequest> QUERY_STATE_REQUEST_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_state_request"),
