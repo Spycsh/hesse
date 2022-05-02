@@ -8,23 +8,23 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * this function receives and aggregates the storage time of records
- * it will output the overall time of storing all records, the number of records
- * and average time one record takes
+ * Applications need to filter the activities in [T0, Tt] to recover state
+ * This function aims to receive and aggregate the processing time for filtering
+ * it will output filtering time for the current query, the overall filtering time for handling different queries
+ * the number of queries and the average filtering time one query takes
  */
-public class BenchmarkStorageTimeFn implements StatefulFunction {
-
-    static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.benchmarks", "benchmark-storage-time");
+public class BenchmarkFilterTimeFn implements StatefulFunction {
+    static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.benchmarks", "benchmark-filter-time");
     private static final ValueSpec<Long> OVERALL_TIME = ValueSpec.named("overallTime").withLongType();
     private static final ValueSpec<Long> RECORD_NUMBER = ValueSpec.named("recordNumber").withLongType();
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
-            .withSupplier(BenchmarkStorageTimeFn::new)
+            .withSupplier(BenchmarkFilterTimeFn::new)
             .withValueSpecs(OVERALL_TIME, RECORD_NUMBER)
             .build();
 
-    private static final TypeName KAFKA_EGRESS = TypeName.typeNameOf("hesse.io", "storage-time");
+    private static final TypeName KAFKA_EGRESS = TypeName.typeNameOf("hesse.io", "filter-time");
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(BenchmarkStorageTimeFn.class);
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(BenchmarkFilterTimeFn.class);
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
@@ -39,14 +39,15 @@ public class BenchmarkStorageTimeFn implements StatefulFunction {
 
             context.storage().set(OVERALL_TIME, overallTime);
             context.storage().set(RECORD_NUMBER, recordNumber);
-            LOGGER.debug("[BenchmarkStorageTimeFn {}] overall time in nano seconds: {}, record number: {}, average time for each record in nano seconds: {}",
-                    context.self().id(), overallTime, recordNumber, String.format("%.2f", averageTimeForEachRecord));
+            LOGGER.debug("[BenchmarkFilterTimeFn {}] current filtering time: {}, overall time in nano seconds: {}, record number: {}, average time for each filtering in nano seconds: {}",
+                    context.self().id(), time, overallTime, recordNumber, String.format("%.2f", averageTimeForEachRecord));
 
             // egress current time to Kafka topic
             context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
-                    .withTopic("storage-time")
-                    .withUtf8Key("record "+ recordNumber + " storage")
-                    .withUtf8Value("overall time: " + overallTime + ", average time: " + averageTimeForEachRecord + ", this record's time: " + time)
+                    .withTopic("filter-time")
+                    .withUtf8Key("filter "+ recordNumber)
+                    .withUtf8Value("current filtering time: " + time + ", overall time: " + overallTime +
+                            ", average time: " + averageTimeForEachRecord + ", this record's time: " + time)
                     .build());
         }
 

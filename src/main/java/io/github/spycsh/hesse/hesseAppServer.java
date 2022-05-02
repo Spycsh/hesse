@@ -1,6 +1,7 @@
 package io.github.spycsh.hesse;
 
 import io.github.spycsh.hesse.applications.*;
+import io.github.spycsh.hesse.benchmarks.BenchmarkFilterTimeFn;
 import io.github.spycsh.hesse.benchmarks.BenchmarkStorageTimeFn;
 import io.github.spycsh.hesse.query.TemporalQueryHandlerFn;
 //import io.github.spycsh.hesse.storage.ControllerFn;
@@ -34,6 +35,7 @@ public class hesseAppServer {
 
         // register the benchmark functions
         functions.withStatefulFunction(BenchmarkStorageTimeFn.SPEC);
+        functions.withStatefulFunction(BenchmarkFilterTimeFn.SPEC);
 
         final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
 

@@ -37,7 +37,6 @@ public class VertexStorageFn implements StatefulFunction {
     private static final ValueSpec<Long> LAST_MESSAGE_TIME_VALUE = ValueSpec.named("lastMessageTime").withLongType();
     // record increment of activities
     private static final ValueSpec<Long> ACTIVITY_INDEX = ValueSpec.named("activityIndex").withLongType();
-    private static final TypeName KAFKA_EGRESS = TypeName.typeNameOf("hesse.io", "processing-time");;
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.storage", "vertex-storage");
 
@@ -96,11 +95,17 @@ public class VertexStorageFn implements StatefulFunction {
             .withSupplier(VertexStorageFn::new)
             .withValueSpecs(VERTEX_ACTIVITIES_LIST, VERTEX_ACTIVITIES_PQ, VERTEX_ACTIVITIES_BRBT, ACTIVITY_INDEX);
     static {
-        for (Map.Entry<String, ValueSpec<List<VertexActivity>>> e : bucketMap.entrySet()) {
-            builder.withValueSpec(e.getValue());
+        // if using storage paradigm 4, create the index
+        if(VertexStorageFn.storageParadigm == 4){
+            for (Map.Entry<String, ValueSpec<List<VertexActivity>>> e : bucketMap.entrySet()) {
+                builder.withValueSpec(e.getValue());
+            }
         }
+
     }
     public static final StatefulFunctionSpec SPEC = builder.build();
+
+    private static final TypeName KAFKA_PRODUCING_EGRESS = TypeName.typeNameOf("hesse.io", "producing-time");
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(VertexStorageFn.class);
 
@@ -115,10 +120,15 @@ public class VertexStorageFn implements StatefulFunction {
             // and the end signature record (key: '-2', value: {'src_id': '-2', 'dst_id': '-2', 'timestamp': '-2'})
             // for measurement of producing time
             if(context.self().id().equals("-1") && temporalEdge.getDstId().equals("-1") && temporalEdge.getTimestamp().equals("-1")){
-                LOGGER.info("time that the first temporal edge arrives: "+ System.currentTimeMillis());
+                String valueString = "time that the first temporal edge arrives: "+ System.currentTimeMillis();
+                LOGGER.debug(valueString);
+                egressProducingTime(context, valueString);
+
             }
             if(context.self().id().equals("-2") && temporalEdge.getDstId().equals("-2") && temporalEdge.getTimestamp().equals("-2")){
-                LOGGER.info("time that the last temporal edge arrives: "+ System.currentTimeMillis());
+                String valueString = "time that the last temporal edge arrives: "+ System.currentTimeMillis();
+                LOGGER.debug(valueString);
+                egressProducingTime(context, valueString);
             }
 
             if(!context.self().id().equals("-1") && !context.self().id().equals("-2")){
@@ -132,13 +142,6 @@ public class VertexStorageFn implements StatefulFunction {
                 context.send(MessageBuilder
                         .forAddress(TypeName.typeNameOf("hesse.benchmarks", "benchmark-storage-time"), "1")
                         .withValue(storageEndTime - storageStartTime)
-                        .build());
-
-                // egress current time to Kafka topic
-                context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
-                        .withTopic("processing-time")
-                        // .withUtf8Key("edge")
-                        .withUtf8Value(String.valueOf(System.currentTimeMillis()))
                         .build());
 
                 long activityIndex = context.storage().get(ACTIVITY_INDEX).orElse(1L);
@@ -249,21 +252,21 @@ public class VertexStorageFn implements StatefulFunction {
     }
 
     private List<VertexActivity> filterActivityListByTimeRegion(Context context, int startT, int endT) {
+        long filterStartTime = System.nanoTime();
+        List<VertexActivity> vertexActivitiesRes = new LinkedList<>();
         switch (storageParadigm){
             case 1: {
                 List<VertexActivity> vertexActivitiesList = context.storage().get(VERTEX_ACTIVITIES_LIST).orElse(new LinkedList<>());
-                List<VertexActivity> vertexActivitiesRes = new LinkedList<>();
                 for (VertexActivity curActivity : vertexActivitiesList) {
                     if (Integer.parseInt(curActivity.getTimestamp()) <= endT && Integer.parseInt(curActivity.getTimestamp()) >= startT) {
                         vertexActivitiesRes.add(curActivity);
                     }
                 }
-                return vertexActivitiesRes;
+                break;
             }
             case 2: {
                 PriorityQueue<VertexActivity> vertexActivitiesPQ = context.storage().get(VERTEX_ACTIVITIES_PQ).orElse(
                         new PriorityQueue<>());
-                List<VertexActivity> vertexActivitiesRes = new LinkedList<>();
 
                 int len = vertexActivitiesPQ.size();
                 for (int i = 0; i < len; i++) {
@@ -275,14 +278,13 @@ public class VertexStorageFn implements StatefulFunction {
                         vertexActivitiesRes.add(curActivity);
                     }
                 }
-                return vertexActivitiesRes;
+                break;
             }
             case 3: {
                 int batchIndexStart = startT / eventTimeInterval;
                 int batchIndexEnd = endT / eventTimeInterval;
                 TreeMap<Integer, List<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
 
-                List<VertexActivity> vertexActivitiesRes = new LinkedList<>();
                 // just select out the buckets that the activities in the given time region belong to
                 for (int i = batchIndexStart; i <= batchIndexEnd; i++) {
                     if (vertexActivitiesBRBT.containsKey(i)) {
@@ -291,13 +293,12 @@ public class VertexStorageFn implements StatefulFunction {
                 }
                 // filter out the other activities that do not belong to the time region
                 vertexActivitiesRes.removeIf(v -> Integer.parseInt(v.getTimestamp()) < startT || Integer.parseInt(v.getTimestamp()) > endT);
-                return vertexActivitiesRes;
+                break;
             }
             case 4: {
                 int batchIndexStart = startT / eventTimeInterval;
                 int batchIndexEnd = endT / eventTimeInterval;
 
-                List<VertexActivity> vertexActivitiesRes = new LinkedList<>();
                 for (int i = batchIndexStart; i <= batchIndexEnd; i++) {
                     if (bucketMap.containsKey(String.valueOf(i))) {
                         List<VertexActivity> list = context.storage().get(bucketMap.get(String.valueOf(i))).orElse(new LinkedList<>());
@@ -305,12 +306,19 @@ public class VertexStorageFn implements StatefulFunction {
                     }
                 }
                 vertexActivitiesRes.removeIf(v -> Integer.parseInt(v.getTimestamp()) < startT || Integer.parseInt(v.getTimestamp()) > endT);
-                return vertexActivitiesRes;
+                break;
             }
             default: {
                 throw new IllegalArgumentException("[VertexStorageFn] Wrong storage paradigm index, please check property file!");
             }
         }
+
+        long filterEndTime = System.nanoTime();
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.benchmarks", "benchmark-filter-time"), "1")
+                .withValue(filterEndTime - filterStartTime)
+                .build());
+        return vertexActivitiesRes;
     }
 
     @Deprecated
@@ -332,6 +340,7 @@ public class VertexStorageFn implements StatefulFunction {
                         new PriorityQueue<>());
                 // append into pq
                 vertexActivitiesPQ.add(new VertexActivity("add", temporalEdge));
+
                 context.storage().set(VERTEX_ACTIVITIES_PQ, vertexActivitiesPQ);
                 break;
             }
@@ -352,7 +361,7 @@ public class VertexStorageFn implements StatefulFunction {
             case 4: {
                 int t = Integer.parseInt(temporalEdge.getTimestamp());
                 String bucketIndex = calculateBucketIndex(T0, eventTimeInterval, t);
-
+                // System.out.println(bucketIndex + ":" + bucketMap.size() + ":" + t);
                 List<VertexActivity> vertexActivities = context.storage().get(bucketMap.get(bucketIndex)).orElse(new LinkedList<>());
                 vertexActivities.add(new VertexActivity("add", temporalEdge));
                 context.storage().set(bucketMap.get(bucketIndex), vertexActivities);
@@ -439,6 +448,14 @@ public class VertexStorageFn implements StatefulFunction {
                 .withCustomType(
                         Types.QUERY_STATE_TYPE,
                         state)
+                .build());
+    }
+
+    private void egressProducingTime(Context context, String valueString) {
+        context.send(KafkaEgressMessage.forEgress(KAFKA_PRODUCING_EGRESS)
+                .withTopic("producing-time")
+                .withUtf8Key("producer")
+                .withUtf8Value(valueString)
                 .build());
     }
 

@@ -74,11 +74,23 @@ docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 -
 
 These are still in experiments and tips for developers
 
-* inspect the egress
+* inspect the topics
 
 ```
 docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic <replace topic name here> --from-beginning
 ```
+
+Here are the exposed topics:
+
+|topic name|usage|io form|
+|---|---|---|
+|temporal-graph|graph ingress stream|ingress|
+|query|query stream|ingress|
+|query-results|results of queries|egress|
+|storage-time|time of storage used for benchmarking|egress|
+|producing-time|time of producing all records by Kafka|egress|
+|filter-time|time of filtering edge activities at arbitrary time windows|egress|
+
 
 * use partition manager:
 
