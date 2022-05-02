@@ -19,7 +19,7 @@ A temporal graph library based on Flink Stateful Functions
 - [x] Measurement of time for queries of three algorithms
 - [x] add Logger and set logger level to eliminate effect of print statements on time measurement
 - [x] Measurement of time for ingestion of edges
-- [ ] Break storage TreeMap buckets into different ValueSpecs and see the performances 
+- [x] Break storage TreeMap buckets into different ValueSpecs and see the performances 
 - [ ] Exploration on remote and local Statefun
 - [ ] Support of Single-Source-Shortest-Path algorithm and PageRank (optional)
 - [ ] Query Concurrency investigation on different concurrent applications

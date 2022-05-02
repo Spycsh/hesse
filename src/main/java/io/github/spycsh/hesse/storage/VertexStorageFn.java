@@ -18,6 +18,7 @@ import io.github.spycsh.hesse.types.sssp.QuerySSSP;
 import io.github.spycsh.hesse.types.sssp.QuerySSSPWithState;
 import io.github.spycsh.hesse.types.sssp.QueryState;
 import io.github.spycsh.hesse.types.sssp.QueryStateRequest;
+import io.github.spycsh.hesse.util.CustomizedComparator;
 import io.github.spycsh.hesse.util.PropertyFileReader;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
@@ -50,7 +51,7 @@ public class VertexStorageFn implements StatefulFunction {
      * then it will have two batches [0, 5), [5, 10)
      * 0 will be in the first batch while 5 and 7 will be in the second one
      *
-     * This is specifically used for BRBT
+     * This is specifically used for BRBT storage paradigm 3 and 4
      */
     private static int eventTimeInterval = 5;
 
@@ -77,14 +78,13 @@ public class VertexStorageFn implements StatefulFunction {
         VertexStorageFn.bucketSize = (int) Math.ceil(((double) Tt - (double) T0) / eventTimeInterval);
     }
 
-
     // valueSpecs of the vertex activities
     private static final ValueSpec<List<VertexActivity>> VERTEX_ACTIVITIES_LIST = ValueSpec.named("vertexActivitiesList").withCustomType(Types.VERTEX_ACTIVITIES_LIST_TYPE);
     private static final ValueSpec<PriorityQueue<VertexActivity>> VERTEX_ACTIVITIES_PQ = ValueSpec.named("vertexActivitiesPQ").withCustomType(Types.VERTEX_ACTIVITIES_PQ_TYPE);
-    private static final ValueSpec<TreeMap<String, List<VertexActivity>>> VERTEX_ACTIVITIES_BRBT = ValueSpec.named("vertexActivitiesBRBT").withCustomType(Types.VERTEX_ACTIVITIES_BRBT_TYPE);
+    private static final ValueSpec<TreeMap<Integer, List<VertexActivity>>> VERTEX_ACTIVITIES_BRBT = ValueSpec.named("vertexActivitiesBRBT").withCustomType(Types.VERTEX_ACTIVITIES_BRBT_TYPE);
 
     // use one ValueSpec for each bucket
-    static TreeMap<String, ValueSpec<List<VertexActivity>>> bucketMap = new TreeMap<>();
+    static TreeMap<String, ValueSpec<List<VertexActivity>>> bucketMap = new TreeMap<String, ValueSpec<List<VertexActivity>>>(new CustomizedComparator());
     static {
         for(int i=0; i<VertexStorageFn.bucketSize; i++){
             bucketMap.put(String.valueOf(i), ValueSpec.named("bucket"+i).withCustomType(Types.BUCKET_TYPE));
@@ -280,13 +280,13 @@ public class VertexStorageFn implements StatefulFunction {
             case 3: {
                 int batchIndexStart = startT / eventTimeInterval;
                 int batchIndexEnd = endT / eventTimeInterval;
-                TreeMap<String, List<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
+                TreeMap<Integer, List<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
 
                 List<VertexActivity> vertexActivitiesRes = new LinkedList<>();
                 // just select out the buckets that the activities in the given time region belong to
                 for (int i = batchIndexStart; i <= batchIndexEnd; i++) {
-                    if (vertexActivitiesBRBT.containsKey(String.valueOf(i))) {
-                        vertexActivitiesRes.addAll(vertexActivitiesBRBT.get(String.valueOf(i)));
+                    if (vertexActivitiesBRBT.containsKey(i)) {
+                        vertexActivitiesRes.addAll(vertexActivitiesBRBT.get(i));
                     }
                 }
                 // filter out the other activities that do not belong to the time region
@@ -336,14 +336,16 @@ public class VertexStorageFn implements StatefulFunction {
                 break;
             }
             case 3: {
-                TreeMap<String, List<VertexActivity>> vertexActivitiesBRBT = context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
+                TreeMap<Integer, List<VertexActivity>> vertexActivitiesBRBT =
+                        context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
                 int t = Integer.parseInt(temporalEdge.getTimestamp());
-                String batchIndex = String.valueOf(t / eventTimeInterval);
+                int batchIndex = t / eventTimeInterval;
                 List<VertexActivity> batchActivity = vertexActivitiesBRBT.getOrDefault(batchIndex, new LinkedList<>());
                 batchActivity.add(
                         new VertexActivity("add",
                                 temporalEdge));
                 vertexActivitiesBRBT.put(batchIndex, batchActivity);
+
                 context.storage().set(VERTEX_ACTIVITIES_BRBT, vertexActivitiesBRBT);
                 break;
             }

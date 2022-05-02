@@ -12,6 +12,7 @@ import io.github.spycsh.hesse.types.ingress.TemporalWeightedEdge;
 import io.github.spycsh.hesse.types.minibatch.*;
 import io.github.spycsh.hesse.types.scc.*;
 import io.github.spycsh.hesse.types.sssp.*;
+import io.github.spycsh.hesse.util.CustomizedComparator;
 import org.apache.flink.statefun.sdk.java.TypeName;
 import org.apache.flink.statefun.sdk.java.types.SimpleType;
 import org.apache.flink.statefun.sdk.java.types.Type;
@@ -300,10 +301,10 @@ public class Types {
             }));
 
     // bucketed red black tree
-    public static final Type<TreeMap<String, List<VertexActivity>>> VERTEX_ACTIVITIES_BRBT_TYPE = SimpleType.simpleImmutableTypeFrom(
+    public static final Type<TreeMap<Integer, List<VertexActivity>>> VERTEX_ACTIVITIES_BRBT_TYPE = SimpleType.simpleImmutableTypeFrom(
             TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activities_brbt"),
             JSON_OBJ_MAPPER::writeValueAsBytes,
-            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<TreeMap<String, List<VertexActivity>>>() {
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<TreeMap<Integer, List<VertexActivity>>>() {
             }));
 
     // list
