@@ -268,9 +268,10 @@ public class VertexStorageFn implements StatefulFunction {
                 PriorityQueue<VertexActivity> vertexActivitiesPQ = context.storage().get(VERTEX_ACTIVITIES_PQ).orElse(
                         new PriorityQueue<>());
 
-                int len = vertexActivitiesPQ.size();
+                PriorityQueue<VertexActivity> tempPQ = new PriorityQueue<>(vertexActivitiesPQ);
+                int len = tempPQ.size();
                 for (int i = 0; i < len; i++) {
-                    VertexActivity curActivity = vertexActivitiesPQ.poll();
+                    VertexActivity curActivity = tempPQ.poll();
                     if (Integer.parseInt(curActivity.getTimestamp()) > endT) {
                         break;
                     }
