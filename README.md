@@ -62,12 +62,34 @@ docker-compose build
 docker-compose up
 ```
 
-Currently, three algorithms are implemented for queries, Connected Component algorithm, Strongly Connected Component algorithm and MiniBatch algorithm. Make sure to select the right ingress file and type using `scenarios_config.py`.
+Currently, four algorithms are implemented for queries, Connected Component algorithm, Strongly Connected Component algorithm,
+MiniBatch algorithm and Single Source Shortest Path algorithm.
+Make sure to select the right ingress file and type using `scenarios_config.py`.
 
 To see the results of query, you can execute the following command:
 
 ```shell
 docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic query-results --partition 0 --from-beginning --property print.key=true --property key.separator=" ** "
+```
+
+Notice that you have to set reasonable delay starting time for the query producer image using the config script based on how large your dataset is
+because you may want to see correct results after your graph is fully established.
+
+Another way is to decoupled the whole `docker-compose up` into three stages: 1) edge producing, 2) edge storage 3) query producing and processing
+by using the following commands:
+
+```shell
+docker-compose down
+docker-compose build
+# do edge producing, and you can check topic temporal-graph
+# to see whether your dataset is fully pushed into topic
+docker-compose up -d hesse-producer
+# hesse, statefun worker and statefun manager will store
+# the edges into RocksDB state backend
+docker-compose up -d statefun-worker
+# do query producing, and hesse will handle these queries
+# and show the results in topic query-results
+docker-compose up -d query-producer
 ```
 
 ## Advanced Tips
@@ -112,7 +134,24 @@ docker exec hesse_kafka_1 kafka-topics --list --zookeeper zookeeper:2181
 docker exec hesse_kafka_1 kafka-topics --delete --zookeeper zookeeper:2181 --topic example-temporal-graph
 ```
 
-* use curl to query
+* streaming mode
+
+You can not only feed query records from files, but also in streaming. Just feed the query into the topic `query`,
+hesse will process them and egress the results to topic `query-results`. The streaming query should for like
+`<query_id>:<original_record>`. Here is an example:
+
 ```shell
-curl -X PUT -H "Content-Type: application/vnd.connected-components.types/vertex" -d '{"vertex_id": "1", "neighbours": ["2", "3"]}' localhost:8090/connected-components.fns/vertex/1
+docker-compose exec kafka kafka-console-producer --broker-list kafka:9092 --topic query --property parse.key=true --property key.separator=:
+>5:{"query_id":"5", "user_id": "1", "vertex_id": "151", "query_type": "connected-components", "start_t": "0", "end_t": "300000"}
+
+docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic query-results --partition 0 --from-beginning --property print.key=true --property key.separator=" ** "
 ```
+
+
+[comment]: <> (* use curl to query)
+
+[comment]: <> (```shell)
+
+[comment]: <> (curl -X PUT -H "Content-Type: application/vnd.connected-components.types/vertex" -d '{"vertex_id": "1", "neighbours": ["2", "3"]}' localhost:8090/connected-components.fns/vertex/1)
+
+[comment]: <> (```)
