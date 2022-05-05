@@ -62,6 +62,8 @@ public class VertexStorageFn implements StatefulFunction {
 
     static Properties prop;
 
+    private static long IndexTime = 0L;
+
     static {
         try {
             prop = PropertyFileReader.readPropertyFile();
@@ -85,8 +87,10 @@ public class VertexStorageFn implements StatefulFunction {
     // use one ValueSpec for each bucket
     static TreeMap<String, ValueSpec<List<VertexActivity>>> bucketMap = new TreeMap<String, ValueSpec<List<VertexActivity>>>(new CustomizedComparator());
     static {
-        for(int i=0; i<VertexStorageFn.bucketSize; i++){
-            bucketMap.put(String.valueOf(i), ValueSpec.named("bucket"+i).withCustomType(Types.BUCKET_TYPE));
+        if(VertexStorageFn.storageParadigm == 4){
+            for(int i=0; i<VertexStorageFn.bucketSize; i++){
+                bucketMap.put(String.valueOf(i), ValueSpec.named("bucket"+i).withCustomType(Types.BUCKET_TYPE));
+            }
         }
     }
 
@@ -97,15 +101,19 @@ public class VertexStorageFn implements StatefulFunction {
     static {
         // if using storage paradigm 4, create the index
         if(VertexStorageFn.storageParadigm == 4){
+            VertexStorageFn.IndexTime = System.nanoTime();
             for (Map.Entry<String, ValueSpec<List<VertexActivity>>> e : bucketMap.entrySet()) {
                 builder.withValueSpec(e.getValue());
             }
+            VertexStorageFn.IndexTime = System.nanoTime() - VertexStorageFn.IndexTime;
         }
 
     }
     public static final StatefulFunctionSpec SPEC = builder.build();
 
     private static final TypeName KAFKA_PRODUCING_EGRESS = TypeName.typeNameOf("hesse.io", "producing-time");
+
+    private static final TypeName KAFKA_INDEXING_EGRESS = TypeName.typeNameOf("hesse.io", "indexing-time");
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(VertexStorageFn.class);
 
@@ -114,7 +122,14 @@ public class VertexStorageFn implements StatefulFunction {
 
         // read streaming temporal edges and convert them to adjacent list form
         if(message.is(Types.TEMPORAL_EDGE_TYPE)) {
+
             TemporalEdge temporalEdge = message.as(Types.TEMPORAL_EDGE_TYPE);
+
+            // egress the index time if using storage paradigm 4
+            if(context.self().id().equals("-1") && VertexStorageFn.storageParadigm == 4 && VertexStorageFn.IndexTime != 0L){
+                // egress all indexing time
+                egressIndexTime(context, VertexStorageFn.IndexTime);
+            }
 
             // hesse sets the start signature record (key: '-1', value: {'src_id': '-1', 'dst_id': '-1', 'timestamp': '-1'})
             // and the end signature record (key: '-2', value: {'src_id': '-2', 'dst_id': '-2', 'timestamp': '-2'})
@@ -457,6 +472,14 @@ public class VertexStorageFn implements StatefulFunction {
                 .withTopic("producing-time")
                 .withUtf8Key("producer")
                 .withUtf8Value(valueString)
+                .build());
+    }
+
+    private void egressIndexTime(Context context, long indexTime) {
+        context.send(KafkaEgressMessage.forEgress(KAFKA_INDEXING_EGRESS)
+                .withTopic("indexing-time")
+                .withUtf8Key("indexing")
+                .withUtf8Value(String.valueOf(indexTime))
                 .build());
     }
 
