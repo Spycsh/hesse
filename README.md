@@ -2,7 +2,7 @@
 
 A temporal graph library based on Flink Stateful Functions
 
-## Already Done (v1.0)
+## Already Done
 
 - [x] Architecture design and Docker environment
 - [x] Kafka Graph Ingress and Query Ingress Stream
@@ -32,19 +32,11 @@ This project aims to build a highly scalable and efficient graph processing libr
 
 ## Architecture
 
-The architecture is basically divided into storage, query and application layers. As you can see they are corresponding to the three folders in the project source folder. Flink Stateful Functions guarantee that each Function serve as a service and the functions specified in this project have their own context and communicate with each other by message passing. Currently, the Kafka ingress and egress are used. The containers are built and run in Docker environment.
-
-As Flink Statefun is native to FaaS (Function as a Service), users can easily make contribution to this library and add their own independent new applications or algorithms to this library. Functions can be remote or embedded with the consistency promise by Flink internals.
+The architecture is basically divided into storage, query and application layers. As you can see, they are corresponding to the three folders in the project source folder. Flink Stateful Functions guarantee that each Function serve as a service and the functions specified in this project have their own context and communicate with each other by message passing. Currently, the Kafka ingress and egress are used. The containers are built and run in Docker environment.
 
 The basic architecture is shown as follows:
 
 ![arch old](doc/arch_hesse.png)
-
-[comment]: <> (After redesigning in version 2.0 &#40;still in implementing&#41;, the new architecture will be as follows:)
-
-[comment]: <> (![arch]&#40;doc/arch_hesse_new.png&#41;)
-
-[comment]: <> (Regarding the hesse sql and its usage, please refer to [hesse sql]&#40;https://github.com/Spycsh/hesse-sql&#41;)
 
 ## How to use
 
@@ -72,10 +64,10 @@ To see the results of query, you can execute the following command:
 docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic query-results --partition 0 --from-beginning --property print.key=true --property key.separator=" ** "
 ```
 
-Notice that you have to set reasonable delay starting time for the query producer image using the config script based on how large your dataset is
+Notice that you should set reasonable delay starting time for the query producer image using the config script based on how large your dataset is
 because you may want to see correct results after your graph is fully established.
 
-Another way is to decoupled the whole `docker-compose up` into three stages: 1) edge producing, 2) edge storage 3) query producing and processing
+Another way is to decouple the whole `docker-compose up` into three stages: 1) edge producing, 2) edge storage 3) query producing and processing
 by using the following commands:
 
 ```shell
@@ -91,6 +83,9 @@ docker-compose up -d statefun-worker
 # and show the results in topic query-results
 docker-compose up -d query-producer
 ```
+
+Apart from the graph datasets and query stream that user can configure by editing the `docker-compose.yml`,
+users can configure other system parameters by editing `hesse.properties` and `log4j2.properties` in the `resources` folder.
 
 ## Advanced Tips
 
@@ -118,7 +113,7 @@ Here are the exposed topics:
 
 Hesse allow two ways of storage of the graph: 
 1) partition by vertex id (VertexStorageFn -> Applications)
-2) partition by partition id (ControllerFn -> PartitionManagerFn -> Applications)
+2) [Still in construction] partition by partition id (ControllerFn -> PartitionManagerFn -> Applications)
 
 The former will create context for each vertex and rely on Flink internal partitioning scheme
 
@@ -146,12 +141,3 @@ docker-compose exec kafka kafka-console-producer --broker-list kafka:9092 --topi
 
 docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic query-results --partition 0 --from-beginning --property print.key=true --property key.separator=" ** "
 ```
-
-
-[comment]: <> (* use curl to query)
-
-[comment]: <> (```shell)
-
-[comment]: <> (curl -X PUT -H "Content-Type: application/vnd.connected-components.types/vertex" -d '{"vertex_id": "1", "neighbours": ["2", "3"]}' localhost:8090/connected-components.fns/vertex/1)
-
-[comment]: <> (```)
