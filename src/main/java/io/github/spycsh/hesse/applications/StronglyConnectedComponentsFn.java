@@ -39,34 +39,45 @@ public class StronglyConnectedComponentsFn implements StatefulFunction {
 
             QuerySCCWithState q = message.as(Types.QUERY_SCC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-
             HashSet<String> neighbourIds = Utils.recoverStateByLog(vertexActivities);
 
-            ArrayList<QuerySCCContext> querySCCContexts = context.storage().get(QUERY_SCC_CONTEXT_LIST).orElse(new ArrayList<>());
-            /*
-              the first node only need to receive neighbourIds.size() results
-              set the component id to itself
-             */
-            ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
-                add(context.self().id());
-            }};
-            SCCPathContext sccPathContext = new SCCPathContext(generateNewStackHash(firstStk), context.self().id(), false, neighbourIds.size(), new HashSet<>());
-            querySCCContexts.add(new QuerySCCContext(q.getQueryId(), q.getUserId(),
-                    new ArrayList<SCCPathContext>(){{add(sccPathContext);}}));
+            // if there are no outer edges, directly egress
+            if(neighbourIds.size() == 0){
+                StringBuilder result = new StringBuilder();
+                String str1 = String.format("Result of query %s by user %s: no connected component found for node %s because it is isolated!\n",
+                        q.getQueryId(), q.getUserId(), context.self().id());
+                result.append(str1);
+                sendResult(context, q.getQueryId(), q.getUserId(), result.toString());
+            } else {
 
-            ArrayDeque<String> stack = new ArrayDeque<>();
-            stack.addFirst(q.getVertexId());    // add itself in the stack
-            for(String neighbourId:neighbourIds){
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), neighbourId)
-                        .withCustomType(
-                                Types.FORWARD_QUERY_SCC_TYPE,
-                                new ForwardQuerySCC(context.self().id(), neighbourId, stack, q)
-                        )
-                        .build());
+                ArrayList<QuerySCCContext> querySCCContexts = context.storage().get(QUERY_SCC_CONTEXT_LIST).orElse(new ArrayList<>());
+                /*
+                  the first node only need to receive neighbourIds.size() results
+                  set the component id to itself
+                 */
+                ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
+                    add(context.self().id());
+                }};
+                SCCPathContext sccPathContext = new SCCPathContext(generateNewStackHash(firstStk), context.self().id(), false, neighbourIds.size(), new HashSet<>());
+                querySCCContexts.add(new QuerySCCContext(q.getQueryId(), q.getUserId(),
+                        new ArrayList<SCCPathContext>() {{
+                            add(sccPathContext);
+                        }}));
+
+                ArrayDeque<String> stack = new ArrayDeque<>();
+                stack.addFirst(q.getVertexId());    // add itself in the stack
+                for (String neighbourId : neighbourIds) {
+                    context.send(MessageBuilder
+                            .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), neighbourId)
+                            .withCustomType(
+                                    Types.FORWARD_QUERY_SCC_TYPE,
+                                    new ForwardQuerySCC(context.self().id(), neighbourId, stack, q)
+                            )
+                            .build());
+                }
+
+                context.storage().set(QUERY_SCC_CONTEXT_LIST, querySCCContexts);
             }
-
-            context.storage().set(QUERY_SCC_CONTEXT_LIST, querySCCContexts);
         }
 
         if(message.is(Types.FORWARD_QUERY_SCC_WITH_STATE_TYPE)){

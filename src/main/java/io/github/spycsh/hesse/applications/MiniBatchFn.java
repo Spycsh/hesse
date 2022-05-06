@@ -47,47 +47,60 @@ public class MiniBatchFn implements StatefulFunction {
             List<VertexActivity> vertexActivities = q.getVertexActivities();
 
             HashSet<String> neighbourIds = Utils.recoverStateByLog(vertexActivities);
-            int H = q.getH();
-            int K = q.getK();
 
-            // the source of the original source of one query will be null
-            ArrayList<QueryMiniBatchContext> queryMiniBatchContextList =
-                    context.storage().get(QUERY_MINI_BATCH_CONTEXT_LIST).orElse(new ArrayList<>());
+            // if there are no outer edges, directly egress
+            if(neighbourIds.size() == 0){
+                StringBuilder result = new StringBuilder();
+                String str1 = String.format("Result of query %s by user %s: no connected component found for node %s because it is isolated!\n",
+                        q.getQueryId(), q.getUserId(), context.self().id());
+                result.append(str1);
+                sendResult(context, q.getQueryId(), q.getUserId(), result.toString());
+            }else {
+
+                int H = q.getH();
+                int K = q.getK();
+
+                // the source of the original source of one query will be null
+                ArrayList<QueryMiniBatchContext> queryMiniBatchContextList =
+                        context.storage().get(QUERY_MINI_BATCH_CONTEXT_LIST).orElse(new ArrayList<>());
 
 
-            ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
-                add(context.self().id());
-            }};
+                ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
+                    add(context.self().id());
+                }};
 
-            // it should collect H responses (when H is less than neighbour size, collect the neighbour size)
-            int responseNumToCollect = Math.min(H, neighbourIds.size());
+                // it should collect H responses (when H is less than neighbour size, collect the neighbour size)
+                int responseNumToCollect = Math.min(H, neighbourIds.size());
 
-            MiniBatchPathContext miniBatchPathContext = new MiniBatchPathContext(Utils.generateNewStackHash(firstStk), responseNumToCollect, new ArrayList<>());
-            queryMiniBatchContextList.add(new QueryMiniBatchContext(q.getQueryId(), q.getUserId(), new ArrayList<MiniBatchPathContext>(){{
-                add(miniBatchPathContext);
-            }}));
+                MiniBatchPathContext miniBatchPathContext = new MiniBatchPathContext(Utils.generateNewStackHash(firstStk), responseNumToCollect, new ArrayList<>());
+                queryMiniBatchContextList.add(new QueryMiniBatchContext(q.getQueryId(), q.getUserId(), new ArrayList<MiniBatchPathContext>() {{
+                    add(miniBatchPathContext);
+                }}));
 
-            context.storage().set(QUERY_MINI_BATCH_CONTEXT_LIST, queryMiniBatchContextList);
+                context.storage().set(QUERY_MINI_BATCH_CONTEXT_LIST, queryMiniBatchContextList);
 
-            // get randomized sample
-            ArrayList<String> neighbourIdList = new ArrayList<>(neighbourIds);
-            shuffle(neighbourIdList);
-            if(K > 0) {
-                int sampleCnt = H;
-                for (String neighbourId : neighbourIdList) {
-                    if (sampleCnt <= 0) break;  // get H sample
-                    sampleCnt -= 1;
+                // get randomized sample
+                ArrayList<String> neighbourIdList = new ArrayList<>(neighbourIds);
+                shuffle(neighbourIdList);
+                if (K > 0) {
+                    int sampleCnt = H;
+                    for (String neighbourId : neighbourIdList) {
+                        if (sampleCnt <= 0) break;  // get H sample
+                        sampleCnt -= 1;
 
-                    context.send(MessageBuilder
-                            .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), neighbourId)
-                            .withCustomType(
-                                    Types.FORWARD_QUERY_MINI_BATCH_TYPE,
-                                    new ForwardQueryMiniBatch(context.self().id(), neighbourId, q, q.getK() - 1, firstStk)
-                            )
-                            .build());
+                        context.send(MessageBuilder
+                                .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), neighbourId)
+                                .withCustomType(
+                                        Types.FORWARD_QUERY_MINI_BATCH_TYPE,
+                                        new ForwardQueryMiniBatch(context.self().id(), neighbourId, q, q.getK() - 1, firstStk)
+                                )
+                                .build());
+                    }
                 }
             }
-        } else if(message.is(Types.FORWARD_QUERY_MINI_BATCH_WITH_STATE_TYPE)){
+        }
+
+        if(message.is(Types.FORWARD_QUERY_MINI_BATCH_WITH_STATE_TYPE)){
             LOGGER.debug("[MiniBatchFn {}] ForwardQueryMiniBatchWithState received", context.self().id());
 
             ForwardQueryMiniBatchWithState q = message.as(Types.FORWARD_QUERY_MINI_BATCH_WITH_STATE_TYPE);

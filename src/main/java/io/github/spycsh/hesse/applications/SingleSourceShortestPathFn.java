@@ -132,19 +132,21 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
             ArrayList<QuerySSSPContext> querySSSPContexts = context.storage().get(QUERY_SSSP_CONTEXT_LIST).orElse(new ArrayList<>());
             QuerySSSPContext querySSSPContext = findSSSPContext(q.getQueryId(), q.getUserId(), querySSSPContexts);
 
+            if(querySSSPContext == null){
+                LOGGER.error("[SingleSourceShortestPathFn {}] querySSSPContext should not be null!", context.self().id());
+                throw new IllegalStateException("querySSSPContext should not be null!\n");
+            }
             Map<String, String> neighbourIdsWithWeight = querySSSPContext.getNeighbourIdsWithWeight();
             Map<String, List<String>> paths = querySSSPContext.getPaths();
             HashSet<String> vertexSet = querySSSPContext.getVertexSet();
             // get the distance to the queried neighbour
             String distToNeighbour = neighbourIdsWithWeight.get(q.getSourceId());
-            // get the path to the queried neighbour
-            List<String> pathToNeighbour = paths.get(q.getSourceId());
 
             // update the neighbourIdsWithWeight with the nextNeighbourIdsWithWeight
             for(Map.Entry<String, String> e:nextNeighbourIdsWithWeight.entrySet()){
                 String id1 = e.getKey();
+                double newDistToNextNeighbour = Double.parseDouble(distToNeighbour) + Double.parseDouble(e.getValue());
                 if(neighbourIdsWithWeight.containsKey(id1)){
-                    double newDistToNextNeighbour = Double.parseDouble(distToNeighbour) + Double.parseDouble(e.getValue());
                     if(newDistToNextNeighbour <= Double.parseDouble(neighbourIdsWithWeight.get(id1))){
                         // update the entry in the dist map and paths map only if it has shorter distance
                         neighbourIdsWithWeight.put(id1, String.valueOf(newDistToNextNeighbour));
@@ -154,8 +156,6 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
                         paths.put(id1, path);
                     }
                 } else {
-                    double newDistToNextNeighbour = Double.parseDouble(distToNeighbour) + Double.parseDouble(e.getValue());
-
                     // directly add an entry in the dist map and paths map
                     neighbourIdsWithWeight.put(id1, String.valueOf(newDistToNextNeighbour));
 
