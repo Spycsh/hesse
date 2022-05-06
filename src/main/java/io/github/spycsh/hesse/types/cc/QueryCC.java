@@ -1,6 +1,7 @@
 package io.github.spycsh.hesse.types.cc;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.spycsh.hesse.query.Query;
 
 public class QueryCC {
 
@@ -23,6 +24,15 @@ public class QueryCC {
     private int endT;
 
     public QueryCC() { }
+
+    public QueryCC(Query q){
+        this.queryId = q.getQueryId();
+        this.userId = q.getUserId();
+        this.vertexId = q.getVertexId();
+        this.queryType = q.getQueryType();
+        this.startT = q.getStartT();
+        this.endT = q.getEndT();
+    }
 
     public QueryCC(String queryId, String userId, String vertexId, String queryType, int startT, int endT) {
         this.queryId = queryId;

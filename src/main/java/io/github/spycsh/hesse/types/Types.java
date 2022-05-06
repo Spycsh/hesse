@@ -3,6 +3,7 @@ package io.github.spycsh.hesse.types;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.github.spycsh.hesse.query.Query;
 import io.github.spycsh.hesse.types.cc.*;
 import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.egress.VertexComponentChange;
@@ -332,4 +333,9 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryNextNeighboursInfo.class));
 
+    public static final Type<Query> QUERY_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, Query.class));
 }

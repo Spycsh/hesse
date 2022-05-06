@@ -1,6 +1,5 @@
 package io.github.spycsh.hesse.query;
 
-import io.github.spycsh.hesse.applications.ConnectedComponentsFn;
 import io.github.spycsh.hesse.types.HistoryQuery;
 import io.github.spycsh.hesse.types.cc.QueryCC;
 import io.github.spycsh.hesse.types.egress.QueryResult;
@@ -15,8 +14,6 @@ import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -39,109 +36,59 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
-        if(message.is(Types.QUERY_MINI_BATCH_TYPE)){
-            // send the query info to storage layer with the vertex id that is the query target
-            QueryMiniBatch q = message.as(Types.QUERY_MINI_BATCH_TYPE);
+        if(message.is(Types.QUERY_TYPE)) {
+            Query q = message.as(Types.QUERY_TYPE);
             String vertexId = q.getVertexId();
 
             LOGGER.info("[TemporalQueryHandler {}] Received Query {} from User {} of vertex {} with query type {}",
                     context.self().id(), q.getQueryId(), q.getUserId(), vertexId, q.getQueryType());
 
+            System.out.println(q);
+
             // check whether in cache the query exist
             long queryReceiveTime = System.currentTimeMillis();
             boolean queryExist = checkCache(context, q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(), queryReceiveTime);
 
-            if(!q.getQueryType().equals("mini-batch")){
-                LOGGER.error("[TemporalQueryHandler {}] query type should be mini-batch but receive" +
-                        "wrong type, check module.yaml or query ingress", context.self().id());
-                throw new IllegalArgumentException("[TemporalQueryHandler] query type should be mini-batch but receive" +
-                        "wrong type, check module.yaml or query ingress\n");
-            }
-
+            // check query type, create the corresponding message and send to storage layer
             if(!queryExist){
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
-                        .withCustomType(
-                                Types.QUERY_MINI_BATCH_TYPE,
-                                q)
-                        .build());
-            }
-
-        } else if(message.is(Types.QUERY_SCC_TYPE)){
-            QuerySCC q = message.as(Types.QUERY_SCC_TYPE);
-            String vertexId = q.getVertexId();
-
-            LOGGER.info("[TemporalQueryHandler {}] Received Query {} from User {} of vertex {} with query type {}",
-                    context.self().id(), q.getQueryId(), q.getUserId(), vertexId, q.getQueryType());
-
-            // check whether in cache the query exist
-            long queryReceiveTime = System.currentTimeMillis();
-            boolean queryExist = checkCache(context, q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(), queryReceiveTime);
-
-            if(!q.getQueryType().equals("strongly-connected-components")) {
-                LOGGER.error("[TemporalQueryHandler {}] query type should be strongly-connected-components but receive" +
-                        "wrong type, check module.yaml or query ingress", context.self().id());
-                throw new IllegalArgumentException("[TemporalQueryHandler] query type should be strongly-connected-components but receive" +
-                        "wrong type, check module.yaml or query ingress\n");
-            }
-            if(!queryExist){
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
-                        .withCustomType(
-                                Types.QUERY_SCC_TYPE,
-                                q)
-                        .build());
-            }
-
-        } else if(message.is(Types.QUERY_CC_TYPE)){
-            QueryCC q = message.as(Types.QUERY_CC_TYPE);
-            String vertexId = q.getVertexId();
-
-            LOGGER.info("[TemporalQueryHandler {}] Received Query {} from User {} of vertex {} with query type {}",
-                    context.self().id(), q.getQueryId(), q.getUserId(), vertexId, q.getQueryType());
-
-            // check whether in cache the query exist
-            long queryReceiveTime = System.currentTimeMillis();
-            boolean queryExist = checkCache(context, q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(), queryReceiveTime);
-
-            if(!q.getQueryType().equals("connected-components")) {
-                LOGGER.error("[TemporalQueryHandler {}] query type should be connected-components but receive" +
-                        "wrong type, check module.yaml or query ingress", context.self().id());
-                throw new IllegalArgumentException("[TemporalQueryHandler] query type should be connected-components but receive" +
-                        "wrong type, check module.yaml or query ingress\n");
-            }
-            if(!queryExist){
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
-                        .withCustomType(
-                                Types.QUERY_CC_TYPE,
-                                q)
-                        .build());
-            }
-        } else if(message.is(Types.QUERY_SSSP_TYPE)) {
-            QuerySSSP q = message.as(Types.QUERY_SSSP_TYPE);
-            String vertexId = q.getVertexId();
-
-            LOGGER.info("[TemporalQueryHandler {}] Received Query {} from User {} of vertex {} with query type {}",
-                    context.self().id(), q.getQueryId(), q.getUserId(), vertexId, q.getQueryType());
-
-            // check whether in cache the query exist
-            long queryReceiveTime = System.currentTimeMillis();
-            boolean queryExist = checkCache(context, q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(), queryReceiveTime);
-
-            if (!q.getQueryType().equals("single-source-shortest-path")) {
-                LOGGER.error("[TemporalQueryHandler {}] query type should be single-source-shortest-path but receive" +
-                        "wrong type, check module.yaml or query ingress", context.self().id());
-                throw new IllegalArgumentException("[TemporalQueryHandler] query type should be single-source-shortest-path but receive" +
-                        "wrong type, check module.yaml or query ingress\n");
-            }
-            if (!queryExist) {
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
-                        .withCustomType(
-                                Types.QUERY_SSSP_TYPE,
-                                q)
-                        .build());
+                switch (q.getQueryType()){
+                    case "connected-components": {
+                        context.send(MessageBuilder
+                                .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
+                                .withCustomType(
+                                        Types.QUERY_CC_TYPE,
+                                        new QueryCC(q))
+                                .build());
+                        break;
+                    }
+                    case "strongly-connected-components": {
+                        context.send(MessageBuilder
+                                .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
+                                .withCustomType(
+                                        Types.QUERY_SCC_TYPE,
+                                        new QuerySCC(q))
+                                .build());
+                        break;
+                    }
+                    case "mini-batch": {
+                        context.send(MessageBuilder
+                            .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
+                            .withCustomType(
+                                    Types.QUERY_MINI_BATCH_TYPE,
+                                    new QueryMiniBatch(q))
+                            .build());
+                        break;
+                    }
+                    case "single-source-shortest-path": {
+                        context.send(MessageBuilder
+                                .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
+                                .withCustomType(
+                                        Types.QUERY_SSSP_TYPE,
+                                        new QuerySSSP(q))
+                                .build());
+                        break;
+                    }
+                }
             }
         }
 

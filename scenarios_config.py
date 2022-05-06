@@ -1,4 +1,3 @@
-from typing import OrderedDict
 import yaml
 import os
 
@@ -28,14 +27,6 @@ query_file_name = d_q[index_q]
 
 print("\n")
 
-QUERY_TYPES = ['hesse.types/query_mini_batch', 'hesse.types/query_strongly_connected_component', 'hesse.types/query_connected_component',
-               'hesse.types/query_single_source_shortest_path']
-for i in range(len(QUERY_TYPES)):
-    print(str(i) + "\t" + QUERY_TYPES[i])
-index_q_type = input("select the query type:\n")
-query_type_name = QUERY_TYPES[int(index_q_type)]
-
-
 query_producer_delay_time = input("how long in seconds would you delay the start of query producer:\n")
 
 print("\n")
@@ -60,16 +51,6 @@ d['services']['hesse-producer']['volumes'][0] = "./" + graph_ingress_path + ":" 
 d['services']['hesse-query-producer']['environment']['APP_PATH'] = '/mnt/' + query_ingress_path
 d['services']['hesse-query-producer']['volumes'][0] = "./" + query_ingress_path + ":" + '/mnt/' + query_ingress_path
 d['services']['hesse-query-producer']['environment']['APP_DELAY_START_SECONDS'] = query_producer_delay_time
-
-
-idx = 5 # the index the query value type is located at
-for i in range(len(m_content)):
-    if i == idx:
-        m_content[i]['spec']['topics'][0]['valueType'] = query_type_name
-
-# begin to dump
-with open('module.yaml', 'w') as file:
-    yaml.safe_dump_all(m_content, file, sort_keys=False, default_flow_style=False)
 
 with open('docker-compose.yml', 'w') as file:
     yaml.safe_dump(d, file, sort_keys=False, default_flow_style=False)

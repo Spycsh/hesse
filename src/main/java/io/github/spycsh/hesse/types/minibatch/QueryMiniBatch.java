@@ -1,6 +1,7 @@
 package io.github.spycsh.hesse.types.minibatch;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.github.spycsh.hesse.query.Query;
 
 public class QueryMiniBatch {
 
@@ -29,6 +30,17 @@ public class QueryMiniBatch {
     private int k;
 
     public QueryMiniBatch() {}
+
+    public QueryMiniBatch(Query q){
+        this.queryId = q.getQueryId();
+        this.userId = q.getUserId();
+        this.vertexId = q.getVertexId();
+        this.queryType = q.getQueryType();
+        this.startT = q.getStartT();
+        this.endT = q.getEndT();
+        this.h = Integer.parseInt(q.getParameterMap().get("h"));
+        this.k = Integer.parseInt(q.getParameterMap().get("k"));
+    }
 
     public QueryMiniBatch(String queryId, String userId, String vertexId, String queryType, int startT, int endT, int h, int k) {
         this.queryId = queryId;

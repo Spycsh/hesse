@@ -1,9 +1,15 @@
-package io.github.spycsh.hesse.types.sssp;
+package io.github.spycsh.hesse.query;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.spycsh.hesse.query.Query;
 
-public class QuerySSSP {
+import java.util.HashMap;
+
+/**
+ * A unified class that each record in query stream will be serialized to
+ */
+public class Query {
     @JsonProperty("query_id")
     private String queryId;
 
@@ -22,25 +28,21 @@ public class QuerySSSP {
     @JsonProperty("end_t")
     private int endT;
 
-    public QuerySSSP() {
+    @JsonProperty("parameter_map")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private HashMap<String, String> parameterMap;
+
+    public Query() {
     }
 
-    public QuerySSSP(Query q){
-        this.queryId = q.getQueryId();
-        this.userId = q.getUserId();
-        this.vertexId = q.getVertexId();
-        this.queryType = q.getQueryType();
-        this.startT = q.getStartT();
-        this.endT = q.getEndT();
-    }
-
-    public QuerySSSP(String queryId, String userId, String vertexId, String queryType, int startT, int endT) {
+    public Query(String queryId, String userId, String vertexId, String queryType, int startT, int endT, HashMap<String, String> parameterMap) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
         this.queryType = queryType;
         this.startT = startT;
         this.endT = endT;
+        this.parameterMap = parameterMap;
     }
 
     public String getQueryId() {
@@ -89,5 +91,26 @@ public class QuerySSSP {
 
     public void setEndT(int endT) {
         this.endT = endT;
+    }
+
+    public HashMap<String, String> getParameterMap() {
+        return parameterMap;
+    }
+
+    public void setParameterMap(HashMap<String, String> parameterMap) {
+        this.parameterMap = parameterMap;
+    }
+
+    @Override
+    public String toString() {
+        return "Query{" +
+                "queryId='" + queryId + '\'' +
+                ", userId='" + userId + '\'' +
+                ", vertexId='" + vertexId + '\'' +
+                ", queryType='" + queryType + '\'' +
+                ", startT=" + startT +
+                ", endT=" + endT +
+                ", parameterMap=" + parameterMap +
+                '}';
     }
 }
