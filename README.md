@@ -73,15 +73,17 @@ by using the following commands:
 ```shell
 docker-compose down
 docker-compose build
+# open the benchmarks subscriber beforehand
+docker-compose up -d hesse-benchmarks
 # do edge producing, and you can check topic temporal-graph
 # to see whether your dataset is fully pushed into topic
-docker-compose up -d hesse-producer
+docker-compose up -d hesse-graph-producer
 # hesse, statefun worker and statefun manager will store
 # the edges into RocksDB state backend
 docker-compose up -d statefun-worker
 # do query producing, and hesse will handle these queries
 # and show the results in topic query-results
-docker-compose up -d query-producer
+docker-compose up -d hesse-query-producer
 ```
 
 Apart from the graph datasets and query stream that user can configure by editing the `docker-compose.yml`,
@@ -140,4 +142,12 @@ docker-compose exec kafka kafka-console-producer --broker-list kafka:9092 --topi
 >5:{"query_id":"5", "user_id": "1", "vertex_id": "151", "query_type": "connected-components", "start_t": "0", "end_t": "300000"}
 
 docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic query-results --partition 0 --from-beginning --property print.key=true --property key.separator=" ** "
+```
+
+* Hot Deploy
+
+After changing code in hesse, you can do a zero-downtime redeploy
+
+```shell
+docker-compose up -d --build hesse
 ```

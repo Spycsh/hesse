@@ -54,7 +54,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-  hesse-producer:
+  hesse-graph-producer:
     image: spycsh/edge-producer:latest
     depends_on:
     - kafka
@@ -87,3 +87,14 @@ services:
       APP_JSON_PATH: query_id
     volumes:
     - ./datasets/query/query_no_result.txt:/mnt/datasets/query/query_no_result.txt
+  hesse-benchmarks:
+    image: spycsh/hesse-benchmarks:latest
+    depends_on:
+      - kafka
+    links:
+      - kafka:kafka
+    environment:
+      APP_KAFKA_HOST: kafka:9092
+      APP_KAFKA_TOPICS: 'indexing-time producing-time storage-time filter-time query-results'
+    volumes:
+    - ./benchmarks:/app/results

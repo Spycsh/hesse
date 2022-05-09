@@ -45,8 +45,8 @@ with open('module.yaml', 'r') as file:
     for mm in m:
         m_content.append(mm)
 
-d['services']['hesse-producer']['environment']['APP_PATH'] = '/mnt/' + graph_ingress_path
-d['services']['hesse-producer']['volumes'][0] = "./" + graph_ingress_path + ":" + '/mnt/' + graph_ingress_path
+d['services']['hesse-graph-producer']['environment']['APP_PATH'] = '/mnt/' + graph_ingress_path
+d['services']['hesse-graph-producer']['volumes'][0] = "./" + graph_ingress_path + ":" + '/mnt/' + graph_ingress_path
 
 d['services']['hesse-query-producer']['environment']['APP_PATH'] = '/mnt/' + query_ingress_path
 d['services']['hesse-query-producer']['volumes'][0] = "./" + query_ingress_path + ":" + '/mnt/' + query_ingress_path
