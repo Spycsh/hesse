@@ -43,7 +43,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
             // if there are no outer edges, directly egress
             if(neighbourIds.size() == 0){
                 StringBuilder result = new StringBuilder();
-                String str1 = String.format("Result of query %s by user %s: no connected component found for node %s because it is isolated!\n",
+                String str1 = String.format("Result of query %s by user %s: no connected component found for node %s because it is isolated!",
                         q.getQueryId(), q.getUserId(), context.self().id());
                 result.append(str1);
                 sendResult(context, q.getQueryId(), q.getUserId(), result.toString());

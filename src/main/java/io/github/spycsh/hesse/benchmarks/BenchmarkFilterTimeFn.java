@@ -45,9 +45,9 @@ public class BenchmarkFilterTimeFn implements StatefulFunction {
             // egress current time to Kafka topic
             context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
                     .withTopic("filter-time")
-                    .withUtf8Key("filter "+ recordNumber)
-                    .withUtf8Value("current filtering time: " + time + ", overall time: " + overallTime +
-                            ", average time: " + averageTimeForEachRecord + ", this record's time: " + time)
+                    .withUtf8Key(String.valueOf(recordNumber))
+                    .withUtf8Value(String.format(
+                            "{\"time\":\"%s\", \"overall_time\":\"%s\", \"average_time\":\"%.1f\"}", time, overallTime, averageTimeForEachRecord))
                     .build());
         }
 

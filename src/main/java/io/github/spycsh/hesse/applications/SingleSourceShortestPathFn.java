@@ -54,7 +54,7 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
             // if there are no outer edges, directly egress
             if(neighbourIdsWithWeight.size() == 0){
                 StringBuilder result = new StringBuilder();
-                String str1 = String.format("Result of query %s by user %s: no shortest path from node %s because there are no outgoing edge from it!\n",
+                String str1 = String.format("Result of query %s by user %s: no shortest path from node %s because there are no outgoing edge from it!",
                         q.getQueryId(), q.getUserId(), context.self().id());
                 result.append(str1);
                 sendResult(context, q.getQueryId(), q.getUserId(), result.toString());

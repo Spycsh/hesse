@@ -121,8 +121,8 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
         context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
                 .withTopic("query-results")
                 .withUtf8Key(queryId + " " + userId)
-                .withUtf8Value(String.format("Result String: '%s', Duration: %s",
-                        result, duration))
+                .withUtf8Value(String.format(
+                        "{\"result_string\":\"%s\", \"time\":\"%s\"}", result, duration))
                 .build());
     }
 

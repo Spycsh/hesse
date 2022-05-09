@@ -45,8 +45,9 @@ public class BenchmarkStorageTimeFn implements StatefulFunction {
             // egress current time to Kafka topic
             context.send(KafkaEgressMessage.forEgress(KAFKA_EGRESS)
                     .withTopic("storage-time")
-                    .withUtf8Key("record "+ recordNumber + " storage")
-                    .withUtf8Value("overall time: " + overallTime + ", average time: " + averageTimeForEachRecord + ", this record's time: " + time)
+                    .withUtf8Key(String.valueOf(recordNumber))
+                    .withUtf8Value(String.format(
+                            "{\"time\":\"%s\", \"overall_time\":\"%s\", \"average_time\":\"%.1f\"}", time, overallTime, averageTimeForEachRecord))
                     .build());
         }
 

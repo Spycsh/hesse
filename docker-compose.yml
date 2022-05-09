@@ -78,23 +78,23 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/query/query_no_result.txt
+      APP_PATH: /mnt/datasets/query/query_cc_email.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: query
       APP_DELAY_SECONDS: 0
-      APP_DELAY_START_SECONDS: '20'
+      APP_DELAY_START_SECONDS: '0'
       APP_LOOP: 'false'
       APP_JSON_PATH: query_id
     volumes:
-    - ./datasets/query/query_no_result.txt:/mnt/datasets/query/query_no_result.txt
+    - ./datasets/query/query_cc_email.txt:/mnt/datasets/query/query_cc_email.txt
   hesse-benchmarks:
     image: spycsh/hesse-benchmarks:latest
     depends_on:
-      - kafka
+    - kafka
     links:
-      - kafka:kafka
+    - kafka:kafka
     environment:
       APP_KAFKA_HOST: kafka:9092
-      APP_KAFKA_TOPICS: 'indexing-time producing-time storage-time filter-time query-results'
+      APP_KAFKA_TOPICS: indexing-time producing-time storage-time filter-time query-results
     volumes:
     - ./benchmarks:/app/results
