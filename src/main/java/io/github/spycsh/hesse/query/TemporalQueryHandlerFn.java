@@ -3,6 +3,7 @@ package io.github.spycsh.hesse.query;
 import io.github.spycsh.hesse.types.HistoryQuery;
 import io.github.spycsh.hesse.types.cc.QueryCC;
 import io.github.spycsh.hesse.types.egress.QueryResult;
+import io.github.spycsh.hesse.types.pagerank.QueryPageRank;
 import io.github.spycsh.hesse.types.scc.QuerySCC;
 import io.github.spycsh.hesse.types.minibatch.QueryMiniBatch;
 import io.github.spycsh.hesse.types.Types;
@@ -85,6 +86,15 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
                                 .withCustomType(
                                         Types.QUERY_SSSP_TYPE,
                                         new QuerySSSP(q))
+                                .build());
+                        break;
+                    }
+                    case "pagerank": {
+                        context.send(MessageBuilder
+                                .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0") // TODO here only have one coordinator with id 0
+                                .withCustomType(
+                                        Types.QUERY_PAGERANK_TYPE,
+                                        new QueryPageRank(q))
                                 .build());
                         break;
                     }

@@ -39,7 +39,7 @@ public class BenchmarkFilterTimeFn implements StatefulFunction {
 
             context.storage().set(OVERALL_TIME, overallTime);
             context.storage().set(RECORD_NUMBER, recordNumber);
-            LOGGER.debug("[BenchmarkFilterTimeFn {}] current filtering time: {}, overall time in nano seconds: {}, record number: {}, average time for each filtering in nano seconds: {}",
+            LOGGER.trace("[BenchmarkFilterTimeFn {}] current filtering time: {}, overall time in nano seconds: {}, record number: {}, average time for each filtering in nano seconds: {}",
                     context.self().id(), time, overallTime, recordNumber, String.format("%.2f", averageTimeForEachRecord));
 
             // egress current time to Kafka topic

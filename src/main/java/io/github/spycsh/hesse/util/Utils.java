@@ -21,12 +21,12 @@ public class Utils {
         return neighbourIds;
     }
 
-    // recover direct neighbours with weight of a vertex by using its filtered activity log
+    // recover out-going direct neighbours with weight of a vertex by using its filtered activity log
     // if the input vertex activities do not have weights, let the weight of every edge be 1.0
     public static HashMap<String, String> recoverWeightedStateByLog(List<VertexActivity> activityLog) {
         HashMap<String, String> neighbourIdsWithWeight = new HashMap<>();
         for(VertexActivity activity:activityLog){
-            if(activity.getActivityType().equals("add")) {
+            if(activity.getActivityType().equals("add") && !activity.isIngoing()) {
                 if(activity.getWeight() != null){
                     neighbourIdsWithWeight.put(activity.getDstId(), activity.getWeight());
                 }else{
@@ -35,6 +35,16 @@ public class Utils {
             }
         }
         return neighbourIdsWithWeight;
+    }
+
+    public static int recoverInDegreeByLog(List<VertexActivity> activityLog){
+        int inDegree = 0;
+        for(VertexActivity activity:activityLog){
+            if(activity.getActivityType().equals("add") && activity.isIngoing()) {
+                inDegree += 1;
+            }
+        }
+        return inDegree;
     }
 
     public static int generateNewStackHash(ArrayDeque<String> stack) {

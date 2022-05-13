@@ -3,6 +3,7 @@ package io.github.spycsh.hesse;
 import io.github.spycsh.hesse.applications.*;
 import io.github.spycsh.hesse.benchmarks.BenchmarkFilterTimeFn;
 import io.github.spycsh.hesse.benchmarks.BenchmarkStorageTimeFn;
+import io.github.spycsh.hesse.coordination.CoordinatorFn;
 import io.github.spycsh.hesse.query.TemporalQueryHandlerFn;
 //import io.github.spycsh.hesse.storage.ControllerFn;
 //import io.github.spycsh.hesse.storage.PartitionManagerFn;
@@ -16,15 +17,18 @@ public class hesseAppServer {
 
     public static void main(String[] args) {
         final StatefulFunctions functions = new StatefulFunctions();
+
+        // register the storage functions
         // options 1: partition by partitionId
         // use controller -> partitionManager -> applications
-//        functions.withStatefulFunction(ControllerFn.SPEC);
-//        functions.withStatefulFunction(PartitionManagerFn.SPEC);
+        // functions.withStatefulFunction(ControllerFn.SPEC);
+        // functions.withStatefulFunction(PartitionManagerFn.SPEC);
         // options 2: partition by vertexId
         // use vertexStorage -> applications
         functions.withStatefulFunction(VertexStorageFn.SPEC);
-//        functions.withStatefulFunction(StreamingConnectedComponentsFn.SPEC);
-//        functions.withStatefulFunction(StreamingSingleSourceShortestPathFn.SPEC);
+
+        // register the coordination functions
+        functions.withStatefulFunction(CoordinatorFn.SPEC);
 
         // register the query functions
         functions.withStatefulFunction(TemporalQueryHandlerFn.SPEC);
@@ -32,6 +36,7 @@ public class hesseAppServer {
         functions.withStatefulFunction(ConnectedComponentsFn.SPEC);
         functions.withStatefulFunction(StronglyConnectedComponentsFn.SPEC);
         functions.withStatefulFunction(SingleSourceShortestPathFn.SPEC);
+        functions.withStatefulFunction(PageRankFn.SPEC);
 
         // register the benchmark functions
         functions.withStatefulFunction(BenchmarkStorageTimeFn.SPEC);

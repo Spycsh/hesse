@@ -9,11 +9,10 @@ import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.egress.VertexComponentChange;
 import io.github.spycsh.hesse.types.egress.VertexShortestPathChange;
 import io.github.spycsh.hesse.types.ingress.TemporalEdge;
-import io.github.spycsh.hesse.types.ingress.TemporalWeightedEdge;
 import io.github.spycsh.hesse.types.minibatch.*;
+import io.github.spycsh.hesse.types.pagerank.*;
 import io.github.spycsh.hesse.types.scc.*;
 import io.github.spycsh.hesse.types.sssp.*;
-import io.github.spycsh.hesse.util.CustomizedComparator;
 import org.apache.flink.statefun.sdk.java.TypeName;
 import org.apache.flink.statefun.sdk.java.types.SimpleType;
 import org.apache.flink.statefun.sdk.java.types.Type;
@@ -45,12 +44,11 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, TemporalEdge.class));
 
-    public static final Type<TemporalWeightedEdge> TEMPORAL_EDGE_WEIGHTED_TYPE =
+    public static final Type<VertexActivity> VERTEX_ACTIVITY_TYPE =
             SimpleType.simpleImmutableTypeFrom(
-                    TypeName.typeNameOf(TYPES_NAMESPACE, "temporal_edge_weighted"),
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "vertex_activity"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, TemporalWeightedEdge.class));
-
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, VertexActivity.class));
 
     /**
      * denote a list of edges hold by one partition
@@ -59,13 +57,6 @@ public class Types {
     public static final Type<HashSet<TemporalEdge>> TEMPORAL_EDGES_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "temporal_edges"),
-                    JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
-
-    @SuppressWarnings("unchecked")
-    public static final Type<HashSet<TemporalWeightedEdge>> TEMPORAL_EDGES_WEIGHTED_TYPE =
-            SimpleType.simpleImmutableTypeFrom(
-                    TypeName.typeNameOf(TYPES_NAMESPACE, "temporal_weighted_edges"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, HashSet.class));
 
@@ -145,6 +136,12 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_connected_component"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryCC.class));
+
+    public static final Type<QueryPageRank> QUERY_PAGERANK_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_pagerank"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryPageRank.class));
 
     /**
      * Type denoting a query of mini batch with state
@@ -273,6 +270,13 @@ public class Types {
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QuerySSSPContext>>() {
                     }));
 
+    public static final Type<ArrayList<PageRankContext>> PAGERANK_CONTEXT_LIST_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_context_list"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<PageRankContext>>() {
+                    }));
+
     public static final Type<QueryResult> QUERY_RESULT_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_result"),
@@ -338,4 +342,48 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, Query.class));
+
+    public static final Type<Set<String>> GRAPH_IDS_TYPE = SimpleType.simpleImmutableTypeFrom(
+            TypeName.typeNameOf(TYPES_NAMESPACE, "graph_ids"),
+            JSON_OBJ_MAPPER::writeValueAsBytes,
+            bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<HashSet<String>>() {
+            }));
+
+    public static final Type<PageRankTask> PAGERANK_TASK_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_task"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankTask.class));
+
+    public static final Type<PageRankTaskWithState> PAGERANK_TASK_WITH_STATE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_task_with_state"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankTaskWithState.class));
+
+    public static final Type<PageRankValueWithWeight> PAGERANK_VALUE_WITH_WEIGHT_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_value_with_weight"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankValueWithWeight.class));
+
+    public static final Type<Map<Integer, Map<String, Double>>> PAGERANK_RESULTS_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_results"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<Map<Integer, Map<String, Double>>>() {
+                    }));
+
+    public static final Type<QueryPageRankResult> QUERY_PAGERANK_RESULT_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_pagerank_result"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryPageRankResult.class));
+
+    public static final Type<PageRankContinueTask> PAGERANK_CONTINUE_TASK_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_continue_task"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankContinueTask.class));
+
 }

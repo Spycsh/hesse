@@ -10,6 +10,8 @@ import io.github.spycsh.hesse.types.minibatch.ForwardQueryMiniBatch;
 import io.github.spycsh.hesse.types.minibatch.ForwardQueryMiniBatchWithState;
 import io.github.spycsh.hesse.types.minibatch.QueryMiniBatch;
 import io.github.spycsh.hesse.types.minibatch.QueryMiniBatchWithState;
+import io.github.spycsh.hesse.types.pagerank.PageRankTask;
+import io.github.spycsh.hesse.types.pagerank.PageRankTaskWithState;
 import io.github.spycsh.hesse.types.scc.ForwardQuerySCC;
 import io.github.spycsh.hesse.types.scc.ForwardQuerySCCWithState;
 import io.github.spycsh.hesse.types.scc.QuerySCC;
@@ -35,12 +37,12 @@ import java.util.concurrent.CompletableFuture;
 public class VertexStorageFn implements StatefulFunction {
 
     private static final ValueSpec<Long> LAST_MESSAGE_TIME_VALUE = ValueSpec.named("lastMessageTime").withLongType();
-    // record increment of activities
-    private static final ValueSpec<Long> ACTIVITY_INDEX = ValueSpec.named("activityIndex").withLongType();
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.storage", "vertex-storage");
 
     static int storageParadigm = 2;    // default paradigm
+
+    static boolean storeIngoingEdges = false;
 
     /**
      * A pre-config event time interval that used to separate
@@ -53,16 +55,12 @@ public class VertexStorageFn implements StatefulFunction {
      * This is specifically used for BRBT storage paradigm 3 and 4
      */
     private static int eventTimeInterval = 5;
-
     private static int bucketSize = 10;
-
     private static int T0 = 0;
-
     private static int Tt = 2000000000;
+    private static long IndexTime = 0L;
 
     static Properties prop;
-
-    private static long IndexTime = 0L;
 
     static {
         try {
@@ -77,13 +75,13 @@ public class VertexStorageFn implements StatefulFunction {
         VertexStorageFn.Tt = Integer.parseInt(prop.getProperty("Tt"));
         // BUCKET_NUMBER = ceil((Tt – T0)/ TIME_INTERVAL)
         VertexStorageFn.bucketSize = (int) Math.ceil(((double) Tt - (double) T0) / eventTimeInterval);
+        VertexStorageFn.storeIngoingEdges = Boolean.parseBoolean(prop.getProperty("STORE_INGOING_EDGES"));
     }
 
-    // valueSpecs of the vertex activities
+    // valueSpecs of outer vertex activities
     private static final ValueSpec<List<VertexActivity>> VERTEX_ACTIVITIES_LIST = ValueSpec.named("vertexActivitiesList").withCustomType(Types.VERTEX_ACTIVITIES_LIST_TYPE);
     private static final ValueSpec<PriorityQueue<VertexActivity>> VERTEX_ACTIVITIES_PQ = ValueSpec.named("vertexActivitiesPQ").withCustomType(Types.VERTEX_ACTIVITIES_PQ_TYPE);
     private static final ValueSpec<TreeMap<Integer, List<VertexActivity>>> VERTEX_ACTIVITIES_BRBT = ValueSpec.named("vertexActivitiesBRBT").withCustomType(Types.VERTEX_ACTIVITIES_BRBT_TYPE);
-
     // use one ValueSpec for each bucket
     static TreeMap<String, ValueSpec<List<VertexActivity>>> bucketMap = new TreeMap<String, ValueSpec<List<VertexActivity>>>(new CustomizedComparator());
     static {
@@ -97,7 +95,7 @@ public class VertexStorageFn implements StatefulFunction {
     // start to build the StatefulFunctionSpec
     static StatefulFunctionSpec.Builder builder = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(VertexStorageFn::new)
-            .withValueSpecs(VERTEX_ACTIVITIES_LIST, VERTEX_ACTIVITIES_PQ, VERTEX_ACTIVITIES_BRBT, ACTIVITY_INDEX);
+            .withValueSpecs(VERTEX_ACTIVITIES_LIST, VERTEX_ACTIVITIES_PQ, VERTEX_ACTIVITIES_BRBT);
     static {
         // if using storage paradigm 4, create the index
         if(VertexStorageFn.storageParadigm == 4){
@@ -105,14 +103,15 @@ public class VertexStorageFn implements StatefulFunction {
             for (Map.Entry<String, ValueSpec<List<VertexActivity>>> e : bucketMap.entrySet()) {
                 builder.withValueSpec(e.getValue());
             }
+
             VertexStorageFn.IndexTime = System.nanoTime() - VertexStorageFn.IndexTime;
+
         }
 
     }
     public static final StatefulFunctionSpec SPEC = builder.build();
 
     private static final TypeName KAFKA_PRODUCING_EGRESS = TypeName.typeNameOf("hesse.io", "producing-time");
-
     private static final TypeName KAFKA_INDEXING_EGRESS = TypeName.typeNameOf("hesse.io", "indexing-time");
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(VertexStorageFn.class);
@@ -122,7 +121,6 @@ public class VertexStorageFn implements StatefulFunction {
 
         // read streaming temporal edges and convert them to adjacent list form
         if(message.is(Types.TEMPORAL_EDGE_TYPE)) {
-
             TemporalEdge temporalEdge = message.as(Types.TEMPORAL_EDGE_TYPE);
 
             // egress the index time if using storage paradigm 4
@@ -138,7 +136,6 @@ public class VertexStorageFn implements StatefulFunction {
                 String valueString = "time that the first temporal edge arrives: "+ System.currentTimeMillis();
                 LOGGER.debug(valueString);
                 egressProducingTime(context, valueString);
-
             }
             if(context.self().id().equals("-2") && temporalEdge.getDstId().equals("-2") && temporalEdge.getTimestamp().equals("-2")){
                 String valueString = "time that the last temporal edge arrives: "+ System.currentTimeMillis();
@@ -152,18 +149,33 @@ public class VertexStorageFn implements StatefulFunction {
                 // should use this to recover to specified state and serve query
                 // TODO transaction here
                 long storageStartTime = System.nanoTime();
-                storeActivity(context, temporalEdge);
+                storeActivity(context, new VertexActivity("add", temporalEdge, false));
+                if(VertexStorageFn.storeIngoingEdges) {
+                    storeIngoingActivity(context, new VertexActivity("add", temporalEdge, true));
+                }
                 long storageEndTime = System.nanoTime();
                 context.send(MessageBuilder
                         .forAddress(TypeName.typeNameOf("hesse.benchmarks", "benchmark-storage-time"), "1")
                         .withValue(storageEndTime - storageStartTime)
                         .build());
 
-                long activityIndex = context.storage().get(ACTIVITY_INDEX).orElse(1L);
-                LOGGER.debug("[VertexStorageFn {}] process activity {}", context.self().id(), activityIndex);
-                context.storage().set(ACTIVITY_INDEX, activityIndex + 1);
+                // send all the nodes ids to Coordinator 0
+                context.send(MessageBuilder
+                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0")
+                        .withValue(temporalEdge.getSrcId() + " " + temporalEdge.getDstId())
+                        .build());
             }
+        }
 
+        if(message.is(Types.VERTEX_ACTIVITY_TYPE)){
+            VertexActivity activity = message.as(Types.VERTEX_ACTIVITY_TYPE);
+            long storageStartTime = System.nanoTime();
+            storeActivity(context, activity);
+            long storageEndTime = System.nanoTime();
+            context.send(MessageBuilder
+                    .forAddress(TypeName.typeNameOf("hesse.benchmarks", "benchmark-storage-time"), "1")
+                    .withValue(storageEndTime - storageStartTime)
+                    .build());
         }
 
         // handle the queries of mini batch
@@ -220,6 +232,18 @@ public class VertexStorageFn implements StatefulFunction {
             sendQuerySingleSourceShortestPathWithStateToApp(context, queryWithState);
         }
 
+        if(message.is(Types.PAGERANK_TASK_TYPE)){
+            PageRankTask q = message.as(Types.PAGERANK_TASK_TYPE);
+            LOGGER.info("[VertexStorageFn {}] PageRankTask received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
+
+            List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
+            PageRankTaskWithState taskWithState = new PageRankTaskWithState(
+                    q,
+                    filteredActivityList
+            );
+            sendPageRankTaskWithStateToApp(context, taskWithState);
+        }
+
         if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
             ForwardQueryMiniBatch q = message.as(Types.FORWARD_QUERY_MINI_BATCH_TYPE);
             LOGGER.info("[VertexStorageFn {}] ForwardQueryMiniBatch received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
@@ -264,6 +288,17 @@ public class VertexStorageFn implements StatefulFunction {
         }
 
         return context.done();
+    }
+
+    // forward the ingoing vertex activity to destination node
+    // to store ingoing activity in the destination node's context
+    private void storeIngoingActivity(Context context, VertexActivity activity) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), activity.getDstId())
+                .withCustomType(
+                        Types.VERTEX_ACTIVITY_TYPE,
+                        activity)
+                .build());
     }
 
     private List<VertexActivity> filterActivityListByTimeRegion(Context context, int startT, int endT) {
@@ -337,17 +372,13 @@ public class VertexStorageFn implements StatefulFunction {
         return vertexActivitiesRes;
     }
 
-    @Deprecated
-    private List<VertexActivity> filterActivityListFromBeginningToT(Context context, int T) {
-        return filterActivityListByTimeRegion(context, 0, T);
-    }
 
-    private void storeActivity(Context context, TemporalEdge temporalEdge) {
+    private void storeActivity(Context context, VertexActivity activity) {
         switch (storageParadigm){
             case 1: {
                 List<VertexActivity> vertexActivitiesList = context.storage().get(VERTEX_ACTIVITIES_LIST).orElse(new LinkedList<>());
                 // append into list
-                vertexActivitiesList.add(new VertexActivity("add", temporalEdge));
+                vertexActivitiesList.add(activity);
                 context.storage().set(VERTEX_ACTIVITIES_LIST, vertexActivitiesList);
                 break;
             }
@@ -355,31 +386,28 @@ public class VertexStorageFn implements StatefulFunction {
                 PriorityQueue<VertexActivity> vertexActivitiesPQ = context.storage().get(VERTEX_ACTIVITIES_PQ).orElse(
                         new PriorityQueue<>());
                 // append into pq
-                vertexActivitiesPQ.add(new VertexActivity("add", temporalEdge));
-
+                vertexActivitiesPQ.add(activity);
                 context.storage().set(VERTEX_ACTIVITIES_PQ, vertexActivitiesPQ);
                 break;
             }
             case 3: {
                 TreeMap<Integer, List<VertexActivity>> vertexActivitiesBRBT =
                         context.storage().get(VERTEX_ACTIVITIES_BRBT).orElse(new TreeMap<>());
-                int t = Integer.parseInt(temporalEdge.getTimestamp());
+                int t = Integer.parseInt(activity.getTimestamp());
                 int batchIndex = t / eventTimeInterval;
                 List<VertexActivity> batchActivity = vertexActivitiesBRBT.getOrDefault(batchIndex, new LinkedList<>());
-                batchActivity.add(
-                        new VertexActivity("add",
-                                temporalEdge));
+                batchActivity.add(activity);
                 vertexActivitiesBRBT.put(batchIndex, batchActivity);
 
                 context.storage().set(VERTEX_ACTIVITIES_BRBT, vertexActivitiesBRBT);
                 break;
             }
             case 4: {
-                int t = Integer.parseInt(temporalEdge.getTimestamp());
+                int t = Integer.parseInt(activity.getTimestamp());
                 String bucketIndex = calculateBucketIndex(T0, eventTimeInterval, t);
                 // System.out.println(bucketIndex + ":" + bucketMap.size() + ":" + t);
                 List<VertexActivity> vertexActivities = context.storage().get(bucketMap.get(bucketIndex)).orElse(new LinkedList<>());
-                vertexActivities.add(new VertexActivity("add", temporalEdge));
+                vertexActivities.add(activity);
                 context.storage().set(bucketMap.get(bucketIndex), vertexActivities);
                 break;
             }
@@ -467,6 +495,16 @@ public class VertexStorageFn implements StatefulFunction {
                 .build());
     }
 
+
+    private void sendPageRankTaskWithStateToApp(Context context, PageRankTaskWithState taskWithState) {
+        context.send(MessageBuilder
+                .forAddress(TypeName.typeNameOf("hesse.applications", "pagerank"), context.self().id())
+                .withCustomType(
+                        Types.PAGERANK_TASK_WITH_STATE_TYPE,
+                        taskWithState)
+                .build());
+    }
+
     private void egressProducingTime(Context context, String valueString) {
         context.send(KafkaEgressMessage.forEgress(KAFKA_PRODUCING_EGRESS)
                 .withTopic("producing-time")
@@ -481,16 +519,5 @@ public class VertexStorageFn implements StatefulFunction {
                 .withUtf8Key("indexing")
                 .withUtf8Value(String.valueOf(indexTime))
                 .build());
-    }
-
-    @Deprecated
-    private long getDiffTime(Context context) {
-        long curUnixTime = System.currentTimeMillis();
-        long lastMessageTime = context.storage().get(LAST_MESSAGE_TIME_VALUE).orElse(-1L);
-        if(lastMessageTime == -1){
-            context.storage().set(LAST_MESSAGE_TIME_VALUE, curUnixTime);
-            return 0L;
-        }
-        return curUnixTime - lastMessageTime;
     }
 }

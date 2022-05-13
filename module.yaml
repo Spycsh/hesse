@@ -21,6 +21,13 @@ spec:
 ---
 kind: io.statefun.endpoints.v2/http
 spec:
+  functions: hesse.coordination/*
+  urlPathTemplate: http://hesse:1108/
+  transport:
+    type: io.statefun.transports.v1/async
+---
+kind: io.statefun.endpoints.v2/http
+spec:
   functions: hesse.benchmarks/*
   urlPathTemplate: http://hesse:1108/
   transport:
@@ -51,13 +58,6 @@ spec:
     valueType: hesse.types/query
     targets:
     - hesse.query/temporal-query-handler
----
-kind: io.statefun.kafka.v1/egress
-spec:
-  id: hesse.io/partition-edges
-  address: kafka:9092
-  deliverySemantic:
-    type: at-least-once
 ---
 kind: io.statefun.kafka.v1/egress
 spec:

@@ -1,0 +1,1 @@
+{"query_id": "1", "user_id": "1", "vertex_id": "all", "query_type": "pagerank", "start_t": "0", "end_t":"50", "parameter_map": {"iterations":"10"}}

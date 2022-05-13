@@ -1,38 +1,31 @@
 package io.github.spycsh.hesse.types;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.spycsh.hesse.types.ingress.TemporalEdge;
 
 public class VertexActivity implements Comparable<VertexActivity>{
+    @JsonProperty("activity_type")
     private String activityType;
-
+    @JsonProperty("src_id")
     private String srcId;
+    @JsonProperty("dst_id")
     private String dstId;
+    @JsonProperty("weight")
     private String weight;
+    @JsonProperty("timestamp")
     private String timestamp;
+    @JsonProperty("ingoing")
+    private boolean ingoing;
 
     public VertexActivity() {}
 
-    public VertexActivity(String activityType, String srcId, String dstId, String timestamp) {
-        this.activityType = activityType;
-        this.srcId = srcId;
-        this.dstId = dstId;
-        this.timestamp = timestamp;
-    }
-
-    public VertexActivity(String activityType, String srcId, String dstId, String weight, String timestamp) {
-        this.activityType = activityType;
-        this.srcId = srcId;
-        this.dstId = dstId;
-        this.weight = weight;
-        this.timestamp = timestamp;
-    }
-
-    public VertexActivity(String activityType, TemporalEdge temporalEdge) {
+    public VertexActivity(String activityType, TemporalEdge temporalEdge, boolean ingoing) {
         this.activityType = activityType;
         this.srcId = temporalEdge.getSrcId();
         this.dstId = temporalEdge.getDstId();
         this.weight = temporalEdge.getWeight();
         this.timestamp = temporalEdge.getTimestamp();
+        this.ingoing = ingoing;
     }
 
     public void setWeight(String weight) {
@@ -73,6 +66,14 @@ public class VertexActivity implements Comparable<VertexActivity>{
 
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public boolean isIngoing() {
+        return ingoing;
+    }
+
+    public void setIngoing(boolean ingoing) {
+        this.ingoing = ingoing;
     }
 
     @Override

@@ -39,7 +39,7 @@ public class BenchmarkStorageTimeFn implements StatefulFunction {
 
             context.storage().set(OVERALL_TIME, overallTime);
             context.storage().set(RECORD_NUMBER, recordNumber);
-            LOGGER.debug("[BenchmarkStorageTimeFn {}] overall time in nano seconds: {}, record number: {}, average time for each record in nano seconds: {}",
+            LOGGER.trace("[BenchmarkStorageTimeFn {}] overall time in nano seconds: {}, record number: {}, average time for each record in nano seconds: {}",
                     context.self().id(), overallTime, recordNumber, String.format("%.2f", averageTimeForEachRecord));
 
             // egress current time to Kafka topic

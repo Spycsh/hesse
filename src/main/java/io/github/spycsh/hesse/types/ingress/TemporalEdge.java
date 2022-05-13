@@ -17,7 +17,6 @@ public class TemporalEdge {
     @JsonProperty("timestamp")
     private String timestamp;
 
-
     public TemporalEdge() {}
 
     public String getSrcId() {
