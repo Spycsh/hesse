@@ -21,8 +21,8 @@ A temporal graph library based on Flink Stateful Functions
 - [x] Measurement of time for ingestion of edges
 - [x] Break storage TreeMap buckets into different ValueSpecs and see the performances 
 - [x] Query Concurrency investigation on different concurrent applications
+- [x] Support of Single-Source-Shortest-Path algorithm and PageRank (optional)
 - [ ] Exploration on remote and local Statefun
-- [ ] Support of Single-Source-Shortest-Path algorithm and PageRank (optional)
 - [ ] LRU cache of query and vertex state
 - [ ] Performance benchmarking comparing with other temporal graph engines
 
@@ -54,8 +54,8 @@ docker-compose build
 docker-compose up
 ```
 
-Currently, four algorithms are implemented for queries, Connected Component algorithm, Strongly Connected Component algorithm,
-MiniBatch algorithm and Single Source Shortest Path algorithm.
+Currently, five algorithms are implemented for queries, Connected Component algorithm, Strongly Connected Component algorithm,
+MiniBatch algorithm, Single Source Shortest Path algorithm, and PageRank algorithm.
 Make sure to select the right ingress file and type using `scenarios_config.py`.
 
 To see the results of query, you can execute the following command:
@@ -146,7 +146,7 @@ docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 -
 
 * Hot Deploy
 
-After changing code in hesse, you can do a zero-downtime redeploy
+After changing code in hesse (for example add an algorithm), you can do a hot redeploy
 
 ```shell
 docker-compose up -d --build hesse
