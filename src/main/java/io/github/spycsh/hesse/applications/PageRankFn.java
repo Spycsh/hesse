@@ -38,18 +38,47 @@ public class PageRankFn implements StatefulFunction {
             Map<String, String> neighbourIdsWithWeight = Utils.recoverWeightedStateByLog(q.getVertexActivities());
             int inDegree = Utils.recoverInDegreeByLog(q.getVertexActivities());
 
-            // if this time window this node does not exist
-            // send 0.0 to this node
+            // if in this time window this node does not exist
+            // set its pagerankValue null
             if(neighbourIdsWithWeight.size() == 0 && inDegree == 0){
                 context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0")
+                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), q.getCoordinatorId())
                         .withCustomType(Types.QUERY_PAGERANK_RESULT_TYPE,
-                                new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), 0.0))
+                                new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), null))
                         .build());
+
+                ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
+                pageRankContexts.add(new PageRankContext(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), 0.0,
+                        0.0, 0, inDegree, neighbourIdsWithWeight, q.getCoordinatorId()));
+                context.storage().set(PAGE_RANK_CONTEXT_LIST, pageRankContexts);
+            } else if(inDegree == 0) {
+                // the node exists
+                // only has outgoing edge, will not receive any messages
+                // should directly send a message back to coordinator
+                context.send(MessageBuilder
+                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), q.getCoordinatorId())
+                        .withCustomType(Types.QUERY_PAGERANK_RESULT_TYPE,
+                                new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), String.valueOf(1-DAMPING_FACTOR)))
+                        .build());
+
+                ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
+                pageRankContexts.add(new PageRankContext(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), 1-DAMPING_FACTOR,
+                        0.0, 0, inDegree, neighbourIdsWithWeight, q.getCoordinatorId()));
+                context.storage().set(PAGE_RANK_CONTEXT_LIST, pageRankContexts);
+
+                // for all neighbours, send own PR value with weights
+                for(Map.Entry<String, String> e : neighbourIdsWithWeight.entrySet()) {
+                    context.send(MessageBuilder
+                            .forAddress(TypeName.typeNameOf("hesse.applications", "pagerank"), e.getKey())
+                            .withCustomType(
+                                    Types.PAGERANK_VALUE_WITH_WEIGHT_TYPE,
+                                    new PageRankValueWithWeight(q.getQueryId(), q.getUserId(), 1.0, Double.parseDouble(e.getValue()), neighbourIdsWithWeight.size()))
+                            .build());
+                }
             } else {
                 ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
                 pageRankContexts.add(new PageRankContext(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), 1.0,
-                        0.0, 0, inDegree, neighbourIdsWithWeight));
+                        0.0, 0, inDegree, neighbourIdsWithWeight, q.getCoordinatorId()));
                 context.storage().set(PAGE_RANK_CONTEXT_LIST, pageRankContexts);
 
                 // for all neighbours, send own PR value with weights
@@ -82,7 +111,7 @@ public class PageRankFn implements StatefulFunction {
             collectedDegree += 1;
             if(collectedDegree == pageRankContext.getInDegree()){
                 pageRankContext.setCurrentCollectedDegree(0);
-                double newValue = DAMPING_FACTOR + (1 - DAMPING_FACTOR) * sum;
+                double newValue = 1 - DAMPING_FACTOR + DAMPING_FACTOR * sum;
 
                 pageRankContext.setPreviousPrValue(newValue);
                 // clear the current pr value
@@ -90,9 +119,9 @@ public class PageRankFn implements StatefulFunction {
 
                 // send current pagerank value to coordinator
                 context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0")
+                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), pageRankContext.getCoordinatorId())
                         .withCustomType(Types.QUERY_PAGERANK_RESULT_TYPE,
-                                new QueryPageRankResult(p.getQueryId(), p.getUserId(), context.self().id(), newValue))
+                                new QueryPageRankResult(p.getQueryId(), p.getUserId(), context.self().id(), String.valueOf(newValue)))
                         .build());
             } else {
                 pageRankContext.setPreviousPrValue(sum);
@@ -111,13 +140,32 @@ public class PageRankFn implements StatefulFunction {
             ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
             PageRankContext pageRankContext = findPageRankContext(q.getQueryId(), q.getUserId(), pageRankContexts);
 
-            if(pageRankContext == null){
+            if(pageRankContext.getInDegree() == 0 && pageRankContext.getNeighbourIdsWithWeight().size() == 0){
                 context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0")
+                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), pageRankContext.getCoordinatorId())
                         .withCustomType(Types.QUERY_PAGERANK_RESULT_TYPE,
-                                new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), 0.0))
+                                new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), null))
                         .build());
-            }else{
+            }else if(pageRankContext.getInDegree() == 0) {
+                context.send(MessageBuilder
+                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), pageRankContext.getCoordinatorId())
+                        .withCustomType(Types.QUERY_PAGERANK_RESULT_TYPE,
+                                new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), String.valueOf(1-DAMPING_FACTOR)))
+                        .build());
+                Map<String, String> neighbourIdsWithWeight = pageRankContext.getNeighbourIdsWithWeight();
+
+                // for all neighbours, send own PR value with weights
+                for(Map.Entry<String, String> e:neighbourIdsWithWeight.entrySet()) {
+                    context.send(MessageBuilder
+                            .forAddress(TypeName.typeNameOf("hesse.applications", "pagerank"), e.getKey())
+                            .withCustomType(
+                                    Types.PAGERANK_VALUE_WITH_WEIGHT_TYPE,
+                                    new PageRankValueWithWeight(q.getQueryId(), q.getUserId(),
+                                            pageRankContext.getPreviousPrValue(), Double.parseDouble(e.getValue()),
+                                            neighbourIdsWithWeight.size()))
+                            .build());
+                }
+            } else{
                 Map<String, String> neighbourIdsWithWeight = pageRankContext.getNeighbourIdsWithWeight();
 
                 // for all neighbours, send own PR value with weights

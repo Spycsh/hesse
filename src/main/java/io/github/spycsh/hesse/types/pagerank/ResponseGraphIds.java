@@ -2,7 +2,9 @@ package io.github.spycsh.hesse.types.pagerank;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class PageRankTask {
+import java.util.Set;
+
+public class ResponseGraphIds {
     @JsonProperty("query_id")
     private String queryId;
 
@@ -15,26 +17,18 @@ public class PageRankTask {
     @JsonProperty("end_t")
     private int endT;
 
-    @JsonProperty("coordinator_id")
-    private String coordinatorId;
+    @JsonProperty("graph_ids")
+    private Set<String> graphIds;
 
-    public PageRankTask() {
+    public ResponseGraphIds() {
     }
 
-    public PageRankTask(String queryId, String userId, int startT, int endT, String coordinatorId) {
+    public ResponseGraphIds(String queryId, String userId, int startT, int endT, Set<String> graphIds) {
         this.queryId = queryId;
         this.userId = userId;
         this.startT = startT;
         this.endT = endT;
-        this.coordinatorId = coordinatorId;
-    }
-
-    public String getCoordinatorId() {
-        return coordinatorId;
-    }
-
-    public void setCoordinatorId(String coordinatorId) {
-        this.coordinatorId = coordinatorId;
+        this.graphIds = graphIds;
     }
 
     public String getQueryId() {
@@ -69,4 +63,11 @@ public class PageRankTask {
         this.endT = endT;
     }
 
+    public Set<String> getGraphIds() {
+        return graphIds;
+    }
+
+    public void setGraphIds(Set<String> graphIds) {
+        this.graphIds = graphIds;
+    }
 }

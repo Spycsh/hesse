@@ -367,11 +367,11 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankValueWithWeight.class));
 
-    public static final Type<Map<Integer, Map<String, Double>>> PAGERANK_RESULTS_TYPE =
+    public static final Type<Map<Integer, Map<String, String>>> PAGERANK_RESULTS_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_results"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<Map<Integer, Map<String, Double>>>() {
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<Map<Integer, Map<String, String>>>() {
                     }));
 
     public static final Type<QueryPageRankResult> QUERY_PAGERANK_RESULT_TYPE =
@@ -386,4 +386,15 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankContinueTask.class));
 
+    public static final Type<QueryGraphIds> QUERY_GRAPH_IDS_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_graph_ids"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryGraphIds.class));
+
+    public static final Type<ResponseGraphIds> RESPONSE_GRAPH_IDS_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "response_graph_ids"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ResponseGraphIds.class));
 }

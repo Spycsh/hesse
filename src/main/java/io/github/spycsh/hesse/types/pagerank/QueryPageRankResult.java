@@ -13,12 +13,12 @@ public class QueryPageRankResult {
     private String vertexId;
 
     @JsonProperty("pagerank_value")
-    private double pagerankValue;
+    private String pagerankValue;
 
     public QueryPageRankResult() {
     }
 
-    public QueryPageRankResult(String queryId, String userId, String vertexId, double pagerankValue) {
+    public QueryPageRankResult(String queryId, String userId, String vertexId, String pagerankValue) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
@@ -41,11 +41,11 @@ public class QueryPageRankResult {
         this.userId = userId;
     }
 
-    public double getPagerankValue() {
+    public String getPagerankValue() {
         return pagerankValue;
     }
 
-    public void setPagerankValue(double pagerankValue) {
+    public void setPagerankValue(String pagerankValue) {
         this.pagerankValue = pagerankValue;
     }
 

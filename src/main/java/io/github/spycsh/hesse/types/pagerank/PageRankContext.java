@@ -32,10 +32,15 @@ public class PageRankContext {
     @JsonProperty("neighbour_ids_with_weight")
     Map<String, String> neighbourIdsWithWeight;
 
+    @JsonProperty("coordinator_id")
+    private String coordinatorId;
+
     public PageRankContext() {
     }
 
-    public PageRankContext(String queryId, String userId, int startT, int endT, double previousPrValue, double currentPrValue, int currentCollectedDegree, int inDegree, Map<String, String> neighbourIdsWithWeight) {
+    public PageRankContext(String queryId, String userId, int startT, int endT, double previousPrValue,
+                           double currentPrValue, int currentCollectedDegree,
+                           int inDegree, Map<String, String> neighbourIdsWithWeight, String coordinatorId) {
         this.queryId = queryId;
         this.userId = userId;
         this.startT = startT;
@@ -45,6 +50,15 @@ public class PageRankContext {
         this.currentCollectedDegree = currentCollectedDegree;
         this.inDegree = inDegree;
         this.neighbourIdsWithWeight = neighbourIdsWithWeight;
+        this.coordinatorId = coordinatorId;
+    }
+
+    public String getCoordinatorId() {
+        return coordinatorId;
+    }
+
+    public void setCoordinatorId(String coordinatorId) {
+        this.coordinatorId = coordinatorId;
     }
 
     public int getCurrentCollectedDegree() {

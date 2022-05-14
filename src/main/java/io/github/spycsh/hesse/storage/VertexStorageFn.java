@@ -36,8 +36,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public class VertexStorageFn implements StatefulFunction {
 
-    private static final ValueSpec<Long> LAST_MESSAGE_TIME_VALUE = ValueSpec.named("lastMessageTime").withLongType();
-
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.storage", "vertex-storage");
 
     static int storageParadigm = 2;    // default paradigm

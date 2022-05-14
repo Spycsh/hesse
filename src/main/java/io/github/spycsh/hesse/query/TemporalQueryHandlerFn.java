@@ -44,8 +44,6 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
             LOGGER.info("[TemporalQueryHandler {}] Received Query {} from User {} of vertex {} with query type {}",
                     context.self().id(), q.getQueryId(), q.getUserId(), vertexId, q.getQueryType());
 
-            System.out.println(q);
-
             // check whether in cache the query exist
             long queryReceiveTime = System.currentTimeMillis();
             boolean queryExist = checkCache(context, q.getQueryId(), q.getUserId(), q.getVertexId(), q.getQueryType(), queryReceiveTime);
@@ -91,7 +89,8 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
                     }
                     case "pagerank": {
                         context.send(MessageBuilder
-                                .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0") // TODO here only have one coordinator with id 0
+                                .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"),
+                                        q.getQueryId() + "_" + q.getUserId())   // send to coordinator "qid uid"
                                 .withCustomType(
                                         Types.QUERY_PAGERANK_TYPE,
                                         new QueryPageRank(q))

@@ -2,10 +2,7 @@ package io.github.spycsh.hesse.coordination;
 
 import io.github.spycsh.hesse.types.Types;
 import io.github.spycsh.hesse.types.egress.QueryResult;
-import io.github.spycsh.hesse.types.pagerank.PageRankContinueTask;
-import io.github.spycsh.hesse.types.pagerank.PageRankTask;
-import io.github.spycsh.hesse.types.pagerank.QueryPageRank;
-import io.github.spycsh.hesse.types.pagerank.QueryPageRankResult;
+import io.github.spycsh.hesse.types.pagerank.*;
 import org.apache.flink.statefun.sdk.java.*;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
@@ -31,7 +28,7 @@ public class CoordinatorFn implements StatefulFunction {
     // current collected response number
     private static final ValueSpec<Integer> CURRENT_RESPONSE_COLLECTED = ValueSpec.named("currentResponseCollected").withIntType();
     // page rank results for each round
-    private static final ValueSpec<Map<Integer, Map<String, Double>>> PAGERANK_RESULTS = ValueSpec.named("pagerankResults").withCustomType(Types.PAGERANK_RESULTS_TYPE);
+    private static final ValueSpec<Map<Integer, Map<String, String>>> PAGERANK_RESULTS = ValueSpec.named("pagerankResults").withCustomType(Types.PAGERANK_RESULTS_TYPE);
 
     private static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.coordination", "coordinator");
 
@@ -56,6 +53,31 @@ public class CoordinatorFn implements StatefulFunction {
             context.storage().set(GRAPH_IDS, graphIds);
         }
 
+        if(message.is(Types.QUERY_GRAPH_IDS_TYPE)){
+            LOGGER.debug("[CoordinatorFn {}] QueryGraphIds received", context.self().id());
+            QueryGraphIds q = message.as(Types.QUERY_GRAPH_IDS_TYPE);
+
+            Set<String> set = context.storage().get(GRAPH_IDS).orElse(new HashSet<>());
+
+            context.send(MessageBuilder
+                    .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), q.getSourceId())
+                    .withCustomType(
+                            Types.RESPONSE_GRAPH_IDS_TYPE,
+                            new ResponseGraphIds(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), set))
+                    .build());
+        }
+
+        if(message.is(Types.RESPONSE_GRAPH_IDS_TYPE)){
+            LOGGER.debug("[CoordinatorFn {}] ResponseGraphIds received", context.self().id());
+            ResponseGraphIds q = message.as(Types.RESPONSE_GRAPH_IDS_TYPE);
+            Set<String> set = q.getGraphIds();
+            context.storage().set(GRAPH_IDS, set);
+
+            context.storage().set(RESPONSE_TO_COLLECT, set.size());
+            context.storage().set(CURRENT_RESPONSE_COLLECTED, 0);
+            broadcastTask(context, set, q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT());
+        }
+
         if(message.is(Types.QUERY_PAGERANK_TYPE)){
             LOGGER.debug("[CoordinatorFn {}] QueryPageRank received", context.self().id());
             QueryPageRank q = message.as(Types.QUERY_PAGERANK_TYPE);
@@ -65,28 +87,43 @@ public class CoordinatorFn implements StatefulFunction {
                 // context.storage().set(CURRENT_ITERATION, 0);
 
                 Set<String> set = context.storage().get(GRAPH_IDS).orElse(new HashSet<>());
-                context.storage().set(RESPONSE_TO_COLLECT, set.size());
-                context.storage().set(CURRENT_RESPONSE_COLLECTED, 0);
-                broadcastTask(context, set, q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT());
+
+                if(set.size() == 0){
+                    // multiple concurrent coordinator, one coordinator responsible for one query
+                    // ask for Coordinator 0 for graph ids
+                    context.send(MessageBuilder
+                            .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0")
+                            .withCustomType(
+                                    Types.QUERY_GRAPH_IDS_TYPE,
+                                    new QueryGraphIds(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), context.self().id()))
+                            .build());
+                } else{
+                    context.storage().set(RESPONSE_TO_COLLECT, set.size());
+                    context.storage().set(CURRENT_RESPONSE_COLLECTED, 0);
+                    broadcastTask(context, set, q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT());
+                }
+
             }
         }
 
         // receive the pagerank value from one vertex
         if(message.is(Types.QUERY_PAGERANK_RESULT_TYPE)){
-            LOGGER.debug("[CoordinatorFn {}] QueryPageRankResult received", context.self().id());
             QueryPageRankResult q = message.as(Types.QUERY_PAGERANK_RESULT_TYPE);
+            LOGGER.debug("[CoordinatorFn {}] QueryPageRankResult received from {}", context.self().id(), q.getVertexId());
+
             int currentResponseCollected = context.storage().get(CURRENT_RESPONSE_COLLECTED).orElse(0);
             currentResponseCollected += 1;
             int responseToCollect = context.storage().get(RESPONSE_TO_COLLECT).orElse(0);
-            System.out.println("responseToCollect:"+responseToCollect);
+            LOGGER.debug("[CoordinatorFn {}] response to collect: {}", context.self().id(), responseToCollect);
+            LOGGER.debug("[CoordinatorFn {}] current collect: {}", context.self().id(), currentResponseCollected);
 
             int currentIteration = context.storage().get(CURRENT_ITERATION).orElse(1);
             int iterations = context.storage().get(ITERATIONS).orElse(0);
 
-            Map<Integer, Map<String, Double>> res = context.storage().get(PAGERANK_RESULTS).orElse(new HashMap<>());
+            Map<Integer, Map<String, String>> res = context.storage().get(PAGERANK_RESULTS).orElse(new HashMap<>());
 
             // store the new pagerank value into the overall result map
-            Map<String, Double> oneIterationResult = res.getOrDefault(currentIteration, new HashMap<>());
+            Map<String, String> oneIterationResult = res.getOrDefault(currentIteration, new HashMap<>());
             oneIterationResult.put(q.getVertexId(), q.getPagerankValue());
             res.put(currentIteration, oneIterationResult);
             context.storage().set(PAGERANK_RESULTS, res);
@@ -134,7 +171,7 @@ public class CoordinatorFn implements StatefulFunction {
                     .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), e)
                     .withCustomType(
                             Types.PAGERANK_TASK_TYPE,
-                            new PageRankTask(qid, uid, startT, endT)
+                            new PageRankTask(qid, uid, startT, endT, context.self().id())
                     )
                     .build());
         }

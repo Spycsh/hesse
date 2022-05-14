@@ -22,23 +22,36 @@ public class PageRankTaskWithState {
     @JsonProperty("vertex_activities")
     List<VertexActivity> vertexActivities = new ArrayList<>();
 
+    @JsonProperty("coordinator_id")
+    private String coordinatorId;
+
     public PageRankTaskWithState() {
     }
 
-    public PageRankTaskWithState(PageRankTask q, List<VertexActivity> vertexActivities){
-        this.queryId = q.getQueryId();
-        this.userId = q.getUserId();
-        this.startT = q.getStartT();
-        this.endT = q.getEndT();
-        this.vertexActivities = vertexActivities;
-    }
-
-    public PageRankTaskWithState(String queryId, String userId, int startT, int endT, int inDegree, List<VertexActivity> vertexActivities) {
+    public PageRankTaskWithState(String queryId, String userId, int startT, int endT, List<VertexActivity> vertexActivities, String coordinatorId) {
         this.queryId = queryId;
         this.userId = userId;
         this.startT = startT;
         this.endT = endT;
         this.vertexActivities = vertexActivities;
+        this.coordinatorId = coordinatorId;
+    }
+
+    public PageRankTaskWithState(PageRankTask q, List<VertexActivity> filteredActivityList) {
+        this.queryId = q.getQueryId();
+        this.userId = q.getUserId();
+        this.startT = q.getStartT();
+        this.endT = q.getEndT();
+        this.vertexActivities = filteredActivityList;
+        this.coordinatorId = q.getCoordinatorId();
+    }
+
+    public String getCoordinatorId() {
+        return coordinatorId;
+    }
+
+    public void setCoordinatorId(String coordinatorId) {
+        this.coordinatorId = coordinatorId;
     }
 
     public String getQueryId() {
