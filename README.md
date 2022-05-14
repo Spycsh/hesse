@@ -8,31 +8,39 @@ A temporal graph library based on Flink Stateful Functions
 - [x] Kafka Graph Ingress and Query Ingress Stream
 - [x] Connected Component, Strongly Connected Component, MiniBatch algorithms based on Graph Traversal
 - [x] A basic non-benchmarking storage paradigm using TreeMap with persistence
-- [x] Query support for three algorithms on arbitrary time window
+- [x] Query support for three algorithms on arbitrary time windows
 - [x] Query cache
 - [x] Time calculation for query
-
-## TODO
-
 - [x] User-configurable Implementation of different storage paradigms
 - [x] Performance benchmarking for different storage paradigms
 - [x] Measurement of time for queries of three algorithms
-- [x] add Logger and set logger level to eliminate effect of print statements on time measurement
+- [x] add Logger and set logger level to eliminate the effect of print statements on time measurement
 - [x] Measurement of time for ingestion of edges
-- [x] Break storage TreeMap buckets into different ValueSpecs and see the performances 
+- [x] Break storage TreeMap buckets into different ValueSpecs and see the performances
 - [x] Query Concurrency investigation on different concurrent applications
-- [x] Support of Single-Source-Shortest-Path algorithm and PageRank (optional)
-- [ ] Exploration on remote and local Statefun
+- [x] Support of Single-Source-Shortest-Path algorithm and PageRank
+
+## TODO
+
+- [ ] Micro-benchmarking and Macro-benchmarking on different datasets
+- [ ] Exploration of remote and local Statefun
 - [ ] LRU cache of query and vertex state
-- [ ] Performance benchmarking comparing with other temporal graph engines
+- [ ] Performance benchmarking compared with other temporal graph engines
 
 ## Features
 
-This project aims to build a highly scalable and efficient graph processing library on top of [Flink Statefun Functions](https://nightlies.apache.org/flink/flink-statefun-docs-stable/). It provides efficient storage of temporal graph and implement the query of graph state at any specific event time for different graph algorithms.
+This project aims to build a best-effort event-driven distributed temporal graph analytics library on top of [Flink Stateful Functions](https://nightlies.apache.org/flink/flink-statefun-docs-stable/).
+It provides efficient storage of temporal graphs and supports different types of queries on different graph algorithms in arbitrary event-time windows.
+The support of arbitrary event-time window query means that Hesse will recover the graph state by applying all the activities in the
+the event-time window for temporal queries of different applications.
 
 ## Architecture
 
-The architecture is basically divided into storage, query and application layers. As you can see, they are corresponding to the three folders in the project source folder. Flink Stateful Functions guarantee that each Function serve as a service and the functions specified in this project have their own context and communicate with each other by message passing. Currently, the Kafka ingress and egress are used. The containers are built and run in Docker environment.
+The core architecture is divided into the Ingress, the storage, query, coordination, application layers, and the Egress.
+Flink Stateful Functions guarantee that each Function has its own context and communicates with each other by message passing.
+Therefore, Hesse is to some extent a group of event-driven functions.
+They provide powerful functionalities and flexibility in the FaaS way.
+Currently, the Kafka ingress and egress are used. The containers are built and run in the Docker environment.
 
 The basic architecture is shown as follows:
 
@@ -40,7 +48,8 @@ The basic architecture is shown as follows:
 
 ## How to use
 
-There are different scenarios so far you can try out, I write a simple [script](./scenarios_config.py) to help you select the right scenario. For developers, you can write your own to replace `docker-compose.yml` and `module.yaml`.
+There are different scenarios so far you can try out, I write a simple [script](./scenarios_config.py) to help you select the right scenario.
+For developers, you can write your own `docker-compose.yml` and `module.yaml` to add your services or scenarios.
 
 ```
 python scenarios_config.py
@@ -58,13 +67,13 @@ Currently, five algorithms are implemented for queries, Connected Component algo
 MiniBatch algorithm, Single Source Shortest Path algorithm, and PageRank algorithm.
 Make sure to select the right ingress file and type using `scenarios_config.py`.
 
-To see the results of query, you can execute the following command:
+To see the results of a query, you can execute the following command:
 
 ```shell
 docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 --topic query-results --partition 0 --from-beginning --property print.key=true --property key.separator=" ** "
 ```
 
-Notice that you should set reasonable delay starting time for the query producer image using the config script based on how large your dataset is
+Notice that you should set a reasonable delay starting time for the query producer image using the config script based on how large your dataset is
 because you may want to see correct results after your graph is fully established.
 
 Another way is to decouple the whole `docker-compose up` into three stages: 1) edge producing, 2) edge storage 3) query producing and processing
@@ -86,8 +95,39 @@ docker-compose up -d statefun-worker
 docker-compose up -d hesse-query-producer
 ```
 
-Apart from the graph datasets and query stream that user can configure by editing the `docker-compose.yml`,
+Apart from the graph datasets and query stream that users can configure by editing the `docker-compose.yml`,
 users can configure other system parameters by editing `hesse.properties` and `log4j2.properties` in the `resources` folder.
+
+## Applications
+
+Here are some examples of queries, and the corresponding JSON query strings as streaming ingress:
+
+* What is the connected component id of vertex 151 between time 0 and 400000 and all the vertex ids in the same connected component?
+
+```json
+{"query_id": "1", "user_id": "1", "vertex_id": "151", "query_type": "connected-components", "start_t": "0", "end_t":"400000"}
+```
+
+* What is the single source shortest path from vertex 151 to the other approachable vertexes and the path distance between time 0 and 400000?
+
+```json
+{"query_id": "2", "user_id": "1", "vertex_id": "151", "query_type": "single-source-shortest-path", "start_t": "0", "end_t":"400000"}
+```
+
+* What is the neighbourhood spanning from (Breadth-First search) vertex 151 with hop size 2 and sample size 2 between time 0 and 400000?
+
+```json
+{"query_id": "3", "user_id": "1", "vertex_id": "151", "query_type": "mini-batch", "start_t": "0", "end_t":"400000", "parameter_map": {"h": "2", "k": "2"}}
+```
+
+* What is the PageRank value in 10 iterations of all the vertexes between time 0 and 150?
+
+```json
+{"query_id": "4", "user_id": "1", "vertex_id": "all", "query_type": "pagerank", "start_t": "0", "end_t":"150", "parameter_map": {"iterations":"10"}}
+```
+
+Hesse even allows you to put these different types of queries with different parameters into one file to feed into the query stream.
+For more examples, see the `datasets/query` folder.
 
 ## Advanced Tips
 
@@ -113,16 +153,16 @@ Here are the exposed topics:
 
 * use partition manager:
 
-Hesse allow two ways of storage of the graph: 
+Hesse allow two ways of storage of the graph:
 1) partition by vertex id (VertexStorageFn -> Applications)
 2) [Still in construction] partition by partition id (ControllerFn -> PartitionManagerFn -> Applications)
 
-The former will create context for each vertex and rely on Flink internal partitioning scheme
+The former will create a context for each vertex and rely on Flink's internal partitioning scheme
 
-The latter will offer a coarse granularity, where several nodes are classified to one partition,
+The latter will offer a coarse granularity, where several nodes are classified into one partition,
 and they share one context
 
-This can also be configured in module.yaml with the ingress targets field
+This can also be configured in `module.yaml` with the ingress targets field
 
 * delete corrupted topics
 
@@ -134,8 +174,8 @@ docker exec hesse_kafka_1 kafka-topics --delete --zookeeper zookeeper:2181 --top
 * streaming mode
 
 You can not only feed query records from files, but also in streaming. Just feed the query into the topic `query`,
-hesse will process them and egress the results to topic `query-results`. The streaming query should for like
-`<query_id>:<original_record>`. Here is an example:
+hesse will process them and egress the results to topic `query-results`. The streaming query should be like
+`<query_id>:<json_query_body>`. Here is an example:
 
 ```shell
 docker-compose exec kafka kafka-console-producer --broker-list kafka:9092 --topic query --property parse.key=true --property key.separator=:
@@ -146,7 +186,7 @@ docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 -
 
 * Hot Deploy
 
-After changing code in hesse (for example add an algorithm), you can do a hot redeploy
+After changing code in hesse (for example, add an application algorithm), you can do a hot-redeploy
 
 ```shell
 docker-compose up -d --build hesse
