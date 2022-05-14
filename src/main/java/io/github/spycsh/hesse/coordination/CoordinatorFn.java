@@ -148,8 +148,9 @@ public class CoordinatorFn implements StatefulFunction {
                                     new QueryResult(q.getQueryId(), q.getUserId(), res.toString()))
                             .build());
 
-                    // clear iteration
-                    context.storage().set(CURRENT_ITERATION, 0);
+                    // clear all state of this query
+                    clearPageRankWorkerState(context, context.storage().get(GRAPH_IDS).orElse(new HashSet<>()), q.getQueryId(), q.getUserId());
+                    clearCoordinatorState(context);
 
                 }else{
                     context.storage().set(CURRENT_ITERATION, currentIteration);
@@ -188,4 +189,24 @@ public class CoordinatorFn implements StatefulFunction {
                     .build());
         }
     }
+
+    private void clearCoordinatorState(Context context) {
+        context.storage().remove(GRAPH_IDS);
+        context.storage().remove(ITERATIONS);
+        context.storage().remove(CURRENT_ITERATION);
+        context.storage().remove(RESPONSE_TO_COLLECT);
+        context.storage().remove(CURRENT_RESPONSE_COLLECTED);
+        context.storage().remove(PAGERANK_RESULTS);
+    }
+
+    private void clearPageRankWorkerState(Context context, Set<String> set, String qid, String uid) {
+        for(String e : set){
+            context.send(MessageBuilder
+                    .forAddress(TypeName.typeNameOf("hesse.applications", "pagerank"), e)
+                    .withCustomType(
+                            Types.PAGERANK_CONTEXT_CLEAR_TYPE,
+                            new PageRankContextClear(qid, uid)
+                    )
+                    .build());
+        }    }
 }

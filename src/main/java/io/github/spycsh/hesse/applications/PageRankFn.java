@@ -180,8 +180,15 @@ public class PageRankFn implements StatefulFunction {
                             .build());
                 }
             }
+        }
 
+        if(message.is(Types.PAGERANK_CONTEXT_CLEAR_TYPE)){
+            LOGGER.debug("[PageRankFn {}] PageRankContextClear received", context.self().id());
 
+            PageRankContextClear p = message.as(Types.PAGERANK_CONTEXT_CLEAR_TYPE);
+            ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
+            PageRankContext pageRankContext = findPageRankContext(p.getQueryId(), p.getUserId(), context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>()));
+            pageRankContexts.remove(pageRankContext);
         }
 
         return context.done();

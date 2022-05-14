@@ -397,4 +397,11 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "response_graph_ids"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, ResponseGraphIds.class));
+
+    public static final Type<PageRankContextClear> PAGERANK_CONTEXT_CLEAR_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_context_clear"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankContextClear.class));
+
 }
