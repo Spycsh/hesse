@@ -61,16 +61,14 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/graph/example_sssp_edges_1.txt
+      APP_PATH: /mnt/datasets/graph/email_edges_undirected.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: temporal-graph
       APP_DELAY_SECONDS: 0
       APP_LOOP: 'false'
       APP_JSON_PATH: src_id
-      APP_FILE_START_SIG: 'true'
-      APP_FILE_END_SIG: 'true'
     volumes:
-    - ./datasets/graph/example_sssp_edges_1.txt:/mnt/datasets/graph/example_sssp_edges_1.txt
+    - ./datasets/graph/email_edges_undirected.txt:/mnt/datasets/graph/email_edges_undirected.txt
   hesse-query-producer:
     image: spycsh/query-producer:latest
     depends_on:
@@ -78,15 +76,15 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/query/query_sssp_1.txt
+      APP_PATH: /mnt/datasets/query/query_cc_email.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: query
       APP_DELAY_SECONDS: 0
-      APP_DELAY_START_SECONDS: '30'
+      APP_DELAY_START_SECONDS: '200'
       APP_LOOP: 'false'
       APP_JSON_PATH: query_id
     volumes:
-    - ./datasets/query/query_sssp_1.txt:/mnt/datasets/query/query_sssp_1.txt
+    - ./datasets/query/query_cc_email.txt:/mnt/datasets/query/query_cc_email.txt
   hesse-benchmarks:
     image: spycsh/hesse-benchmarks:latest
     depends_on:
@@ -95,6 +93,8 @@ services:
     - kafka:kafka
     environment:
       APP_KAFKA_HOST: kafka:9092
-      APP_KAFKA_TOPICS: storage-time filter-time query-results
+      APP_KAFKA_TOPICS: storage-time filter-time query-results indexing-time producing-time
+      APP_PLOT_FLAG: 'true'
+      APP_DELAY_PLOT_START_SECONDS: 100
     volumes:
     - ./benchmarks:/app/results

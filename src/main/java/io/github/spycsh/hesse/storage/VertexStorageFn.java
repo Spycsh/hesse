@@ -33,6 +33,9 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * partition by vertexId storage function
+ * each vertex storage function instance will be distributed
+ * to different Flink StateFun workers by using hash partitioning
+ * on its address and the partitioning is transparent to users
  */
 public class VertexStorageFn implements StatefulFunction {
 
@@ -121,9 +124,10 @@ public class VertexStorageFn implements StatefulFunction {
         if(message.is(Types.TEMPORAL_EDGE_TYPE)) {
             TemporalEdge temporalEdge = message.as(Types.TEMPORAL_EDGE_TYPE);
 
-            // egress the index time if using storage paradigm 4
-            if(context.self().id().equals("-1") && VertexStorageFn.storageParadigm == 4 && VertexStorageFn.IndexTime != 0L){
-                // egress all indexing time
+            if(VertexStorageFn.storageParadigm == 4 && VertexStorageFn.IndexTime != 0L){
+                // egress indexing time
+                // static field has no atomic control, so this can produce several same index time
+                // but it is just a benchmark metric for one storage paradigm so it does not matter
                 egressIndexTime(context, VertexStorageFn.IndexTime);
             }
 

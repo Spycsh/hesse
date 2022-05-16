@@ -48,11 +48,11 @@ The basic architecture is shown as follows:
 
 ## How to use
 
-There are different scenarios so far you can try out, I write a simple [script](./scenarios_config.py) to help you select the right scenario.
+There are different scenarios so far you can try out, I write a simple [script](scripts/scenarios_config.py) to help you select the right scenario.
 For developers, you can write your own `docker-compose.yml` and `module.yaml` to add your services or scenarios.
 
 ```
-python scenarios_config.py
+python scripts/scenarios_config.py
 ```
 
 build the environment and start the containers
@@ -65,7 +65,7 @@ docker-compose up
 
 Currently, five algorithms are implemented for queries, Connected Component algorithm, Strongly Connected Component algorithm,
 MiniBatch algorithm, Single Source Shortest Path algorithm, and PageRank algorithm.
-Make sure to select the right ingress file and type using `scenarios_config.py`.
+Make sure to select the right ingress file and type using `scripts/scenarios_config.py`.
 
 To see the results of a query, you can execute the following command:
 
@@ -150,19 +150,6 @@ Here are the exposed topics:
 |producing-time|time of producing all records by Kafka|egress|
 |filter-time|time of filtering edge activities at arbitrary time windows|egress|
 |indexing-time|time of indexing (only used for storage paradigm 4)|egress|
-
-* use partition manager:
-
-Hesse allow two ways of storage of the graph:
-1) partition by vertex id (VertexStorageFn -> Applications)
-2) [Still in construction] partition by partition id (ControllerFn -> PartitionManagerFn -> Applications)
-
-The former will create a context for each vertex and rely on Flink's internal partitioning scheme
-
-The latter will offer a coarse granularity, where several nodes are classified into one partition,
-and they share one context
-
-This can also be configured in `module.yaml` with the ingress targets field
 
 * delete corrupted topics
 
