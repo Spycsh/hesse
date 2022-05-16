@@ -45,12 +45,6 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
             // the indirect neighbours do not have an entry and will be dynamically added
             Map<String, String> neighbourIdsWithWeight = Utils.recoverWeightedStateByLog(vertexActivities);
 
-            // for(Map.Entry<String, String> e:neighbourIdsWithWeight.entrySet()){
-            //     System.out.println(e.getKey() +":"+e.getValue());
-            // }
-
-            // System.out.println(neighbourIdsWithWeight.size());
-
             // if there are no outer edges, directly egress
             if(neighbourIdsWithWeight.size() == 0){
                 StringBuilder result = new StringBuilder();
@@ -172,7 +166,7 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
             // if all neighbour ids equals to vertexSet, it means all the approachable nodes find shortest path, egress
             if(neighbourIdsWithWeight.keySet().equals(vertexSet)){
                 StringBuilder result = new StringBuilder();
-                String str1 = String.format("Result of query %s by user %s: shortest path(s) from node %s to others:\n",
+                String str1 = String.format("Result of query %s by user %s: shortest path(s) from node %s to others: ",
                         q.getQueryId(), q.getUserId(), context.self().id());
                 result.append(str1);
                 for(Map.Entry<String, String> e:neighbourIdsWithWeight.entrySet()){
@@ -181,11 +175,10 @@ public class SingleSourceShortestPathFn implements StatefulFunction {
                     String path;
                     if(!id.equals(q.getVertexId())) {
                         path = paths.get(id).toString();
-                        result.append("\tid: ").append(id).append(" distance: ").append(weight).append(" path: ").append(path).append("\n");
+                        result.append("id: ").append(id).append(" distance: ").append(weight).append(" path: ").append(path).append(";");
                     }
                 }
                 querySSSPContexts.remove(querySSSPContext);
-                System.out.println("yyyy");
                 sendResult(context, q.getQueryId(), q.getUserId(), result.toString());
             } else{
                 // find the shortest path vertex among those not in the vertexSet and send to it the state request
