@@ -75,13 +75,6 @@ spec:
 ---
 kind: io.statefun.kafka.v1/egress
 spec:
-  id: hesse.io/producing-time
-  address: kafka:9092
-  deliverySemantic:
-    type: at-least-once
----
-kind: io.statefun.kafka.v1/egress
-spec:
   id: hesse.io/filter-time
   address: kafka:9092
   deliverySemantic:

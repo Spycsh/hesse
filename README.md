@@ -147,7 +147,6 @@ Here are the exposed topics:
 |query|query stream|ingress|
 |query-results|results of queries|egress|
 |storage-time|time of storage used for benchmarking|egress|
-|producing-time|time of producing all records by Kafka|egress|
 |filter-time|time of filtering edge activities at arbitrary time windows|egress|
 |indexing-time|time of indexing (only used for storage paradigm 4)|egress|
 

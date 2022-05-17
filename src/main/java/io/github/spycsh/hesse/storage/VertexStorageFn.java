@@ -112,7 +112,6 @@ public class VertexStorageFn implements StatefulFunction {
     }
     public static final StatefulFunctionSpec SPEC = builder.build();
 
-    private static final TypeName KAFKA_PRODUCING_EGRESS = TypeName.typeNameOf("hesse.io", "producing-time");
     private static final TypeName KAFKA_INDEXING_EGRESS = TypeName.typeNameOf("hesse.io", "indexing-time");
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(VertexStorageFn.class);
@@ -129,20 +128,6 @@ public class VertexStorageFn implements StatefulFunction {
                 // static field has no atomic control, so this can produce several same index time
                 // but it is just a benchmark metric for one storage paradigm so it does not matter
                 egressIndexTime(context, VertexStorageFn.IndexTime);
-            }
-
-            // hesse sets the start signature record (key: '-1', value: {'src_id': '-1', 'dst_id': '-1', 'timestamp': '-1'})
-            // and the end signature record (key: '-2', value: {'src_id': '-2', 'dst_id': '-2', 'timestamp': '-2'})
-            // for measurement of producing time
-            if(context.self().id().equals("-1") && temporalEdge.getDstId().equals("-1") && temporalEdge.getTimestamp().equals("-1")){
-                String valueString = "time that the first temporal edge arrives: "+ System.currentTimeMillis();
-                LOGGER.debug(valueString);
-                egressProducingTime(context, valueString);
-            }
-            if(context.self().id().equals("-2") && temporalEdge.getDstId().equals("-2") && temporalEdge.getTimestamp().equals("-2")){
-                String valueString = "time that the last temporal edge arrives: "+ System.currentTimeMillis();
-                LOGGER.debug(valueString);
-                egressProducingTime(context, valueString);
             }
 
             if(!context.self().id().equals("-1") && !context.self().id().equals("-2")){
@@ -504,14 +489,6 @@ public class VertexStorageFn implements StatefulFunction {
                 .withCustomType(
                         Types.PAGERANK_TASK_WITH_STATE_TYPE,
                         taskWithState)
-                .build());
-    }
-
-    private void egressProducingTime(Context context, String valueString) {
-        context.send(KafkaEgressMessage.forEgress(KAFKA_PRODUCING_EGRESS)
-                .withTopic("producing-time")
-                .withUtf8Key("producer")
-                .withUtf8Value(valueString)
                 .build());
     }
 

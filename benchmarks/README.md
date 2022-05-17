@@ -1,7 +1,7 @@
 This folder contains all the benchmarking results.
 
 For one execution of Hesse, one folder will be created that contains five text files.
-Those five text files are `filter-time.txt`, `indexing-time.txt`, `producing-time.txt`,
+Those five text files are `filter-time.txt`, `indexing-time.txt`,
 `query-results.txt` and `storage-time.txt`. They represent different benchmarking results
 under different metrics. They subscribe to the exposed egress topics of Hesse and store persistent
 data for further analysis.
@@ -20,14 +20,6 @@ qid uid time result_string
 ```
 # in nanoseconds
 record_number time overall_time average_time
-```
-
-* producing-time
-
-```
-# in milliseconds
-time that the first temporal edge arrives: xxx
-time that the last temporal edge arrives: xxx
 ```
 
 * indexing-time  
