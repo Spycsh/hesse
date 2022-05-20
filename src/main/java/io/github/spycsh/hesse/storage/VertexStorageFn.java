@@ -130,29 +130,27 @@ public class VertexStorageFn implements StatefulFunction {
                 egressIndexTime(context, VertexStorageFn.IndexTime);
             }
 
-            if(!context.self().id().equals("-1") && !context.self().id().equals("-2")){
-                // store the new activity of into specified batch one single vertex in its context
-                // here the default activity type is add
-                // should use this to recover to specified state and serve query
-                // TODO transaction here
-                long storageStartTime = System.nanoTime();
-                storeActivity(context, new VertexActivity("add", temporalEdge, false));
-                if(VertexStorageFn.storeIngoingEdges) {
-                    storeIngoingActivity(context, new VertexActivity("add", temporalEdge, true));
-                }
-                long storageEndTime = System.nanoTime();
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.benchmarks", "benchmark-storage-time"), "1")
-                        .withValue(storageEndTime - storageStartTime)
-                        .build());
-
-                // send all the nodes ids to Coordinator 0
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0")
-                        .withValue(temporalEdge.getSrcId() + " " + temporalEdge.getDstId())
-                        .build());
+            // store the new activity of into specified batch one single vertex in its context
+            // here the default activity type is add
+            // should use this to recover to specified state and serve query
+            long storageStartTime = System.nanoTime();
+            storeActivity(context, new VertexActivity("add", temporalEdge, false));
+            if(VertexStorageFn.storeIngoingEdges) {
+                storeIngoingActivity(context, new VertexActivity("add", temporalEdge, true));
             }
+            long storageEndTime = System.nanoTime();
+            context.send(MessageBuilder
+                    .forAddress(TypeName.typeNameOf("hesse.benchmarks", "benchmark-storage-time"), "1")
+                    .withValue(storageEndTime - storageStartTime)
+                    .build());
+
+            // send all the nodes ids to Coordinator 0
+            context.send(MessageBuilder
+                    .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0")
+                    .withValue(temporalEdge.getSrcId() + " " + temporalEdge.getDstId())
+                    .build());
         }
+
 
         if(message.is(Types.VERTEX_ACTIVITY_TYPE)){
             VertexActivity activity = message.as(Types.VERTEX_ACTIVITY_TYPE);
