@@ -13,6 +13,10 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * this function serves the temporal query of the graph about the single source shortest path
+ * of all other approachable vertices to the given vertex in any arbitrary time window
+ */
 public class SingleSourceShortestPathFn implements StatefulFunction {
 
     static final TypeName TYPE_NAME = TypeName.typeNameOf("hesse.applications", "single-source-shortest-path");

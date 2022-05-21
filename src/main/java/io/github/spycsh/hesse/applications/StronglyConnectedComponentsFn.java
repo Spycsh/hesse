@@ -15,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * this function serves the temporal query of the graph about the strongly connected component
  * e.g. it can answer the vertex's strongly connected component id and all ids including in the SCC
- * in a time interval [startT, endT]
+ * in any arbitrary time window
  */
 public class StronglyConnectedComponentsFn implements StatefulFunction {
     /**

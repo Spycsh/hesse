@@ -13,9 +13,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 // https://en.wikipedia.org/wiki/PageRank
+/**
+ * this function, along with the coordinator function,
+ * serve the temporal query of the graph about the PageRank
+ * e.g. it can answer all the vertices' PageRank values
+ * in a time window for each iteration
+ */
 public class PageRankFn implements StatefulFunction {
 
-    public static final double DAMPING_FACTOR = 0.5;
+    public static final double DAMPING_FACTOR = 0.85;
     private static final ValueSpec<ArrayList<PageRankContext>> PAGE_RANK_CONTEXT_LIST
             = ValueSpec.named("pagerank_context_list").withCustomType(Types.PAGERANK_CONTEXT_LIST_TYPE);
 
@@ -101,6 +107,7 @@ public class PageRankFn implements StatefulFunction {
             LOGGER.debug("[PageRankFn {}] PageRankValueWithWeight received {},{},{}", context.self().id(), p.getPagerankValue(), p.getWeight(), p.getDegree());
             ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
             PageRankContext pageRankContext = findPageRankContext(p.getQueryId(), p.getUserId(), pageRankContexts);
+            assert pageRankContext != null;
             double sum = pageRankContext.getCurrentPrValue();
             sum = sum + p.getPagerankValue() * p.getWeight() / p.getDegree();
             pageRankContext.setCurrentPrValue(sum);
@@ -140,6 +147,7 @@ public class PageRankFn implements StatefulFunction {
             ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
             PageRankContext pageRankContext = findPageRankContext(q.getQueryId(), q.getUserId(), pageRankContexts);
 
+            assert pageRankContext != null;
             if(pageRankContext.getInDegree() == 0 && pageRankContext.getNeighbourIdsWithWeight().size() == 0){
                 context.send(MessageBuilder
                         .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), pageRankContext.getCoordinatorId())

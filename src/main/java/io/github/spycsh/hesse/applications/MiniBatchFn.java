@@ -14,7 +14,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * this function serves the temporal query of the graph about the mini-batch
+ * this function serves the temporal query of the graph about the
+ * K-hop H-size neighbourhood of one node in any arbitrary time window
  * refer to http://snap.stanford.edu/graphsage/sample_and_agg.png for more details
  * the question can be simplified as following:
  * given H and K and t
