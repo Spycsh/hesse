@@ -94,7 +94,5 @@ services:
     environment:
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPICS: storage-time filter-time query-results indexing-time
-      APP_PLOT_FLAG: 'true'
-      APP_DELEY_PLOT: 20
     volumes:
     - ./benchmarks:/app/results
