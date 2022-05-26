@@ -1,4 +1,4 @@
-package io.github.spycsh.hesse.types.minibatch;
+package io.github.spycsh.hesse.types.gnnsampling;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -8,7 +8,7 @@ import java.util.ArrayList;
  * this class records a vertex's parents for each query
  * and the number of responses to collect
  */
-public class QueryMiniBatchContext {
+public class QueryGNNSamplingContext {
 
     @JsonProperty("query_id")
     private String queryId;
@@ -17,16 +17,16 @@ public class QueryMiniBatchContext {
     private String userId;
 
     @JsonProperty("mini_batch_path_contexts")
-    ArrayList<MiniBatchPathContext> miniBatchPathContexts;
+    ArrayList<GNNSamplingPathContext> GNNSamplingPathContexts;
 
 
-    public QueryMiniBatchContext() {
+    public QueryGNNSamplingContext() {
     }
 
-    public QueryMiniBatchContext(String queryId, String userId, ArrayList<MiniBatchPathContext> miniBatchPathContexts) {
+    public QueryGNNSamplingContext(String queryId, String userId, ArrayList<GNNSamplingPathContext> GNNSamplingPathContexts) {
         this.queryId = queryId;
         this.userId = userId;
-        this.miniBatchPathContexts = miniBatchPathContexts;
+        this.GNNSamplingPathContexts = GNNSamplingPathContexts;
     }
 
     public String getQueryId() {
@@ -45,11 +45,11 @@ public class QueryMiniBatchContext {
         this.userId = userId;
     }
 
-    public ArrayList<MiniBatchPathContext> getMiniBatchPathContexts() {
-        return miniBatchPathContexts;
+    public ArrayList<GNNSamplingPathContext> getGNNSamplingPathContexts() {
+        return GNNSamplingPathContexts;
     }
 
-    public void setMiniBatchPathContexts(ArrayList<MiniBatchPathContext> miniBatchPathContexts) {
-        this.miniBatchPathContexts = miniBatchPathContexts;
+    public void setGNNSamplingPathContexts(ArrayList<GNNSamplingPathContext> GNNSamplingPathContexts) {
+        this.GNNSamplingPathContexts = GNNSamplingPathContexts;
     }
 }

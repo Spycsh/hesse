@@ -1,16 +1,12 @@
-package io.github.spycsh.hesse.types.minibatch;
+package io.github.spycsh.hesse.types.gnnsampling;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.spycsh.hesse.types.VertexActivity;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ForwardQueryMiniBatchWithState {
-    @JsonProperty("source")
-    private String source;
-
+public class QueryGNNSamplingState {
     @JsonProperty("query_id")
     private String queryId;
 
@@ -36,16 +32,24 @@ public class ForwardQueryMiniBatchWithState {
     private int k;
 
     @JsonProperty("vertex_activities")
-    List<VertexActivity> vertexActivities = new ArrayList<>();
+    private List<VertexActivity> vertexActivities = new ArrayList<>();
 
-    @JsonProperty("stack")
-    private ArrayDeque<String> stack;
-
-    public ForwardQueryMiniBatchWithState() {
+    public QueryGNNSamplingState() {
     }
 
-    public ForwardQueryMiniBatchWithState(ForwardQueryMiniBatch q, List<VertexActivity> vertexActivities) {
-        this.source = q.getSource();
+    public QueryGNNSamplingState(String queryId, String userId, String vertexId, String queryType, int startT, int endT, int h, int k, List<VertexActivity> vertexActivities) {
+        this.queryId = queryId;
+        this.userId = userId;
+        this.vertexId = vertexId;
+        this.queryType = queryType;
+        this.startT = startT;
+        this.endT = endT;
+        this.h = h;
+        this.k = k;
+        this.vertexActivities = vertexActivities;
+    }
+
+    public QueryGNNSamplingState(QueryGNNSampling q, List<VertexActivity> vertexActivities){
         this.queryId = q.getQueryId();
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
@@ -54,7 +58,6 @@ public class ForwardQueryMiniBatchWithState {
         this.endT = q.getEndT();
         this.h = q.getH();
         this.k = q.getK();
-        this.stack = q.getStack();
         this.vertexActivities = vertexActivities;
     }
 
@@ -78,10 +81,6 @@ public class ForwardQueryMiniBatchWithState {
         return vertexActivities;
     }
 
-    public String getSource() {
-        return source;
-    }
-
     public int getStartT() {
         return startT;
     }
@@ -91,14 +90,10 @@ public class ForwardQueryMiniBatchWithState {
     }
 
     public int getH() {
-        return h;
+        return this.h;
     }
 
     public int getK() {
-        return k;
-    }
-
-    public ArrayDeque<String> getStack() {
-        return stack;
+        return this.k;
     }
 }

@@ -1,9 +1,15 @@
-package io.github.spycsh.hesse.types.minibatch;
+package io.github.spycsh.hesse.types.gnnsampling;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.spycsh.hesse.query.Query;
+import io.github.spycsh.hesse.types.VertexActivity;
 
-public class QueryMiniBatch {
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+
+public class ForwardQueryGNNSamplingWithState {
+    @JsonProperty("source")
+    private String source;
 
     @JsonProperty("query_id")
     private String queryId;
@@ -29,28 +35,27 @@ public class QueryMiniBatch {
     @JsonProperty("k")
     private int k;
 
-    public QueryMiniBatch() {}
+    @JsonProperty("vertex_activities")
+    List<VertexActivity> vertexActivities = new ArrayList<>();
 
-    public QueryMiniBatch(Query q){
+    @JsonProperty("stack")
+    private ArrayDeque<String> stack;
+
+    public ForwardQueryGNNSamplingWithState() {
+    }
+
+    public ForwardQueryGNNSamplingWithState(ForwardQueryGNNSampling q, List<VertexActivity> vertexActivities) {
+        this.source = q.getSource();
         this.queryId = q.getQueryId();
         this.userId = q.getUserId();
         this.vertexId = q.getVertexId();
         this.queryType = q.getQueryType();
         this.startT = q.getStartT();
         this.endT = q.getEndT();
-        this.h = Integer.parseInt(q.getParameterMap().get("h"));
-        this.k = Integer.parseInt(q.getParameterMap().get("k"));
-    }
-
-    public QueryMiniBatch(String queryId, String userId, String vertexId, String queryType, int startT, int endT, int h, int k) {
-        this.queryId = queryId;
-        this.userId = userId;
-        this.vertexId = vertexId;
-        this.queryType = queryType;
-        this.startT = startT;
-        this.endT = endT;
-        this.h = h;
-        this.k = k;
+        this.h = q.getH();
+        this.k = q.getK();
+        this.stack = q.getStack();
+        this.vertexActivities = vertexActivities;
     }
 
     public String getQueryId() {
@@ -69,6 +74,14 @@ public class QueryMiniBatch {
         return queryType;
     }
 
+    public List<VertexActivity> getVertexActivities() {
+        return vertexActivities;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
     public int getStartT() {
         return startT;
     }
@@ -83,5 +96,9 @@ public class QueryMiniBatch {
 
     public int getK() {
         return k;
+    }
+
+    public ArrayDeque<String> getStack() {
+        return stack;
     }
 }

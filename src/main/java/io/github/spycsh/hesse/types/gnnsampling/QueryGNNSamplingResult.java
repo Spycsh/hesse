@@ -1,4 +1,4 @@
-package io.github.spycsh.hesse.types.minibatch;
+package io.github.spycsh.hesse.types.gnnsampling;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.spycsh.hesse.types.egress.Edge;
@@ -6,7 +6,7 @@ import io.github.spycsh.hesse.types.egress.Edge;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 
-public class QueryMiniBatchResult {
+public class QueryGNNSamplingResult {
 
     @JsonProperty("query_id")
     private String queryId;
@@ -26,10 +26,10 @@ public class QueryMiniBatchResult {
     @JsonProperty("stack")
     private ArrayDeque<String> stack;
 
-    public QueryMiniBatchResult() {
+    public QueryGNNSamplingResult() {
     }
 
-    public QueryMiniBatchResult(String queryId, String userId, String vertexId, String queryType,ArrayList<Edge> aggregatedResults, ArrayDeque<String> stack) {
+    public QueryGNNSamplingResult(String queryId, String userId, String vertexId, String queryType, ArrayList<Edge> aggregatedResults, ArrayDeque<String> stack) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;

@@ -6,10 +6,10 @@ import io.github.spycsh.hesse.types.cc.ForwardQueryCCWithState;
 import io.github.spycsh.hesse.types.cc.QueryCC;
 import io.github.spycsh.hesse.types.cc.QueryCCWithState;
 import io.github.spycsh.hesse.types.ingress.TemporalEdge;
-import io.github.spycsh.hesse.types.minibatch.ForwardQueryMiniBatch;
-import io.github.spycsh.hesse.types.minibatch.ForwardQueryMiniBatchWithState;
-import io.github.spycsh.hesse.types.minibatch.QueryMiniBatch;
-import io.github.spycsh.hesse.types.minibatch.QueryMiniBatchWithState;
+import io.github.spycsh.hesse.types.gnnsampling.ForwardQueryGNNSampling;
+import io.github.spycsh.hesse.types.gnnsampling.ForwardQueryGNNSamplingWithState;
+import io.github.spycsh.hesse.types.gnnsampling.QueryGNNSampling;
+import io.github.spycsh.hesse.types.gnnsampling.QueryGNNSamplingState;
 import io.github.spycsh.hesse.types.pagerank.PageRankTask;
 import io.github.spycsh.hesse.types.pagerank.PageRankTaskWithState;
 import io.github.spycsh.hesse.types.scc.ForwardQuerySCC;
@@ -164,20 +164,20 @@ public class VertexStorageFn implements StatefulFunction {
         }
 
         // handle the queries of mini batch
-        if(message.is(Types.QUERY_MINI_BATCH_TYPE)){
-            QueryMiniBatch q = message.as(Types.QUERY_MINI_BATCH_TYPE);
-            LOGGER.info("[VertexStorageFn {}] QueryMiniBatch received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
+        if(message.is(Types.QUERY_GNN_SAMPLING_TYPE)){
+            QueryGNNSampling q = message.as(Types.QUERY_GNN_SAMPLING_TYPE);
+            LOGGER.info("[VertexStorageFn {}] QueryGNNSampling received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
 
             // only send the needed log
             // namely from the beginning to the batch which time T is in
             // remove all the log that is later than the time region that the batch index corresponding to
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
 
-            QueryMiniBatchWithState queryWithState = new QueryMiniBatchWithState(
+            QueryGNNSamplingState queryWithState = new QueryGNNSamplingState(
                     q,
                     filteredActivityList
             );
-            sendQueryMiniBatchWithStateToApp(context, queryWithState);
+            sendQueryGNNSamplingWithStateToApp(context, queryWithState);
         }
 
         // handle the queries of connected component
@@ -229,16 +229,16 @@ public class VertexStorageFn implements StatefulFunction {
             sendPageRankTaskWithStateToApp(context, taskWithState);
         }
 
-        if(message.is(Types.FORWARD_QUERY_MINI_BATCH_TYPE)){
-            ForwardQueryMiniBatch q = message.as(Types.FORWARD_QUERY_MINI_BATCH_TYPE);
-            LOGGER.info("[VertexStorageFn {}] ForwardQueryMiniBatch received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
+        if(message.is(Types.FORWARD_QUERY_GNN_SAMPLING_TYPE)){
+            ForwardQueryGNNSampling q = message.as(Types.FORWARD_QUERY_GNN_SAMPLING_TYPE);
+            LOGGER.info("[VertexStorageFn {}] ForwardQueryGNNSampling received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
 
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());
-            ForwardQueryMiniBatchWithState queryWithState = new ForwardQueryMiniBatchWithState(
+            ForwardQueryGNNSamplingWithState queryWithState = new ForwardQueryGNNSamplingWithState(
                      q,
                      filteredActivityList
              );
-            sendQueryMiniBatchWithStateToApp(context, queryWithState);
+            sendQueryGNNSamplingWithStateToApp(context, queryWithState);
         }
 
         if(message.is(Types.FORWARD_QUERY_SCC_TYPE)){
@@ -408,20 +408,20 @@ public class VertexStorageFn implements StatefulFunction {
         return String.valueOf((int) Math.floor(((double) t - (double) t0) / eventTimeInterval));
     }
 
-    private void sendQueryMiniBatchWithStateToApp(Context context, QueryMiniBatchWithState queryWithState) {
+    private void sendQueryGNNSamplingWithStateToApp(Context context, QueryGNNSamplingState queryWithState) {
         context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.applications", "mini-batch"), context.self().id())
+                        .forAddress(TypeName.typeNameOf("hesse.applications", "gnn-sampling"), context.self().id())
                         .withCustomType(
-                                Types.QUERY_MINI_BATCH_WITH_STATE_TYPE,
+                                Types.QUERY_GNN_SAMPLING_WITH_STATE_TYPE,
                                 queryWithState)
                         .build());
     }
 
-    private void sendQueryMiniBatchWithStateToApp(Context context, ForwardQueryMiniBatchWithState queryWithState) {
+    private void sendQueryGNNSamplingWithStateToApp(Context context, ForwardQueryGNNSamplingWithState queryWithState) {
         context.send(MessageBuilder
-                .forAddress(TypeName.typeNameOf("hesse.applications", "mini-batch"), context.self().id())
+                .forAddress(TypeName.typeNameOf("hesse.applications", "gnn-sampling"), context.self().id())
                 .withCustomType(
-                        Types.FORWARD_QUERY_MINI_BATCH_WITH_STATE_TYPE,
+                        Types.FORWARD_QUERY_GNN_SAMPLING_WITH_STATE_TYPE,
                         queryWithState)
                 .build());
     }

@@ -1,10 +1,10 @@
-package io.github.spycsh.hesse.types.minibatch;
+package io.github.spycsh.hesse.types.gnnsampling;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayDeque;
 
-public class ForwardQueryMiniBatch {
+public class ForwardQueryGNNSampling {
     @JsonProperty("source")
     private String source;
 
@@ -38,10 +38,10 @@ public class ForwardQueryMiniBatch {
     @JsonProperty("stack")
     private ArrayDeque<String> stack;
 
-    public ForwardQueryMiniBatch() {
+    public ForwardQueryGNNSampling() {
     }
 
-    public ForwardQueryMiniBatch(String source, String target, QueryMiniBatchWithState q, int newHopNum, ArrayDeque<String> stack) {
+    public ForwardQueryGNNSampling(String source, String target, QueryGNNSamplingState q, int newHopNum, ArrayDeque<String> stack) {
         this.source = source;
         this.target = target;
         this.queryId = q.getQueryId();
@@ -55,7 +55,7 @@ public class ForwardQueryMiniBatch {
         this.stack = stack;
     }
 
-    public ForwardQueryMiniBatch(String source, String target, ForwardQueryMiniBatchWithState q, int newHopNum, ArrayDeque<String> stack) {
+    public ForwardQueryGNNSampling(String source, String target, ForwardQueryGNNSamplingWithState q, int newHopNum, ArrayDeque<String> stack) {
         this.source = source;
         this.target = target;
         this.queryId = q.getQueryId();

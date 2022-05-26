@@ -1,11 +1,11 @@
-package io.github.spycsh.hesse.types.minibatch;
+package io.github.spycsh.hesse.types.gnnsampling;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.spycsh.hesse.types.egress.Edge;
 
 import java.util.List;
 
-public class MiniBatchPathContext {
+public class GNNSamplingPathContext {
 
     @JsonProperty("path_hash")
     private int pathHash;
@@ -14,16 +14,16 @@ public class MiniBatchPathContext {
     private int responseNum;
 
     @JsonProperty("aggregated_mini_batch_edges")
-    private List<Edge> aggregatedMiniBatchEdges;
+    private List<Edge> aggregatedGNNSamplingEdges;
 
 
 
-    public MiniBatchPathContext() {
+    public GNNSamplingPathContext() {
     }
 
-    public MiniBatchPathContext(int pathHash,  int responseNum, List<Edge> aggregatedMiniBatchEdges) {
+    public GNNSamplingPathContext(int pathHash, int responseNum, List<Edge> aggregatedGNNSamplingEdges) {
         this.pathHash = pathHash;
-        this.aggregatedMiniBatchEdges = aggregatedMiniBatchEdges;
+        this.aggregatedGNNSamplingEdges = aggregatedGNNSamplingEdges;
         this.responseNum = responseNum;
     }
 
@@ -35,12 +35,12 @@ public class MiniBatchPathContext {
         this.pathHash = pathHash;
     }
 
-    public List<Edge> getAggregatedMiniBatchEdges() {
-        return aggregatedMiniBatchEdges;
+    public List<Edge> getAggregatedGNNSamplingEdges() {
+        return aggregatedGNNSamplingEdges;
     }
 
-    public void setAggregatedMiniBatchEdges(List<Edge> aggregatedMiniBatchEdges) {
-        this.aggregatedMiniBatchEdges = aggregatedMiniBatchEdges;
+    public void setAggregatedGNNSamplingEdges(List<Edge> aggregatedGNNSamplingEdges) {
+        this.aggregatedGNNSamplingEdges = aggregatedGNNSamplingEdges;
     }
 
     public int getResponseNum() {

@@ -6,7 +6,7 @@ A temporal graph library based on Flink Stateful Functions
 
 - [x] Architecture design and Docker environment
 - [x] Kafka Graph Ingress and Query Ingress Stream
-- [x] Connected Component, Strongly Connected Component, MiniBatch algorithms based on Graph Traversal
+- [x] Connected Component, Strongly Connected Component, GNNSampling algorithms based on Graph Traversal
 - [x] A basic non-benchmarking storage paradigm using TreeMap with persistence
 - [x] Query support for three algorithms on arbitrary time windows
 - [x] Query cache
@@ -64,7 +64,7 @@ docker-compose up
 ```
 
 Currently, five algorithms are implemented for queries, Connected Component algorithm, Strongly Connected Component algorithm,
-MiniBatch algorithm, Single Source Shortest Path algorithm, and PageRank algorithm.
+GNNSampling algorithm, Single Source Shortest Path algorithm, and PageRank algorithm.
 Make sure to select the right ingress file and type using `scripts/scenarios_config.py`.
 
 To see the results of a query, you can execute the following command:
@@ -117,7 +117,7 @@ Here are some examples of queries, and the corresponding JSON query strings as s
 * What is the neighbourhood spanning from (Breadth-First search) vertex 151 with hop size 2 and sample size 2 between time 0 and 400000?
 
 ```json
-{"query_id": "3", "user_id": "1", "vertex_id": "151", "query_type": "mini-batch", "start_t": "0", "end_t":"400000", "parameter_map": {"h": "2", "k": "2"}}
+{"query_id": "3", "user_id": "1", "vertex_id": "151", "query_type": "gnn-sampling", "start_t": "0", "end_t":"400000", "parameter_map": {"h": "2", "k": "2"}}
 ```
 
 * What is the PageRank value in 10 iterations of all the vertexes between time 0 and 150?

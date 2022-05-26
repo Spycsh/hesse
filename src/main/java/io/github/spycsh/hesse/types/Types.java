@@ -9,7 +9,7 @@ import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.egress.VertexComponentChange;
 import io.github.spycsh.hesse.types.egress.VertexShortestPathChange;
 import io.github.spycsh.hesse.types.ingress.TemporalEdge;
-import io.github.spycsh.hesse.types.minibatch.*;
+import io.github.spycsh.hesse.types.gnnsampling.*;
 import io.github.spycsh.hesse.types.pagerank.*;
 import io.github.spycsh.hesse.types.scc.*;
 import io.github.spycsh.hesse.types.sssp.*;
@@ -102,11 +102,11 @@ public class Types {
      * Type denoting a query of mini batch
      * that is sent from ingress to storage
      */
-    public static final Type<QueryMiniBatch> QUERY_MINI_BATCH_TYPE =
+    public static final Type<QueryGNNSampling> QUERY_GNN_SAMPLING_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatch.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryGNNSampling.class));
     /**
      * Type denoting a query of strongly connected component
      * that is sent from ingress to storage
@@ -147,11 +147,11 @@ public class Types {
      * Type denoting a query of mini batch with state
      * sent from storage to application
      */
-    public static final Type<QueryMiniBatchWithState> QUERY_MINI_BATCH_WITH_STATE_TYPE =
+    public static final Type<QueryGNNSamplingState> QUERY_GNN_SAMPLING_WITH_STATE_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_with_state"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatchWithState.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryGNNSamplingState.class));
 
     /**
      * Type denoting a query of strongly connected component with state
@@ -176,22 +176,22 @@ public class Types {
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySSSPWithState.class));
 
     /**
-     * MiniBatchFn -> neighbours' VertexStorageFn
+     * GNNSamplingFn -> neighbours' VertexStorageFn
      */
-    public static final Type<ForwardQueryMiniBatch> FORWARD_QUERY_MINI_BATCH_TYPE =
+    public static final Type<ForwardQueryGNNSampling> FORWARD_QUERY_GNN_SAMPLING_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_mini_batch"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQueryMiniBatch.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQueryGNNSampling.class));
 
     /**
-     * neighbour's VertexStorageFn to neighbours' MiniBatchFn
+     * neighbour's VertexStorageFn to neighbours' GNNSamplingFn
      */
-    public static final Type<ForwardQueryMiniBatchWithState> FORWARD_QUERY_MINI_BATCH_WITH_STATE_TYPE =
+    public static final Type<ForwardQueryGNNSamplingWithState> FORWARD_QUERY_GNN_SAMPLING_WITH_STATE_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "forward_query_mini_batch_with_state"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQueryMiniBatchWithState.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, ForwardQueryGNNSamplingWithState.class));
 
     public static final Type<ForwardQuerySCC> FORWARD_QUERY_SCC_TYPE =
             SimpleType.simpleImmutableTypeFrom(
@@ -220,11 +220,11 @@ public class Types {
     /**
      * query result
      */
-    public static final Type<QueryMiniBatchResult> QUERY_MINI_BATCH_RESULT_TYPE =
+    public static final Type<QueryGNNSamplingResult> QUERY_GNN_SAMPLING_RESULT_TYPE =
             SimpleType.simpleImmutableTypeFrom(
                     TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_result"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryMiniBatchResult.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryGNNSamplingResult.class));
 
     public static final Type<QuerySCCResult> QUERY_SCC_RESULT_TYPE =
             SimpleType.simpleImmutableTypeFrom(
@@ -242,11 +242,11 @@ public class Types {
      * each query has a context on each vertex
      * so for one vertex there is a list of contexts corresponding to list of queries
      */
-    public static final Type<ArrayList<QueryMiniBatchContext>> QUERY_MINI_BATCH_CONTEXT_LIST_TYPE =
+    public static final Type<ArrayList<QueryGNNSamplingContext>> QUERY_GNN_SAMPLING_CONTEXT_LIST_TYPE =
         SimpleType.simpleImmutableTypeFrom(
                 TypeName.typeNameOf(TYPES_NAMESPACE, "query_mini_batch_context_list"),
                 JSON_OBJ_MAPPER::writeValueAsBytes,
-                bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QueryMiniBatchContext>>() {
+                bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<ArrayList<QueryGNNSamplingContext>>() {
                 }));
 
     public static final Type<ArrayList<QuerySCCContext>> QUERY_SCC_CONTEXT_LIST_TYPE =

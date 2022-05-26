@@ -24,7 +24,7 @@ public class hesseAppServer {
 
         // register the query functions
         functions.withStatefulFunction(TemporalQueryHandlerFn.SPEC);
-        functions.withStatefulFunction(MiniBatchFn.SPEC);
+        functions.withStatefulFunction(GNNSamplingFn.SPEC);
         functions.withStatefulFunction(ConnectedComponentsFn.SPEC);
         functions.withStatefulFunction(StronglyConnectedComponentsFn.SPEC);
         functions.withStatefulFunction(SingleSourceShortestPathFn.SPEC);

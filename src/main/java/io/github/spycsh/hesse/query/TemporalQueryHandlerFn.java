@@ -5,7 +5,7 @@ import io.github.spycsh.hesse.types.cc.QueryCC;
 import io.github.spycsh.hesse.types.egress.QueryResult;
 import io.github.spycsh.hesse.types.pagerank.QueryPageRank;
 import io.github.spycsh.hesse.types.scc.QuerySCC;
-import io.github.spycsh.hesse.types.minibatch.QueryMiniBatch;
+import io.github.spycsh.hesse.types.gnnsampling.QueryGNNSampling;
 import io.github.spycsh.hesse.types.Types;
 import io.github.spycsh.hesse.types.sssp.QuerySSSP;
 import org.apache.flink.statefun.sdk.java.*;
@@ -69,12 +69,12 @@ public class TemporalQueryHandlerFn implements StatefulFunction {
                                 .build());
                         break;
                     }
-                    case "mini-batch": {
+                    case "gnn-sampling": {
                         context.send(MessageBuilder
                             .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), vertexId)
                             .withCustomType(
-                                    Types.QUERY_MINI_BATCH_TYPE,
-                                    new QueryMiniBatch(q))
+                                    Types.QUERY_GNN_SAMPLING_TYPE,
+                                    new QueryGNNSampling(q))
                             .build());
                         break;
                     }

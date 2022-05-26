@@ -1,12 +1,10 @@
-package io.github.spycsh.hesse.types.minibatch;
+package io.github.spycsh.hesse.types.gnnsampling;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.github.spycsh.hesse.types.VertexActivity;
+import io.github.spycsh.hesse.query.Query;
 
-import java.util.ArrayList;
-import java.util.List;
+public class QueryGNNSampling {
 
-public class QueryMiniBatchWithState {
     @JsonProperty("query_id")
     private String queryId;
 
@@ -31,13 +29,20 @@ public class QueryMiniBatchWithState {
     @JsonProperty("k")
     private int k;
 
-    @JsonProperty("vertex_activities")
-    private List<VertexActivity> vertexActivities = new ArrayList<>();
+    public QueryGNNSampling() {}
 
-    public QueryMiniBatchWithState() {
+    public QueryGNNSampling(Query q){
+        this.queryId = q.getQueryId();
+        this.userId = q.getUserId();
+        this.vertexId = q.getVertexId();
+        this.queryType = q.getQueryType();
+        this.startT = q.getStartT();
+        this.endT = q.getEndT();
+        this.h = Integer.parseInt(q.getParameterMap().get("h"));
+        this.k = Integer.parseInt(q.getParameterMap().get("k"));
     }
 
-    public QueryMiniBatchWithState(String queryId, String userId, String vertexId, String queryType, int startT, int endT, int h, int k, List<VertexActivity> vertexActivities) {
+    public QueryGNNSampling(String queryId, String userId, String vertexId, String queryType, int startT, int endT, int h, int k) {
         this.queryId = queryId;
         this.userId = userId;
         this.vertexId = vertexId;
@@ -46,19 +51,6 @@ public class QueryMiniBatchWithState {
         this.endT = endT;
         this.h = h;
         this.k = k;
-        this.vertexActivities = vertexActivities;
-    }
-
-    public QueryMiniBatchWithState(QueryMiniBatch q, List<VertexActivity> vertexActivities){
-        this.queryId = q.getQueryId();
-        this.userId = q.getUserId();
-        this.vertexId = q.getVertexId();
-        this.queryType = q.getQueryType();
-        this.startT = q.getStartT();
-        this.endT = q.getEndT();
-        this.h = q.getH();
-        this.k = q.getK();
-        this.vertexActivities = vertexActivities;
     }
 
     public String getQueryId() {
@@ -77,10 +69,6 @@ public class QueryMiniBatchWithState {
         return queryType;
     }
 
-    public List<VertexActivity> getVertexActivities() {
-        return vertexActivities;
-    }
-
     public int getStartT() {
         return startT;
     }
@@ -90,10 +78,10 @@ public class QueryMiniBatchWithState {
     }
 
     public int getH() {
-        return this.h;
+        return h;
     }
 
     public int getK() {
-        return this.k;
+        return k;
     }
 }
