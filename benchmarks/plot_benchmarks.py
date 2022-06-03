@@ -19,10 +19,10 @@ def plot_result(output_path):
             x = [int(line.split()[0]) for line in lines]
             y = [int(line.split()[1]) for line in lines]
             plt.plot(x, y)
-            plt.xlabel('storage operation index')
-            plt.ylabel('storage time (nanoseconds)')
-            plt.title('time for each edge storage operation')
-            plt.savefig(os.path.join(output_path, 'storage-time.png'), dpi=300, bbox_inches='tight')
+            plt.xlabel('ingestion operation index')
+            plt.ylabel('ingestion time (nanoseconds)')
+            plt.title('time for each edge ingestion operation')
+            plt.savefig(os.path.join(output_path, 'ingestion-time.png'), dpi=300, bbox_inches='tight')
             plt.clf()
 
         with open(storage_time_file_path, 'r') as f:
@@ -41,11 +41,11 @@ def plot_result(output_path):
             # plt.hist(data,bins=10, density=True)
             # plt.hist(data,bins=10, density=True, cumulative=True, label='CDF', histtype='step')
             # plt.plot(x, cdf)
-            plt.xlabel('storage time (nanoseconds)')
+            plt.xlabel('ingestion time (nanoseconds)')
             plt.ylabel('probability values')
             # plt.xticks(ticks=range(0,10), labels=["10^" + str(i) for i in range(10)])
-            plt.title('CDF for continous distribution of storage time')
-            plt.savefig(os.path.join(output_path, 'cdf-storage-time.png'), dpi=300, bbox_inches='tight')
+            plt.title('CDF for continous distribution of ingestion time')
+            plt.savefig(os.path.join(output_path, 'cdf-ingestion-time.png'), dpi=300, bbox_inches='tight')
             plt.clf()
 
 
