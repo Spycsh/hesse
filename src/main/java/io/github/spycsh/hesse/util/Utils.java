@@ -37,14 +37,16 @@ public class Utils {
         return neighbourIdsWithWeight;
     }
 
+    // recover in-degree with filtered activity log
     public static int recoverInDegreeByLog(List<VertexActivity> activityLog){
-        int inDegree = 0;
+        HashSet<String> inGoingNeighbours = new HashSet<>();
+
         for(VertexActivity activity:activityLog){
             if(activity.getActivityType().equals("add") && activity.isIngoing()) {
-                inDegree += 1;
+                inGoingNeighbours.add(activity.getSrcId());
             }
         }
-        return inDegree;
+        return inGoingNeighbours.size();
     }
 
     public static int generateNewStackHash(ArrayDeque<String> stack) {

@@ -116,7 +116,10 @@ public class PageRankFn implements StatefulFunction {
             // enter the next round
             int collectedDegree = pageRankContext.getCurrentCollectedDegree();
             collectedDegree += 1;
+            LOGGER.debug("[PageRankFn {}] in-degree: {}, current collected: {}", context.self().id(), pageRankContext.getInDegree(), collectedDegree);
+
             if(collectedDegree == pageRankContext.getInDegree()){
+                LOGGER.debug("[PageRankFn {}] collect all degree", context.self().id());
                 pageRankContext.setCurrentCollectedDegree(0);
                 double newValue = 1 - DAMPING_FACTOR + DAMPING_FACTOR * sum;
 

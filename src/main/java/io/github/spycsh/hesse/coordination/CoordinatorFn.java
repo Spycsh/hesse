@@ -102,7 +102,8 @@ public class CoordinatorFn implements StatefulFunction {
                     context.storage().set(CURRENT_RESPONSE_COLLECTED, 0);
                     broadcastTask(context, set, q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT());
                 }
-
+            } else {
+                LOGGER.error("[CoordinatorFn {}] Currently only support PageRank on whole graph", context.self().id());
             }
         }
 
