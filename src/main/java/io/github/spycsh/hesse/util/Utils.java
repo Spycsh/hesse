@@ -12,7 +12,7 @@ public class Utils {
     public static HashSet<String> recoverStateByLog(List<VertexActivity> activityLog) {
         HashSet<String> neighbourIds = new HashSet<>();
         for(VertexActivity activity:activityLog){
-            if(activity.getActivityType().equals("add")) {
+            if(activity.getActivityType().equals("add") && !activity.isIngoing()) {
                 if(activity.getWeight() == null){
                     neighbourIds.add(activity.getDstId());
                 }

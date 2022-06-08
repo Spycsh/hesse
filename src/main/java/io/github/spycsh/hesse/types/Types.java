@@ -232,11 +232,11 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, QuerySCCResult.class));
 
-    public static final Type<QueryCCResult> QUERY_CC_RESULT_TYPE =
+    public static final Type<QueryCCNeighbours> QUERY_CC_NEIGHBOURS_TYPE =
             SimpleType.simpleImmutableTypeFrom(
-                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_cc_result"),
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "query_cc_neighbours"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryCCResult.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, QueryCCNeighbours.class));
 
     /**
      * each query has a context on each vertex

@@ -33,14 +33,11 @@ public class ConnectedComponentsFn implements StatefulFunction {
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
 
         if(message.is(Types.QUERY_CC_WITH_STATE_TYPE)){
-
             LOGGER.debug("[ConnectedComponentsFn {}] QueryCCWithState received", context.self().id());
             QueryCCWithState q = message.as(Types.QUERY_CC_WITH_STATE_TYPE);
             List<VertexActivity> vertexActivities = q.getVertexActivities();
-
             HashSet<String> neighbourIds = Utils.recoverStateByLog(vertexActivities);
 
-            // if there are no outer edges, directly egress
             if(neighbourIds.size() == 0){
                 StringBuilder result = new StringBuilder();
                 String str1 = String.format("Result of query %s by user %s: no connected component found for node %s because it is isolated!",
@@ -48,188 +45,98 @@ public class ConnectedComponentsFn implements StatefulFunction {
                 result.append(str1);
                 sendResult(context, q.getQueryId(), q.getUserId(), result.toString());
             }else{
-                ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
-                ArrayDeque<String> firstStk = new ArrayDeque<String>() {{
+                HashSet<String> vertexSet = new HashSet<String>(){{
                     add(context.self().id());
                 }};
-                CCPathContext ccPathContext = new CCPathContext(Utils.generateNewStackHash(firstStk), context.self().id(), neighbourIds.size(), new HashSet<>());
-                queryCCContexts.add(new QueryCCContext(q.getQueryId(), q.getUserId(),
-                        new ArrayList<CCPathContext>(){{add(ccPathContext);}}));
+                vertexSet.addAll(neighbourIds);
 
-                ArrayDeque<String> stack = new ArrayDeque<>();
-                stack.addFirst(q.getVertexId());    // add itself in the stack
-                for(String neighbourId:neighbourIds){
+                QueryCCContext c = new QueryCCContext(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(),
+                        vertexSet, new HashSet<>(), neighbourIds.size());
+                ArrayList<QueryCCContext> list = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
+                list.add(c);
+                context.storage().set(QUERY_CC_CONTEXT_LIST, list);
+
+                for(String neighbourId: neighbourIds){
                     context.send(MessageBuilder
                             .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), neighbourId)
                             .withCustomType(
                                     Types.FORWARD_QUERY_CC_TYPE,
-                                    new ForwardQueryCC(context.self().id(), neighbourId, stack, q)
+                                    new ForwardQueryCC(q.getQueryId(), q.getUserId(), q.getVertexId(), q.getStartT(), q.getEndT())
                             )
                             .build());
                 }
-
-                context.storage().set(QUERY_CC_CONTEXT_LIST, queryCCContexts);
             }
-
         }
 
-        if(message.is(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE)){
+        if(message.is(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE)) {
             LOGGER.debug("[ConnectedComponentsFn {}] ForwardQueryCCWithState received", context.self().id());
-
             ForwardQueryCCWithState q = message.as(Types.FORWARD_QUERY_CC_WITH_STATE_TYPE);
-            List<VertexActivity> vertexActivities = q.getVertexActivities();
-            HashSet<String> neighbourIds = Utils.recoverStateByLog(vertexActivities);
+            HashSet<String> neighbourIds = Utils.recoverStateByLog(q.getVertexActivities());
 
-            ArrayDeque<String> stack = q.getStack();
-
-            ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
-            QueryCCContext queryCCContext = findCCContext(q.getQueryId(), q.getUserId(), queryCCContexts);
-
-            // if self already on stack path or has no more neighbours other than the node that the message comes from,
-            // then return response
-            // otherwise, continue forwarding
-            if(stack.contains(context.self().id()) || neighbourIds.size() == 0){
-                LOGGER.debug("[ConnectedComponentsFn {}] ForwardQueryCCWithState received and self " +
-                        "is already on the stack or has no more neighbours", context.self().id());
-
-                Set<String> aggregatedCCIds = new HashSet<>();
-
-                if(neighbourIds.size() == 0){
-                    aggregatedCCIds.add(context.self().id());
-                }
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.applications", "connected-components"), q.getSource())
-                        .withCustomType(
-                                Types.QUERY_CC_RESULT_TYPE,
-                                new QueryCCResult(q.getQueryId(), q.getUserId(),
-                                        q.getVertexId(), q.getQueryType(), context.self().id(), aggregatedCCIds, stack)
-                        )
-                        .build());
-
-            } else {
-                // continue forwarding and also keep the path context in self
-                LOGGER.debug("[ConnectedComponentsFn {}] ForwardQueryCCWithState received and self " +
-                        "is not on the stack, continue forwarding", context.self().id());
-
-                stack.addFirst(context.self().id());    // add itself in the stack
-                int newStackHash = Utils.generateNewStackHash(stack);
-
-                if(queryCCContext == null){ // first path context
-                    CCPathContext ccPathContext = new CCPathContext(newStackHash, context.self().id(),  neighbourIds.size(), new HashSet<>());
-                    queryCCContext = new QueryCCContext(q.getQueryId(), q.getUserId(), new ArrayList<CCPathContext>(){{add(ccPathContext);}});
-                    queryCCContexts.add(queryCCContext);
-                } else {
-                    ArrayList<CCPathContext> ccPathContexts = queryCCContext.getCcPathContexts();
-                    ccPathContexts.add(new CCPathContext(newStackHash, context.self().id(), neighbourIds.size(), new HashSet<>()));
-                }
-
-                context.storage().set(QUERY_CC_CONTEXT_LIST, queryCCContexts);
-
-                for(String neighbourId:neighbourIds){
-                    context.send(MessageBuilder
-                            .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), neighbourId)
-                            .withCustomType(
-                                    Types.FORWARD_QUERY_CC_TYPE,
-                                    new ForwardQueryCC(context.self().id(), neighbourId, stack, q)
-                            )
-                            .build());
-                }
-            }
+            context.send(MessageBuilder
+                    .forAddress(TypeName.typeNameOf("hesse.applications", "connected-components"), q.getVertexId())
+                    .withCustomType(
+                            Types.QUERY_CC_NEIGHBOURS_TYPE,
+                            new QueryCCNeighbours(q.getQueryId(), q.getUserId(), q.getVertexId(), neighbourIds)
+                    )
+                    .build());
         }
 
-        if(message.is(Types.QUERY_CC_RESULT_TYPE)){
-            LOGGER.debug("[ConnectedComponentsFn {}] QueryCCResult received", context.self().id());
-            QueryCCResult result = message.as(Types.QUERY_CC_RESULT_TYPE);
+        if(message.is(Types.QUERY_CC_NEIGHBOURS_TYPE)) {
+            LOGGER.debug("[ConnectedComponentsFn {}] QueryCCNeighbours received", context.self().id());
+            QueryCCNeighbours q = message.as(Types.QUERY_CC_NEIGHBOURS_TYPE);
+            ArrayList<QueryCCContext> list = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
 
-            ArrayList<QueryCCContext> queryCCContexts = context.storage().get(QUERY_CC_CONTEXT_LIST).orElse(new ArrayList<>());
-            QueryCCContext queryCCContext = findCCContext(result.getQueryId(), result.getUserId(), queryCCContexts);
-            if(queryCCContext == null){
-                LOGGER.error("[ConnectedComponentsFn {}] queryCCContext should not be null because the result is sent back from children nodes", context.self().id());
-                throw new IllegalStateException("queryCCContext should not be null because the result is sent back from children nodes\n");
-            }
+            QueryCCContext ccContext = findCCContext(q.getQueryId(), q.getUserId(), list);
+            assert ccContext != null;
+            HashSet<String> vertexSet = ccContext.getVertexSet();
 
-            ArrayDeque<String> stack = result.getStack();
-            int stackHash = Utils.generateNewStackHash(stack);
+            HashSet<String> currentCandidateNeighbours = ccContext.getCandidateNeighbours();
+            HashSet<String> candidateNeighbours = q.getNeighbours();
+            candidateNeighbours.removeAll(vertexSet);
+            currentCandidateNeighbours.addAll(candidateNeighbours);
+            ccContext.setCandidateNeighbours(currentCandidateNeighbours);
 
-            // find in context the current response num to collect by stackHash
-            ArrayList<CCPathContext> ccPathContexts = queryCCContext.getCcPathContexts();
-            CCPathContext ccContextByPathHash = findCCContextByPathHash(ccPathContexts, stackHash);
+            vertexSet.addAll(q.getNeighbours());
 
-            // add all the aggregated cc ids for one path from descendants
-            if(ccContextByPathHash == null){
-                LOGGER.error("[ConnectedComponentsFn {}] ccContextByPathHash should not be null!", context.self().id());
-                throw new IllegalStateException("ccContextByPathHash should not be null!");
-            }
-            ccContextByPathHash.getAggregatedCCIds().addAll(result.getAggregatedCCIds());
+            ccContext.setCandidateResponseNumber(ccContext.getCandidateResponseNumber() - 1);
 
-            int n = ccContextByPathHash.getResponseNum();
-
-            // remove the first of the stack namely itself
-            stack.removeFirst();
-
-            // update the low link id and store into context
-            int updatedLowLinkId = Integer.parseInt(ccContextByPathHash.getAggregatedLowLinkId());
-            updatedLowLinkId = Math.min(Integer.parseInt(result.getLowLinkId()), updatedLowLinkId);
-            ccContextByPathHash.setAggregatedLowLinkId(String.valueOf(updatedLowLinkId));
-
-            // all responses are collected for one path
-            if(n - 1 == 0){
-                LOGGER.debug("[ConnectedComponentsFn {}] QueryCCResult received " +
-                                "and all responses are collected for one path", context.self().id());
-
-                // if it is the source node, just egress
-                if(context.self().id().equals(result.getVertexId())){
-                    LOGGER.info("[ConnectedComponentsFn {}] Success! qid: {}, uid: {}",
-                            context.self().id(), result.getQueryId(), result.getUserId());
-                    String str1 = String.format("Result of query %s by user %s: connected component id of node %s is %s. ",
-                            result.getQueryId(), result.getUserId(), context.self().id(), updatedLowLinkId);
-                    String str2 = "Other node ids that contain in the same component are:";
-
-                    StringBuilder sb = new StringBuilder();
-                    for(String id : ccContextByPathHash.getAggregatedCCIds())
-                        sb.append(" ").append(id);
-
-                    String resultStr = str1 + str2 + sb.toString();
-
-                    sendResult(context, result.getQueryId(), result.getUserId(), resultStr);
-
-                } else {
-                    // not source node, send to its parents the aggregated low link id
-                    LOGGER.debug("[ConnectedComponentsFn {}}] not the source node", context.self().id());
-                    // merge all the cc ids, send to parent
-                    Set<String> aggregatedCCIds = new HashSet<>();
-                    for(CCPathContext c: ccPathContexts){
-                        aggregatedCCIds.addAll(c.getAggregatedCCIds());
+            if(ccContext.getCandidateResponseNumber() == 0) {
+                if(currentCandidateNeighbours.size() == 0){
+                    /**
+                     * egress!
+                     */
+                    int lowLinkId = Integer.MAX_VALUE;
+                    for(String i: vertexSet){
+                        lowLinkId = Math.min(Integer.parseInt(i), lowLinkId);
                     }
-                    aggregatedCCIds.add(context.self().id());
+                    String str1 = String.format("Result of query %s by user %s: connected component id of node %s is %s. ",
+                            q.getQueryId(), q.getUserId(), context.self().id(), lowLinkId);
+                    String str2 = "All node ids that contain in the same component are:" + vertexSet.toString();
 
-                    // backtracking
-                    context.send(MessageBuilder
-                            .forAddress(TypeName.typeNameOf("hesse.applications", "connected-components"), stack.getFirst())
-                            .withCustomType(
-                                    Types.QUERY_CC_RESULT_TYPE,
-                                    new QueryCCResult(result.getQueryId(), result.getUserId(),
-                                            result.getVertexId(), result.getQueryType(), String.valueOf(updatedLowLinkId), aggregatedCCIds, stack)
-                            )
-                            .build());
+                    sendResult(context, q.getQueryId(), q.getUserId(), str1 + str2);
+
+                    // clear state
+                    removeCCContext(q.getQueryId(), q.getUserId(), list);
+                }else{
+                    // clear candidate neighbors and set candidate response number
+                    // continue forwarding to current candidate neighbours
+                    ccContext.setCandidateResponseNumber(currentCandidateNeighbours.size());
+                    ccContext.setCandidateNeighbours(new HashSet<>());
+
+                    for(String neighbourId: currentCandidateNeighbours){
+                        context.send(MessageBuilder
+                                .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), neighbourId)
+                                .withCustomType(
+                                        Types.FORWARD_QUERY_CC_TYPE,
+                                        new ForwardQueryCC(q.getQueryId(), q.getUserId(), q.getVertexId(),
+                                                ccContext.getStartT(), ccContext.getEndT())
+                                )
+                                .build());
+                    }
                 }
-
-                // no longer need the CC context of current node
-                // remove the pathContext using stackHash
-                // remove this path
-                queryCCContext.getCcPathContexts().remove(ccContextByPathHash);
-                if(queryCCContext.getCcPathContexts().size() == 0){
-                    // if no paths
-                    // no longer need the CC context of current node
-                    queryCCContexts.remove(queryCCContext);
-                }
-
-            } else {  // not the last result to collect
-                LOGGER.debug("[ConnectedComponentsFn {}] QueryCCResult received " +
-                                "but not all responses of one path are collected", context.self().id());
-                ccContextByPathHash.setResponseNum(n - 1);
             }
-            context.storage().set(QUERY_CC_CONTEXT_LIST, queryCCContexts);
+            context.storage().set(QUERY_CC_CONTEXT_LIST, list);
         }
 
         return context.done();
@@ -253,12 +160,7 @@ public class ConnectedComponentsFn implements StatefulFunction {
         return null;
     }
 
-    private CCPathContext findCCContextByPathHash(ArrayList<CCPathContext> ccPathContexts, int stackHash) {
-        for(CCPathContext c:ccPathContexts){
-            if(c.getPathHash() == stackHash){
-                return c;
-            }
-        }
-        return null;
+    private void removeCCContext(String queryId, String userId, ArrayList<QueryCCContext> list) {
+        list.removeIf(e -> e.getQueryId().equals(queryId) && e.getUserId().equals(userId));
     }
 }
