@@ -1,6 +1,7 @@
 import random
 import json
 
+# for micro-benchmarking
 # e.g
 # {"query_id": "1", "user_id": "1", "vertex_id": "0", "query_type": "connected-components", "start_t": "0", "end_t":"20"}
 

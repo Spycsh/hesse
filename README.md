@@ -19,10 +19,10 @@ A temporal graph library based on Flink Stateful Functions
 - [x] Break storage TreeMap buckets into different ValueSpecs and see the performances
 - [x] Query Concurrency investigation on different concurrent applications
 - [x] Support of Single-Source-Shortest-Path algorithm and PageRank
+- [x] Micro-benchmarking and Macro-benchmarking on different datasets
 
 ## TODO
 
-- [ ] Micro-benchmarking and Macro-benchmarking on different datasets
 - [ ] Exploration of remote and local Statefun
 - [ ] LRU cache of query and vertex state
 - [ ] Performance benchmarking compared with other temporal graph engines
@@ -30,9 +30,8 @@ A temporal graph library based on Flink Stateful Functions
 ## Features
 
 This project aims to build a best-effort event-driven distributed temporal graph analytics library on top of [Flink Stateful Functions](https://nightlies.apache.org/flink/flink-statefun-docs-stable/).
-It provides efficient storage of temporal graphs and supports different types of queries on different graph algorithms in arbitrary event-time windows.
-The support of arbitrary event-time window query means that Hesse will recover the graph state by applying all the activities in the
-the event-time window for temporal queries of different applications.
+It provides efficient storage of temporal graphs and supports different types of concurrent queries on different graph algorithms in arbitrary event-time windows.
+The support of arbitrary event-time window query means that Hesse will recover the graph state by applying all the activities in the event-time window for temporal queries of different applications.
 
 ## Architecture
 
@@ -129,6 +128,30 @@ Here are some examples of queries, and the corresponding JSON query strings as s
 Hesse even allows you to put these different types of queries with different parameters into one file to feed into the query stream.
 For more examples, see the `datasets/query` folder.
 
+## Storage paradigms
+
+Hesse offers four kinds of configurable [storage paradigms](https://github.com/Spycsh/hesse/blob/main/src/main/resources/hesse.properties),
+and can be configured based on users' graph stream for better performance.
+Details will be demonstrated in future paper to this repository.
+
+## Benchmarking
+
+Graph Stream Dataset: refer to [link](https://snap.stanford.edu/data/email-Eu-core-temporal.html)
+
+Query Stream (synthetic): refer to [link](https://github.com/Spycsh/hesse/blob/main/datasets/query/generate_synthetic_queries.py)
+
+Storage Paradigm: iTM with bucket number 128
+
+*  Overall latencies in **milliseconds** handling 100 concurrent queries given
+   different query types and time windows
+
+![overall-latencies-handling-one-hundred-query](doc/macro_benchmarking_2.PNG)
+
+* Average latencies in **milliseconds** handling one query given different query
+  types and time windows
+
+![avg-latency-handling-one-query](doc/macro_benchmarking_1.PNG)
+
 ## Advanced Tips
 
 These are still in experiments and tips for developers
@@ -148,7 +171,7 @@ Here are the exposed topics:
 |query-results|results of queries|egress|
 |storage-time|time of storage used for benchmarking|egress|
 |filter-time|time of filtering edge activities at arbitrary time windows|egress|
-|indexing-time|time of indexing (only used for storage paradigm 4)|egress|
+|indexing-time|time of indexing (only used for storage paradigm iTM)|egress|
 
 * delete corrupted topics
 
