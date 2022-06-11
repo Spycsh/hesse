@@ -17,6 +17,7 @@ services:
       MASTER_HOST: statefun-manager
     volumes:
     - ./module.yaml:/opt/statefun/modules/hesse/module.yaml
+    - ./flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
   statefun-worker:
     image: apache/flink-statefun:3.2.0-java11
     expose:
@@ -35,6 +36,7 @@ services:
       MASTER_HOST: statefun-manager
     volumes:
     - ./module.yaml:/opt/statefun/modules/hesse/module.yaml
+    - ./flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
   zookeeper:
     image: confluentinc/cp-zookeeper:5.4.3
     environment:
@@ -61,14 +63,14 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/graph/example_gnnsampling_edges_1.txt
+      APP_PATH: /mnt/datasets/graph/example_pagerank_edges_1.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: temporal-graph
       APP_DELAY_SECONDS: 0
       APP_LOOP: 'false'
       APP_JSON_PATH: src_id
     volumes:
-    - ./datasets/graph/example_gnnsampling_edges_1.txt:/mnt/datasets/graph/example_gnnsampling_edges_1.txt
+    - ./datasets/graph/example_pagerank_edges_1.txt:/mnt/datasets/graph/example_pagerank_edges_1.txt
   hesse-query-producer:
     image: spycsh/query-producer:latest
     depends_on:
@@ -76,7 +78,7 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/query/query_gnnsampling_1.txt
+      APP_PATH: /mnt/datasets/query/query_pagerank_1.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: query
       APP_DELAY_SECONDS: 0
@@ -84,7 +86,7 @@ services:
       APP_LOOP: 'false'
       APP_JSON_PATH: query_id
     volumes:
-    - ./datasets/query/query_gnnsampling_1.txt:/mnt/datasets/query/query_gnnsampling_1.txt
+    - ./datasets/query/query_pagerank_1.txt:/mnt/datasets/query/query_pagerank_1.txt
   hesse-benchmarks:
     image: spycsh/hesse-benchmarks:latest
     depends_on:
