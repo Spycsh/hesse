@@ -404,4 +404,16 @@ public class Types {
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankContextClear.class));
 
+    public static final Type<PageRankPrepareResponse> PAGERANK_PREPARE_RESPONSE_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_prepare_response"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankPrepareResponse.class));
+
+    public static final Type<PageRankStartTask> PAGERANK_START_TASK_TYPE =
+            SimpleType.simpleImmutableTypeFrom(
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_start_task"),
+                    JSON_OBJ_MAPPER::writeValueAsBytes,
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankStartTask.class));
+
 }

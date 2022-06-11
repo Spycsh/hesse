@@ -25,8 +25,13 @@ public class CoordinatorFn implements StatefulFunction {
     private static final ValueSpec<Integer> CURRENT_ITERATION = ValueSpec.named("currentIteration").withIntType();
     // number of responses to collect from PageRank applications
     private static final ValueSpec<Integer> RESPONSE_TO_COLLECT = ValueSpec.named("responseToCollect").withIntType();
+    // number of prepare responses to collect from PageRank applications
+    private static final ValueSpec<Integer> PREPARE_RESPONSE_TO_COLLECT = ValueSpec.named("prepareResponseToCollect").withIntType();
     // current collected response number
     private static final ValueSpec<Integer> CURRENT_RESPONSE_COLLECTED = ValueSpec.named("currentResponseCollected").withIntType();
+    // current collected prepare phase response number
+    private static final ValueSpec<Integer> CURRENT_PREPARE_RESPONSE_COLLECTED = ValueSpec.named("currentPrepareResponseCollected").withIntType();
+
     // page rank results for each round
     private static final ValueSpec<Map<Integer, Map<String, String>>> PAGERANK_RESULTS = ValueSpec.named("pagerankResults").withCustomType(Types.PAGERANK_RESULTS_TYPE);
 
@@ -34,7 +39,8 @@ public class CoordinatorFn implements StatefulFunction {
 
     public static final StatefulFunctionSpec SPEC = StatefulFunctionSpec.builder(TYPE_NAME)
             .withSupplier(CoordinatorFn::new)
-            .withValueSpecs(GRAPH_IDS, ITERATIONS, CURRENT_ITERATION, RESPONSE_TO_COLLECT, CURRENT_RESPONSE_COLLECTED, PAGERANK_RESULTS)
+            .withValueSpecs(GRAPH_IDS, ITERATIONS, CURRENT_ITERATION, RESPONSE_TO_COLLECT, CURRENT_RESPONSE_COLLECTED,
+                    PREPARE_RESPONSE_TO_COLLECT, CURRENT_PREPARE_RESPONSE_COLLECTED, PAGERANK_RESULTS)
             .build();
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CoordinatorFn.class);
@@ -44,12 +50,15 @@ public class CoordinatorFn implements StatefulFunction {
         // here record a set of all nodes id in the graph
         // for collecting enough responses
         if(message.isUtf8String()){
-            LOGGER.debug("[CoordinatorFn {}] graph id received", context.self().id());
             String srcIdToDstId = message.asUtf8String();
+
             Set<String> graphIds = context.storage().get(GRAPH_IDS).orElse(new HashSet<>());
             String[] srcToDst = srcIdToDstId.split(" ");
             graphIds.add(srcToDst[0]);
             graphIds.add(srcToDst[1]);
+
+            LOGGER.debug("[CoordinatorFn {}] graph id {},{} received", context.self().id(), srcToDst[0], srcToDst[1]);
+
             context.storage().set(GRAPH_IDS, graphIds);
         }
 
@@ -75,6 +84,8 @@ public class CoordinatorFn implements StatefulFunction {
 
             context.storage().set(RESPONSE_TO_COLLECT, set.size());
             context.storage().set(CURRENT_RESPONSE_COLLECTED, 0);
+            context.storage().set(PREPARE_RESPONSE_TO_COLLECT, set.size());
+            context.storage().set(CURRENT_PREPARE_RESPONSE_COLLECTED, 0);
             broadcastTask(context, set, q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT());
         }
 
@@ -104,6 +115,23 @@ public class CoordinatorFn implements StatefulFunction {
                 }
             } else {
                 LOGGER.error("[CoordinatorFn {}] Currently only support PageRank on whole graph", context.self().id());
+            }
+        }
+
+        if(message.is(Types.PAGERANK_PREPARE_RESPONSE_TYPE)){
+            PageRankPrepareResponse q = message.as(Types.PAGERANK_PREPARE_RESPONSE_TYPE);
+            LOGGER.debug("[CoordinatorFn {}] PageRankPrepareResponse received", context.self().id());
+
+            int currentPrepareResponseCollected = context.storage().get(CURRENT_PREPARE_RESPONSE_COLLECTED).orElse(0);
+            currentPrepareResponseCollected += 1;
+            context.storage().set(CURRENT_PREPARE_RESPONSE_COLLECTED, currentPrepareResponseCollected);
+            int prepareResponseToCollect = context.storage().get(PREPARE_RESPONSE_TO_COLLECT).orElse(0);
+            LOGGER.debug("[CoordinatorFn {}] prepare response to collect: {}", context.self().id(), prepareResponseToCollect);
+            LOGGER.debug("[CoordinatorFn {}] current collect: {}", context.self().id(), currentPrepareResponseCollected);
+
+            if(currentPrepareResponseCollected == prepareResponseToCollect){
+                Set<String> set = context.storage().get(GRAPH_IDS).orElse(new HashSet<>());
+                broadcastStartTask(context, set, q.getQueryId(), q.getUserId());
             }
         }
 
@@ -152,15 +180,13 @@ public class CoordinatorFn implements StatefulFunction {
                     // clear all state of this query
                     clearPageRankWorkerState(context, context.storage().get(GRAPH_IDS).orElse(new HashSet<>()), q.getQueryId(), q.getUserId());
                     clearCoordinatorState(context);
-
                 }else{
                     context.storage().set(CURRENT_ITERATION, currentIteration);
                     Set<String> set = context.storage().get(GRAPH_IDS).orElse(new HashSet<>());
-                    broadcastTask(context, set, q.getQueryId(), q.getUserId());
+                    broadcastContinueTask(context, set, q.getQueryId(), q.getUserId());
                 }
             }else{
                 context.storage().set(CURRENT_RESPONSE_COLLECTED, currentResponseCollected);
-
             }
         }
 
@@ -179,7 +205,19 @@ public class CoordinatorFn implements StatefulFunction {
         }
     }
 
-    public void broadcastTask(Context context, Set<String> set, String qid, String uid){
+    private void broadcastStartTask(Context context, Set<String> set, String qid, String uid) {
+        for(String e : set){
+            context.send(MessageBuilder
+                    .forAddress(TypeName.typeNameOf("hesse.applications", "pagerank"), e)
+                    .withCustomType(
+                            Types.PAGERANK_START_TASK_TYPE,
+                            new PageRankStartTask(qid, uid)
+                    )
+                    .build());
+        }
+    }
+
+    public void broadcastContinueTask(Context context, Set<String> set, String qid, String uid){
         for(String e : set){
             context.send(MessageBuilder
                     .forAddress(TypeName.typeNameOf("hesse.applications", "pagerank"), e)
@@ -198,6 +236,8 @@ public class CoordinatorFn implements StatefulFunction {
         context.storage().remove(RESPONSE_TO_COLLECT);
         context.storage().remove(CURRENT_RESPONSE_COLLECTED);
         context.storage().remove(PAGERANK_RESULTS);
+        context.storage().remove(PREPARE_RESPONSE_TO_COLLECT);
+        context.storage().remove(CURRENT_PREPARE_RESPONSE_COLLECTED);
     }
 
     private void clearPageRankWorkerState(Context context, Set<String> set, String qid, String uid) {
