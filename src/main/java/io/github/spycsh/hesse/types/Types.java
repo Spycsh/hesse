@@ -349,11 +349,11 @@ public class Types {
             bytes -> JSON_OBJ_MAPPER.readValue(bytes, new TypeReference<HashSet<String>>() {
             }));
 
-    public static final Type<PageRankTask> PAGERANK_TASK_TYPE =
+    public static final Type<PageRankPrepareTask> PAGERANK_PREPARE_TASK_TYPE =
             SimpleType.simpleImmutableTypeFrom(
-                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_task"),
+                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_prepare_task"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankTask.class));
+                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankPrepareTask.class));
 
     public static final Type<PageRankTaskWithState> PAGERANK_TASK_WITH_STATE_TYPE =
             SimpleType.simpleImmutableTypeFrom(
@@ -409,11 +409,5 @@ public class Types {
                     TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_prepare_response"),
                     JSON_OBJ_MAPPER::writeValueAsBytes,
                     bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankPrepareResponse.class));
-
-    public static final Type<PageRankStartTask> PAGERANK_START_TASK_TYPE =
-            SimpleType.simpleImmutableTypeFrom(
-                    TypeName.typeNameOf(TYPES_NAMESPACE, "pagerank_start_task"),
-                    JSON_OBJ_MAPPER::writeValueAsBytes,
-                    bytes -> JSON_OBJ_MAPPER.readValue(bytes, PageRankStartTask.class));
 
 }

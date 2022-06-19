@@ -47,7 +47,7 @@ public class CoordinatorFn implements StatefulFunction {
 
     @Override
     public CompletableFuture<Void> apply(Context context, Message message) throws Throwable {
-        // here record a set of all nodes id in the graph
+        // coordinator 00 receives a set of all vertex ids in the graph
         // for collecting enough responses
         if(message.isUtf8String()){
             String srcIdToDstId = message.asUtf8String();
@@ -62,6 +62,33 @@ public class CoordinatorFn implements StatefulFunction {
             context.storage().set(GRAPH_IDS, graphIds);
         }
 
+        // the current query coordinator receives the pagerank query from query handler
+        if(message.is(Types.QUERY_PAGERANK_TYPE)){
+            LOGGER.debug("[CoordinatorFn {}] QueryPageRank received", context.self().id());
+            QueryPageRank q = message.as(Types.QUERY_PAGERANK_TYPE);
+            if(q.getVertexId().equals("all")) {
+                int iterations = q.getIterations();
+                context.storage().set(ITERATIONS, iterations);
+
+                Set<String> set = context.storage().get(GRAPH_IDS).orElse(new HashSet<>());
+
+                if(set.size() == 0){
+                    // one coordinator named after queryId_userId is responsible for one query
+                    // all coordinators ask for coordinator 0 for graph ids
+                    context.send(MessageBuilder
+                            .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0")
+                            .withCustomType(
+                                    Types.QUERY_GRAPH_IDS_TYPE,
+                                    new QueryGraphIds(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), context.self().id()))
+                            .build());
+                }
+
+            } else {
+                LOGGER.error("[CoordinatorFn {}] Currently only support PageRank on whole graph", context.self().id());
+            }
+        }
+
+        // coordinator 0 receives requests of all graph ids
         if(message.is(Types.QUERY_GRAPH_IDS_TYPE)){
             LOGGER.debug("[CoordinatorFn {}] QueryGraphIds received", context.self().id());
             QueryGraphIds q = message.as(Types.QUERY_GRAPH_IDS_TYPE);
@@ -76,6 +103,8 @@ public class CoordinatorFn implements StatefulFunction {
                     .build());
         }
 
+        // the current query coordinator receives all the graph ids
+        // and broad cast tasks to all the graph vertices
         if(message.is(Types.RESPONSE_GRAPH_IDS_TYPE)){
             LOGGER.debug("[CoordinatorFn {}] ResponseGraphIds received", context.self().id());
             ResponseGraphIds q = message.as(Types.RESPONSE_GRAPH_IDS_TYPE);
@@ -86,36 +115,7 @@ public class CoordinatorFn implements StatefulFunction {
             context.storage().set(CURRENT_RESPONSE_COLLECTED, 0);
             context.storage().set(PREPARE_RESPONSE_TO_COLLECT, set.size());
             context.storage().set(CURRENT_PREPARE_RESPONSE_COLLECTED, 0);
-            broadcastTask(context, set, q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT());
-        }
-
-        if(message.is(Types.QUERY_PAGERANK_TYPE)){
-            LOGGER.debug("[CoordinatorFn {}] QueryPageRank received", context.self().id());
-            QueryPageRank q = message.as(Types.QUERY_PAGERANK_TYPE);
-            if(q.getVertexId().equals("all")){
-                int iterations = q.getIterations();
-                context.storage().set(ITERATIONS, iterations);
-                // context.storage().set(CURRENT_ITERATION, 0);
-
-                Set<String> set = context.storage().get(GRAPH_IDS).orElse(new HashSet<>());
-
-                if(set.size() == 0){
-                    // multiple concurrent coordinator, one coordinator responsible for one query
-                    // ask for Coordinator 0 for graph ids
-                    context.send(MessageBuilder
-                            .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), "0")
-                            .withCustomType(
-                                    Types.QUERY_GRAPH_IDS_TYPE,
-                                    new QueryGraphIds(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), context.self().id()))
-                            .build());
-                } else{
-                    context.storage().set(RESPONSE_TO_COLLECT, set.size());
-                    context.storage().set(CURRENT_RESPONSE_COLLECTED, 0);
-                    broadcastTask(context, set, q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT());
-                }
-            } else {
-                LOGGER.error("[CoordinatorFn {}] Currently only support PageRank on whole graph", context.self().id());
-            }
+            broadcastPrepareTask(context, set, q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT());
         }
 
         if(message.is(Types.PAGERANK_PREPARE_RESPONSE_TYPE)){
@@ -131,7 +131,7 @@ public class CoordinatorFn implements StatefulFunction {
 
             if(currentPrepareResponseCollected == prepareResponseToCollect){
                 Set<String> set = context.storage().get(GRAPH_IDS).orElse(new HashSet<>());
-                broadcastStartTask(context, set, q.getQueryId(), q.getUserId());
+                broadcastContinueTask(context, set, q.getQueryId(), q.getUserId());
             }
         }
 
@@ -162,9 +162,6 @@ public class CoordinatorFn implements StatefulFunction {
                 // clear for next round
                 context.storage().set(CURRENT_RESPONSE_COLLECTED, 0);
 
-                currentIteration += 1;
-                context.storage().set(CURRENT_ITERATION, currentIteration);
-
                 if(currentIteration == iterations){
                     // egress
                     System.out.println("success!");
@@ -185,6 +182,9 @@ public class CoordinatorFn implements StatefulFunction {
                     Set<String> set = context.storage().get(GRAPH_IDS).orElse(new HashSet<>());
                     broadcastContinueTask(context, set, q.getQueryId(), q.getUserId());
                 }
+
+                currentIteration += 1;
+                context.storage().set(CURRENT_ITERATION, currentIteration);
             }else{
                 context.storage().set(CURRENT_RESPONSE_COLLECTED, currentResponseCollected);
             }
@@ -193,25 +193,14 @@ public class CoordinatorFn implements StatefulFunction {
         return context.done();
     }
 
-    public void broadcastTask(Context context, Set<String> set, String qid, String uid, int startT, int endT){
+    // broadcast pagerank tasks to PageRankFn instances
+    public void broadcastPrepareTask(Context context, Set<String> set, String qid, String uid, int startT, int endT){
         for(String e : set){
             context.send(MessageBuilder
                     .forAddress(TypeName.typeNameOf("hesse.storage", "vertex-storage"), e)
                     .withCustomType(
-                            Types.PAGERANK_TASK_TYPE,
-                            new PageRankTask(qid, uid, startT, endT, context.self().id())
-                    )
-                    .build());
-        }
-    }
-
-    private void broadcastStartTask(Context context, Set<String> set, String qid, String uid) {
-        for(String e : set){
-            context.send(MessageBuilder
-                    .forAddress(TypeName.typeNameOf("hesse.applications", "pagerank"), e)
-                    .withCustomType(
-                            Types.PAGERANK_START_TASK_TYPE,
-                            new PageRankStartTask(qid, uid)
+                            Types.PAGERANK_PREPARE_TASK_TYPE,
+                            new PageRankPrepareTask(qid, uid, startT, endT, context.self().id())
                     )
                     .build());
         }

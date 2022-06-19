@@ -10,7 +10,7 @@ import io.github.spycsh.hesse.types.gnnsampling.ForwardQueryGNNSampling;
 import io.github.spycsh.hesse.types.gnnsampling.ForwardQueryGNNSamplingWithState;
 import io.github.spycsh.hesse.types.gnnsampling.QueryGNNSampling;
 import io.github.spycsh.hesse.types.gnnsampling.QueryGNNSamplingState;
-import io.github.spycsh.hesse.types.pagerank.PageRankTask;
+import io.github.spycsh.hesse.types.pagerank.PageRankPrepareTask;
 import io.github.spycsh.hesse.types.pagerank.PageRankTaskWithState;
 import io.github.spycsh.hesse.types.scc.ForwardQuerySCC;
 import io.github.spycsh.hesse.types.scc.ForwardQuerySCCWithState;
@@ -217,8 +217,8 @@ public class VertexStorageFn implements StatefulFunction {
             sendQuerySingleSourceShortestPathWithStateToApp(context, queryWithState);
         }
 
-        if(message.is(Types.PAGERANK_TASK_TYPE)){
-            PageRankTask q = message.as(Types.PAGERANK_TASK_TYPE);
+        if(message.is(Types.PAGERANK_PREPARE_TASK_TYPE)){
+            PageRankPrepareTask q = message.as(Types.PAGERANK_PREPARE_TASK_TYPE);
             LOGGER.info("[VertexStorageFn {}] PageRankTask received with startT:{}, endT:{}", context.self().id(), q.getStartT(), q.getEndT());
 
             List<VertexActivity> filteredActivityList = filterActivityListByTimeRegion(context, q.getStartT(), q.getEndT());

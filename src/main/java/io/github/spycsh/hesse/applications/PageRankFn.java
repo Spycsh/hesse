@@ -49,26 +49,10 @@ public class PageRankFn implements StatefulFunction {
 
             ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
 
-            // if in this time window this node does not exist
-            // set its pagerankValue null
             if(neighbourIdsWithWeight.size() == 0 && inDegree == 0){
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), q.getCoordinatorId())
-                        .withCustomType(Types.QUERY_PAGERANK_RESULT_TYPE,
-                                new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), null))
-                        .build());
-
                 pageRankContexts.add(new PageRankContext(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), 0.0,
                         0.0, 0, inDegree, neighbourIdsWithWeight, q.getCoordinatorId()));
             } else if(inDegree == 0) {
-                // the node exists
-                // only has outgoing edge, will not receive any messages
-                // should directly send a message back to coordinator
-                context.send(MessageBuilder
-                        .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), q.getCoordinatorId())
-                        .withCustomType(Types.QUERY_PAGERANK_RESULT_TYPE,
-                                new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), String.valueOf(1-DAMPING_FACTOR)))
-                        .build());
                 pageRankContexts.add(new PageRankContext(q.getQueryId(), q.getUserId(), q.getStartT(), q.getEndT(), 1-DAMPING_FACTOR,
                         0.0, 0, inDegree, neighbourIdsWithWeight, q.getCoordinatorId()));
             } else {
@@ -78,19 +62,6 @@ public class PageRankFn implements StatefulFunction {
 
             context.storage().set(PAGE_RANK_CONTEXT_LIST, pageRankContexts);
             sendPrepareResponseToCoordinator(context, q);
-        }
-
-        if(message.is(Types.PAGERANK_START_TASK_TYPE)){
-            PageRankStartTask p = message.as(Types.PAGERANK_START_TASK_TYPE);
-            LOGGER.debug("[PageRankFn {}] PageRankStartTask received", context.self().id());
-            ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
-            PageRankContext pageRankContext = findPageRankContext(p.getQueryId(), p.getUserId(), pageRankContexts);
-            Map<String, String> neighbourIdsWithWeight = pageRankContext.getNeighbourIdsWithWeight();
-
-            if(neighbourIdsWithWeight.size() != 0 ){
-                LOGGER.debug("[PageRankFn {}] has outgoing edges!", context.self().id());
-                broadcastPRValueWithWeights(context, neighbourIdsWithWeight, p);
-            }
         }
 
         // after receiving the PR value, weight and out-degree from the source vertex
@@ -146,13 +117,19 @@ public class PageRankFn implements StatefulFunction {
             PageRankContext pageRankContext = findPageRankContext(q.getQueryId(), q.getUserId(), pageRankContexts);
 
             assert pageRankContext != null;
+
             if(pageRankContext.getInDegree() == 0 && pageRankContext.getNeighbourIdsWithWeight().size() == 0){
+                // if in this time window this node does not exist
+                // set its pagerankValue null
                 context.send(MessageBuilder
                         .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), pageRankContext.getCoordinatorId())
                         .withCustomType(Types.QUERY_PAGERANK_RESULT_TYPE,
                                 new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), null))
                         .build());
             }else if(pageRankContext.getInDegree() == 0) {
+                // the node exists
+                // only has outgoing edge, will not receive any messages
+                // should directly send a message back to coordinator
                 context.send(MessageBuilder
                         .forAddress(TypeName.typeNameOf("hesse.coordination", "coordinator"), pageRankContext.getCoordinatorId())
                         .withCustomType(Types.QUERY_PAGERANK_RESULT_TYPE,
@@ -207,19 +184,6 @@ public class PageRankFn implements StatefulFunction {
                         Types.PAGERANK_PREPARE_RESPONSE_TYPE,
                         new PageRankPrepareResponse(q.getQueryId(), q.getUserId()))
                 .build());
-    }
-
-    private void broadcastPRValueWithWeights(Context context, Map<String, String> neighbourIdsWithWeight, PageRankStartTask q) {
-        // for all neighbours, send own PR value with weights
-        for(Map.Entry<String, String> e:neighbourIdsWithWeight.entrySet()) {
-            context.send(MessageBuilder
-                    .forAddress(TypeName.typeNameOf("hesse.applications", "pagerank"), e.getKey())
-                    .withCustomType(
-                            Types.PAGERANK_VALUE_WITH_WEIGHT_TYPE,
-                            new PageRankValueWithWeight(q.getQueryId(), q.getUserId(), 1.0,
-                                    Double.parseDouble(e.getValue()), neighbourIdsWithWeight.size()))
-                    .build());
-        }
     }
 
     private PageRankContext findPageRankContext(String queryId, String userId, ArrayList<PageRankContext> list) {

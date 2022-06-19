@@ -37,7 +37,7 @@ public class PageRankTaskWithState {
         this.coordinatorId = coordinatorId;
     }
 
-    public PageRankTaskWithState(PageRankTask q, List<VertexActivity> filteredActivityList) {
+    public PageRankTaskWithState(PageRankPrepareTask q, List<VertexActivity> filteredActivityList) {
         this.queryId = q.getQueryId();
         this.userId = q.getUserId();
         this.startT = q.getStartT();

@@ -2,7 +2,7 @@ package io.github.spycsh.hesse.types.pagerank;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class PageRankTask {
+public class PageRankPrepareTask {
     @JsonProperty("query_id")
     private String queryId;
 
@@ -18,10 +18,10 @@ public class PageRankTask {
     @JsonProperty("coordinator_id")
     private String coordinatorId;
 
-    public PageRankTask() {
+    public PageRankPrepareTask() {
     }
 
-    public PageRankTask(String queryId, String userId, int startT, int endT, String coordinatorId) {
+    public PageRankPrepareTask(String queryId, String userId, int startT, int endT, String coordinatorId) {
         this.queryId = queryId;
         this.userId = userId;
         this.startT = startT;
