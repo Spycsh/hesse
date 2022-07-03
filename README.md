@@ -72,6 +72,10 @@ docker-compose up -d hesse-query-producer
 Apart from the graph datasets and query stream that users can configure by editing the `docker-compose.yml`,
 users can configure other system parameters by editing `hesse.properties` and `log4j2.properties` in the `resources` folder.
 
+## Demo
+
+This [demo](doc/demo.md) gives an example demo to start with the project.
+
 ## Applications
 
 Here are some examples of queries, and the corresponding JSON query strings as streaming ingress:
