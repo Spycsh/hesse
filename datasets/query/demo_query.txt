@@ -1,0 +1,10 @@
+{"query_id": "1", "user_id": "1", "vertex_id": "3", "query_type": "connected-components", "start_t": "0", "end_t":"100"}
+{"query_id": "2", "user_id": "1", "vertex_id": "3", "query_type": "single-source-shortest-path", "start_t": "0", "end_t":"100"}
+{"query_id": "3", "user_id": "1", "vertex_id": "3", "query_type": "gnn-sampling", "start_t": "0", "end_t":"100", "parameter_map": {"h": "2", "k": "2"}}
+{"query_id": "4", "user_id": "1", "vertex_id": "all", "query_type": "pagerank", "start_t": "0", "end_t":"200", "parameter_map": {"iterations":"10"}}
+{"query_id": "5", "user_id": "1", "vertex_id": "3", "query_type": "connected-components", "start_t": "0", "end_t":"200"}
+{"query_id": "6", "user_id": "1", "vertex_id": "3", "query_type": "single-source-shortest-path", "start_t": "0", "end_t":"200"}
+{"query_id": "7", "user_id": "1", "vertex_id": "3", "query_type": "gnn-sampling", "start_t": "0", "end_t":"200", "parameter_map": {"h": "2", "k": "2"}}
+{"query_id": "8", "user_id": "1", "vertex_id": "7", "query_type": "connected-components", "start_t": "0", "end_t":"200"}
+{"query_id": "9", "user_id": "1", "vertex_id": "7", "query_type": "single-source-shortest-path", "start_t": "0", "end_t":"200"}
+{"query_id": "10", "user_id": "1", "vertex_id": "7", "query_type": "gnn-sampling", "start_t": "0", "end_t":"200", "parameter_map": {"h": "2", "k": "2"}}

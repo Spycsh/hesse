@@ -6,6 +6,8 @@ services:
       context: .
     expose:
     - '1108'
+    depends_on:
+    - hesse-benchmarks
   statefun-manager:
     image: apache/flink-statefun:3.2.0-java11
     expose:
@@ -63,14 +65,14 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/graph/example_pagerank_edges_1.txt
+      APP_PATH: /mnt/datasets/graph/demo_edges.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: temporal-graph
       APP_DELAY_SECONDS: 0
       APP_LOOP: 'false'
       APP_JSON_PATH: src_id
     volumes:
-    - ./datasets/graph/example_pagerank_edges_1.txt:/mnt/datasets/graph/example_pagerank_edges_1.txt
+    - ./datasets/graph/demo_edges.txt:/mnt/datasets/graph/demo_edges.txt
   hesse-query-producer:
     image: spycsh/query-producer:latest
     depends_on:
@@ -78,15 +80,15 @@ services:
     links:
     - kafka:kafka
     environment:
-      APP_PATH: /mnt/datasets/query/query_pagerank_1.txt
+      APP_PATH: /mnt/datasets/query/demo_query.txt
       APP_KAFKA_HOST: kafka:9092
       APP_KAFKA_TOPIC: query
       APP_DELAY_SECONDS: 0
-      APP_DELAY_START_SECONDS: '20'
+      APP_DELAY_START_SECONDS: '30'
       APP_LOOP: 'false'
       APP_JSON_PATH: query_id
     volumes:
-    - ./datasets/query/query_pagerank_1.txt:/mnt/datasets/query/query_pagerank_1.txt
+    - ./datasets/query/demo_query.txt:/mnt/datasets/query/demo_query.txt
   hesse-benchmarks:
     image: spycsh/hesse-benchmarks:latest
     depends_on:
@@ -95,6 +97,6 @@ services:
     - kafka:kafka
     environment:
       APP_KAFKA_HOST: kafka:9092
-      APP_KAFKA_TOPICS: storage-time filter-time query-results indexing-time
+      APP_KAFKA_TOPICS: storage-time filter-time query-results
     volumes:
     - ./benchmarks:/app/results

@@ -2,34 +2,9 @@
 
 A temporal graph library based on Flink Stateful Functions
 
-## Already Done
-
-- [x] Architecture design and Docker environment
-- [x] Kafka Graph Ingress and Query Ingress Stream
-- [x] Connected Component, Strongly Connected Component, GNNSampling algorithms based on Graph Traversal
-- [x] A basic non-benchmarking storage paradigm using TreeMap with persistence
-- [x] Query support for three algorithms on arbitrary time windows
-- [x] Query cache
-- [x] Time calculation for query
-- [x] User-configurable Implementation of different storage paradigms
-- [x] Performance benchmarking for different storage paradigms
-- [x] Measurement of time for queries of three algorithms
-- [x] add Logger and set logger level to eliminate the effect of print statements on time measurement
-- [x] Measurement of time for ingestion of edges
-- [x] Break storage TreeMap buckets into different ValueSpecs and see the performances
-- [x] Query Concurrency investigation on different concurrent applications
-- [x] Support of Single-Source-Shortest-Path algorithm and PageRank
-- [x] Micro-benchmarking and Macro-benchmarking on different datasets
-
-## TODO
-
-- [ ] Exploration of remote and local Statefun
-- [ ] LRU cache of query and vertex state
-- [ ] Performance benchmarking compared with other temporal graph engines
-
 ## Features
 
-This project aims to build a best-effort event-driven distributed temporal graph analytics library on top of [Flink Stateful Functions](https://nightlies.apache.org/flink/flink-statefun-docs-stable/).
+This project aims to build an event-driven distributed temporal graph analytics library on top of [Flink Stateful Functions](https://nightlies.apache.org/flink/flink-statefun-docs-stable/).
 It provides efficient storage of temporal graphs and supports different types of concurrent queries on different graph algorithms in arbitrary event-time windows.
 The support of arbitrary event-time window query means that Hesse will recover the graph state by applying all the activities in the event-time window for temporal queries of different applications.
 
@@ -75,7 +50,7 @@ docker-compose exec kafka kafka-console-consumer --bootstrap-server kafka:9092 -
 Notice that you should set a reasonable delay starting time for the query producer image using the config script based on how large your dataset is
 because you may want to see correct results after your graph is fully established.
 
-Another way is to decouple the whole `docker-compose up` into three stages: 1) edge producing, 2) edge storage 3) query producing and processing
+Another way (**highly recommended**) is to decouple the whole `docker-compose up` into three stages: 1) edge producing, 2) edge storage 3) query producing and processing
 by using the following commands:
 
 ```shell
@@ -131,10 +106,9 @@ For more examples, see the `datasets/query` folder.
 ## Storage paradigms
 
 Hesse offers four kinds of configurable [storage paradigms](https://github.com/Spycsh/hesse/blob/main/src/main/resources/hesse.properties),
-and can be configured based on users' graph stream for better performance.
-Details will be demonstrated in future paper to this repository.
+and can be configured based on users' graph stream for better performance. We recommend you configure storage paradigm as `TM` and `iTM` and specify appropriate bucket number if you want to do analytics on large-scale graph. Details will be demonstrated in future paper to this repository.
 
-## Benchmarking
+<!-- ## Benchmarking
 
 Graph Stream Dataset: refer to [link](https://snap.stanford.edu/data/email-Eu-core-temporal.html)
 
@@ -150,7 +124,7 @@ Storage Paradigm: iTM with bucket number 128
 * Average latencies in **milliseconds** handling one query given different query
   types and time windows
 
-![avg-latency-handling-one-query](doc/macro_benchmarking_1.PNG)
+![avg-latency-handling-one-query](doc/macro_benchmarking_1.PNG) -->
 
 ## Advanced Tips
 
@@ -200,3 +174,32 @@ After changing code in hesse (for example, add an application algorithm), you ca
 ```shell
 docker-compose up -d --build hesse
 ```
+
+## Already Done
+
+- [x] Architecture design and Docker environment
+- [x] Kafka Graph Ingress and Query Ingress Stream
+- [x] Connected Component, Strongly Connected Component, GNNSampling algorithms based on Graph Traversal
+- [x] A basic non-benchmarking storage paradigm using TreeMap with persistence
+- [x] Query support for three algorithms on arbitrary time windows
+- [x] Query cache
+- [x] Time calculation for query
+- [x] User-configurable Implementation of different storage paradigms
+- [x] Performance benchmarking for different storage paradigms
+- [x] Measurement of time for queries of three algorithms
+- [x] add Logger and set logger level to eliminate the effect of print statements on time measurement
+- [x] Measurement of time for ingestion of edges
+- [x] Break storage TreeMap buckets into different ValueSpecs and see the performances
+- [x] Query Concurrency investigation on different concurrent applications
+- [x] Support of Single-Source-Shortest-Path algorithm and PageRank
+- [x] Micro-benchmarking and Macro-benchmarking on different datasets
+
+## TODO
+
+- [ ] Deployment as AWS Lambda/Azure Functions/Google Cloud Functions
+- [ ] Exploration of remote and local Statefun
+- [ ] Efficient storage and retrievals of properties on edges and vertices
+- [ ] Modification/Deletion of edges (extra fields in ingress stream)
+- [ ] Performance benchmarking compared with other temporal graph engines
+- [ ] A CLI for developers to add UDF functions to the system
+- [ ] LRU cache refatoring in Query handler function

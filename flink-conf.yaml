@@ -64,5 +64,5 @@ execution.savepoint.ignore-unclaimed-state: true
 #==============================================================================
 # parallelism configurations
 #==============================================================================
-taskmanager.numberOfTaskSlots: 3
-parallelism.default: 3
+taskmanager.numberOfTaskSlots: 2
+parallelism.default: 2
