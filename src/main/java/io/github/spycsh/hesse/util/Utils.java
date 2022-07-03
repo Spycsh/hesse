@@ -13,9 +13,7 @@ public class Utils {
         HashSet<String> neighbourIds = new HashSet<>();
         for(VertexActivity activity:activityLog){
             if(activity.getActivityType().equals("add") && !activity.isIngoing()) {
-                if(activity.getWeight() == null){
-                    neighbourIds.add(activity.getDstId());
-                }
+                neighbourIds.add(activity.getDstId());
             }
         }
         return neighbourIds;

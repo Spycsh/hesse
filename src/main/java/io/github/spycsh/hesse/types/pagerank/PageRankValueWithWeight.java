@@ -15,18 +15,18 @@ public class PageRankValueWithWeight {
     @JsonProperty("weight")
     double weight;
 
-    @JsonProperty("degree")
-    int degree;
+    @JsonProperty("weight_sum")
+    double weightSum;
 
     public PageRankValueWithWeight() {
     }
 
-    public PageRankValueWithWeight(String queryId, String userId, double pagerankValue, double weight, int degree) {
+    public PageRankValueWithWeight(String queryId, String userId, double pagerankValue, double weight, double weightSum) {
         this.queryId = queryId;
         this.userId = userId;
         this.pagerankValue = pagerankValue;
         this.weight = weight;
-        this.degree = degree;
+        this.weightSum = weightSum;
     }
 
     public String getQueryId() {
@@ -61,11 +61,11 @@ public class PageRankValueWithWeight {
         this.weight = weight;
     }
 
-    public int getDegree() {
-        return degree;
+    public double getWeightSum() {
+        return weightSum;
     }
 
-    public void setDegree(int degree) {
-        this.degree = degree;
+    public void setWeightSum(double weightSum) {
+        this.weightSum = weightSum;
     }
 }

@@ -64,19 +64,19 @@ public class PageRankFn implements StatefulFunction {
             sendPrepareResponseToCoordinator(context, q);
         }
 
-        // after receiving the PR value, weight and out-degree from the source vertex
-        // of all incoming edges to itself, send its own result to coordinator
+        // after receiving the PR value, weight, weightSum and out-degree from the source vertex
+        // of all incoming edges to itself, apply formula, and send its own result to coordinator
         if(message.is(Types.PAGERANK_VALUE_WITH_WEIGHT_TYPE)){
             PageRankValueWithWeight p = message.as(Types.PAGERANK_VALUE_WITH_WEIGHT_TYPE);
 
-            LOGGER.debug("[PageRankFn {}] PageRankValueWithWeight received {},{},{}", context.self().id(), p.getPagerankValue(), p.getWeight(), p.getDegree());
+            LOGGER.debug("[PageRankFn {}] PageRankValueWithWeight received PR:{}, w:{}, W:{}", context.self().id(), p.getPagerankValue(), p.getWeight(), p.getWeightSum());
             ArrayList<PageRankContext> pageRankContexts = context.storage().get(PAGE_RANK_CONTEXT_LIST).orElse(new ArrayList<>());
             PageRankContext pageRankContext = findPageRankContext(p.getQueryId(), p.getUserId(), pageRankContexts);
             if(pageRankContext == null){
                 LOGGER.error("[PageRankFn {}] PageRankContext does not exist! qid: {}, uid: {}", context.self().id(), p.getQueryId(), p.getUserId());
             }
             double sum = pageRankContext.getCurrentPrValue();
-            sum = sum + p.getPagerankValue() * p.getWeight() / p.getDegree();
+            sum = sum + p.getPagerankValue() * p.getWeight() / p.getWeightSum();
             pageRankContext.setCurrentPrValue(sum);
 
             // if receive enough pagerank value with weights from other nodes
@@ -136,6 +136,7 @@ public class PageRankFn implements StatefulFunction {
                                 new QueryPageRankResult(q.getQueryId(), q.getUserId(), context.self().id(), String.valueOf(1-DAMPING_FACTOR)))
                         .build());
                 Map<String, String> neighbourIdsWithWeight = pageRankContext.getNeighbourIdsWithWeight();
+                double weightSum = neighbourIdsWithWeight.values().stream().mapToDouble(Double::parseDouble).sum();
 
                 // for all neighbours, send own PR value with weights
                 for(Map.Entry<String, String> e:neighbourIdsWithWeight.entrySet()) {
@@ -145,11 +146,12 @@ public class PageRankFn implements StatefulFunction {
                                     Types.PAGERANK_VALUE_WITH_WEIGHT_TYPE,
                                     new PageRankValueWithWeight(q.getQueryId(), q.getUserId(),
                                             pageRankContext.getPreviousPrValue(), Double.parseDouble(e.getValue()),
-                                            neighbourIdsWithWeight.size()))
+                                            weightSum))
                             .build());
                 }
             } else{
                 Map<String, String> neighbourIdsWithWeight = pageRankContext.getNeighbourIdsWithWeight();
+                double weightSum = neighbourIdsWithWeight.values().stream().mapToDouble(Double::parseDouble).sum();
 
                 // for all neighbours, send own PR value with weights
                 for(Map.Entry<String, String> e: neighbourIdsWithWeight.entrySet()) {
@@ -159,7 +161,7 @@ public class PageRankFn implements StatefulFunction {
                                     Types.PAGERANK_VALUE_WITH_WEIGHT_TYPE,
                                     new PageRankValueWithWeight(q.getQueryId(), q.getUserId(),
                                             pageRankContext.getPreviousPrValue(), Double.parseDouble(e.getValue()),
-                                            neighbourIdsWithWeight.size()))
+                                            weightSum))
                             .build());
                 }
             }
