@@ -6,22 +6,24 @@ import java.util.Properties;
 
 public class PropertyFileReader {
 
-    private static Properties prop = new Properties();
-    public static Properties readPropertyFile() throws Exception {
-        if(prop.isEmpty()){
-            InputStream input = PropertyFileReader.class.getClassLoader().getResourceAsStream("hesse.properties");
-            try {
-                prop.load(input);
-            } catch (IOException ex){
-                System.out.println(ex);
-                throw ex;
-            } finally{
-                if(input!=null){
-                    input.close();
-                }
-            }
-        }
+  private static Properties prop = new Properties();
 
-        return prop;
+  public static Properties readPropertyFile() throws Exception {
+    if (prop.isEmpty()) {
+      InputStream input =
+          PropertyFileReader.class.getClassLoader().getResourceAsStream("hesse.properties");
+      try {
+        prop.load(input);
+      } catch (IOException ex) {
+        System.out.println(ex);
+        throw ex;
+      } finally {
+        if (input != null) {
+          input.close();
+        }
+      }
     }
+
+    return prop;
+  }
 }

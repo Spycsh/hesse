@@ -13,35 +13,34 @@ import org.apache.flink.statefun.sdk.java.handler.RequestReplyHandler;
 
 public class hesseAppServer {
 
-    public static void main(String[] args) {
-        final StatefulFunctions functions = new StatefulFunctions();
+  public static void main(String[] args) {
+    final StatefulFunctions functions = new StatefulFunctions();
 
-        // register the storage functions
-        functions.withStatefulFunction(VertexStorageFn.SPEC);
+    // register the storage functions
+    functions.withStatefulFunction(VertexStorageFn.SPEC);
 
-        // register the coordination functions
-        functions.withStatefulFunction(CoordinatorFn.SPEC);
+    // register the coordination functions
+    functions.withStatefulFunction(CoordinatorFn.SPEC);
 
-        // register the query functions
-        functions.withStatefulFunction(TemporalQueryHandlerFn.SPEC);
-        functions.withStatefulFunction(GNNSamplingFn.SPEC);
-        functions.withStatefulFunction(ConnectedComponentsFn.SPEC);
-        functions.withStatefulFunction(StronglyConnectedComponentsFn.SPEC);
-        functions.withStatefulFunction(SingleSourceShortestPathFn.SPEC);
-        functions.withStatefulFunction(PageRankFn.SPEC);
+    // register the query functions
+    functions.withStatefulFunction(TemporalQueryHandlerFn.SPEC);
+    functions.withStatefulFunction(GNNSamplingFn.SPEC);
+    functions.withStatefulFunction(ConnectedComponentsFn.SPEC);
+    functions.withStatefulFunction(StronglyConnectedComponentsFn.SPEC);
+    functions.withStatefulFunction(SingleSourceShortestPathFn.SPEC);
+    functions.withStatefulFunction(PageRankFn.SPEC);
 
-        // register the benchmark functions
-        functions.withStatefulFunction(BenchmarkStorageTimeFn.SPEC);
-        functions.withStatefulFunction(BenchmarkFilterTimeFn.SPEC);
+    // register the benchmark functions
+    functions.withStatefulFunction(BenchmarkStorageTimeFn.SPEC);
+    functions.withStatefulFunction(BenchmarkFilterTimeFn.SPEC);
 
-        final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
+    final RequestReplyHandler requestReplyHandler = functions.requestReplyHandler();
 
-        final Undertow httpServer =
-                Undertow.builder()
-                    .addHttpListener(1108, "0.0.0.0")
-                    .setHandler(new UndertowHttpHandler(requestReplyHandler))
-                    .build();
-        httpServer.start();
-    }
-
+    final Undertow httpServer =
+        Undertow.builder()
+            .addHttpListener(1108, "0.0.0.0")
+            .setHandler(new UndertowHttpHandler(requestReplyHandler))
+            .build();
+    httpServer.start();
+  }
 }

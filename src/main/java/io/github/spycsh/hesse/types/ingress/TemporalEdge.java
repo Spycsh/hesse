@@ -4,34 +4,34 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class TemporalEdge {
-    @JsonProperty("src_id")
-    private String srcId;
+  @JsonProperty("src_id")
+  private String srcId;
 
-    @JsonProperty("dst_id")
-    private String dstId;
+  @JsonProperty("dst_id")
+  private String dstId;
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonProperty("weight")
-    private String weight;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonProperty("weight")
+  private String weight;
 
-    @JsonProperty("timestamp")
-    private String timestamp;
+  @JsonProperty("timestamp")
+  private String timestamp;
 
-    public TemporalEdge() {}
+  public TemporalEdge() {}
 
-    public String getSrcId() {
-        return srcId;
-    }
+  public String getSrcId() {
+    return srcId;
+  }
 
-    public String getDstId() {
-        return dstId;
-    }
+  public String getDstId() {
+    return dstId;
+  }
 
-    public String getWeight() {
-        return weight;
-    }
+  public String getWeight() {
+    return weight;
+  }
 
-    public String getTimestamp() {
-        return timestamp;
-    }
+  public String getTimestamp() {
+    return timestamp;
+  }
 }

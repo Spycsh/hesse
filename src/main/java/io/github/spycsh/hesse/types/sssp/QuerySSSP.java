@@ -4,90 +4,90 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.spycsh.hesse.query.Query;
 
 public class QuerySSSP {
-    @JsonProperty("query_id")
-    private String queryId;
+  @JsonProperty("query_id")
+  private String queryId;
 
-    @JsonProperty("user_id")
-    private String userId;
+  @JsonProperty("user_id")
+  private String userId;
 
-    @JsonProperty("vertex_id")
-    private String vertexId;
+  @JsonProperty("vertex_id")
+  private String vertexId;
 
-    @JsonProperty("query_type")
-    private String queryType;
+  @JsonProperty("query_type")
+  private String queryType;
 
-    @JsonProperty("start_t")
-    private int startT;
+  @JsonProperty("start_t")
+  private int startT;
 
-    @JsonProperty("end_t")
-    private int endT;
+  @JsonProperty("end_t")
+  private int endT;
 
-    public QuerySSSP() {
-    }
+  public QuerySSSP() {}
 
-    public QuerySSSP(Query q){
-        this.queryId = q.getQueryId();
-        this.userId = q.getUserId();
-        this.vertexId = q.getVertexId();
-        this.queryType = q.getQueryType();
-        this.startT = q.getStartT();
-        this.endT = q.getEndT();
-    }
+  public QuerySSSP(Query q) {
+    this.queryId = q.getQueryId();
+    this.userId = q.getUserId();
+    this.vertexId = q.getVertexId();
+    this.queryType = q.getQueryType();
+    this.startT = q.getStartT();
+    this.endT = q.getEndT();
+  }
 
-    public QuerySSSP(String queryId, String userId, String vertexId, String queryType, int startT, int endT) {
-        this.queryId = queryId;
-        this.userId = userId;
-        this.vertexId = vertexId;
-        this.queryType = queryType;
-        this.startT = startT;
-        this.endT = endT;
-    }
+  public QuerySSSP(
+      String queryId, String userId, String vertexId, String queryType, int startT, int endT) {
+    this.queryId = queryId;
+    this.userId = userId;
+    this.vertexId = vertexId;
+    this.queryType = queryType;
+    this.startT = startT;
+    this.endT = endT;
+  }
 
-    public String getQueryId() {
-        return queryId;
-    }
+  public String getQueryId() {
+    return queryId;
+  }
 
-    public void setQueryId(String queryId) {
-        this.queryId = queryId;
-    }
+  public void setQueryId(String queryId) {
+    this.queryId = queryId;
+  }
 
-    public String getUserId() {
-        return userId;
-    }
+  public String getUserId() {
+    return userId;
+  }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+  public void setUserId(String userId) {
+    this.userId = userId;
+  }
 
-    public String getVertexId() {
-        return vertexId;
-    }
+  public String getVertexId() {
+    return vertexId;
+  }
 
-    public void setVertexId(String vertexId) {
-        this.vertexId = vertexId;
-    }
+  public void setVertexId(String vertexId) {
+    this.vertexId = vertexId;
+  }
 
-    public String getQueryType() {
-        return queryType;
-    }
+  public String getQueryType() {
+    return queryType;
+  }
 
-    public void setQueryType(String queryType) {
-        this.queryType = queryType;
-    }
+  public void setQueryType(String queryType) {
+    this.queryType = queryType;
+  }
 
-    public int getStartT() {
-        return startT;
-    }
+  public int getStartT() {
+    return startT;
+  }
 
-    public void setStartT(int startT) {
-        this.startT = startT;
-    }
+  public void setStartT(int startT) {
+    this.startT = startT;
+  }
 
-    public int getEndT() {
-        return endT;
-    }
+  public int getEndT() {
+    return endT;
+  }
 
-    public void setEndT(int endT) {
-        this.endT = endT;
-    }
+  public void setEndT(int endT) {
+    this.endT = endT;
+  }
 }

@@ -3,12 +3,12 @@ package io.github.spycsh.hesse.types;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class PartitionConfig {
-    @JsonProperty("partition_id")
-    private String PartitionId;
+  @JsonProperty("partition_id")
+  private String PartitionId;
 
-    PartitionConfig(){};
+  PartitionConfig() {};
 
-    public String getPartitionId() {
-        return PartitionId;
-    }
+  public String getPartitionId() {
+    return PartitionId;
+  }
 }
