@@ -200,10 +200,15 @@ docker-compose up -d --build hesse
 
 ## TODO
 
-- [ ] Deployment as AWS Lambda/Azure Functions/Google Cloud Functions
-- [ ] Exploration of remote and local Statefun
-- [ ] Efficient storage and retrievals of properties on edges and vertices
-- [ ] Modification/Deletion of edges (extra fields in ingress stream)
-- [ ] Performance benchmarking compared with other temporal graph engines
-- [ ] A CLI for developers to add UDF functions to the system
-- [ ] LRU cache refatoring in Query handler function
+- [ ] Deployment on serverless platforms such as AWS lambda 
+- [ ] Add more graph algorithms
+
+[comment]: <> (- [ ] Efficient storage and retrievals of properties on edges and vertices)
+
+[comment]: <> (- [ ] Modification/Deletion of edges &#40;extra fields in ingress stream&#41;)
+
+[comment]: <> (- [ ] Performance benchmarking compared with other temporal graph engines)
+
+[comment]: <> (- [ ] A CLI for developers to add UDF functions to the system)
+
+[comment]: <> (- [ ] LRU cache refatoring in Query handler function)
