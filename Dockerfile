@@ -5,7 +5,7 @@ COPY pom.xml /usr/src/app
 RUN mvn -f /usr/src/app/pom.xml clean package
 
 # ... and run the web server!
-FROM openjdk:8
+FROM openjdk:11
 WORKDIR /
 COPY --from=builder /usr/src/app/target/hesse*jar-with-dependencies.jar hesse.jar
 EXPOSE 1108
