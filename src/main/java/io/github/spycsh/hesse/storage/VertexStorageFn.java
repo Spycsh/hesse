@@ -25,7 +25,6 @@ import io.github.spycsh.hesse.util.PropertyFileReader;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import org.apache.flink.statefun.sdk.java.*;
-import org.apache.flink.statefun.sdk.java.io.KafkaEgressMessage;
 import org.apache.flink.statefun.sdk.java.message.Message;
 import org.apache.flink.statefun.sdk.java.message.MessageBuilder;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,7 @@ public class VertexStorageFn implements StatefulFunction {
    * 5 then it will have two batches [0, 5), [5, 10) 0 will be in the first batch while 5 and 7 will
    * be in the second one
    *
-   * This is specifically used for TM & iTM storage paradigm 3 and 4
+   * <p>This is specifically used for TM & iTM storage paradigm 3 and 4
    */
   private static int eventTimeInterval = 5;
 
@@ -84,7 +83,7 @@ public class VertexStorageFn implements StatefulFunction {
   private static final ValueSpec<TreeMap<Integer, List<VertexActivity>>> VERTEX_ACTIVITIES_BRBT =
       ValueSpec.named("vertexActivitiesBRBT").withCustomType(Types.VERTEX_ACTIVITIES_BRBT_TYPE);
   // use one ValueSpec for each bucket
-  static TreeMap<String, ValueSpec<List<VertexActivity>>> bucketMap =
+  public static TreeMap<String, ValueSpec<List<VertexActivity>>> bucketMap =
       new TreeMap<String, ValueSpec<List<VertexActivity>>>(new CustomizedComparator());
 
   static {
@@ -97,7 +96,7 @@ public class VertexStorageFn implements StatefulFunction {
   }
 
   // start to build the StatefulFunctionSpec
-  static StatefulFunctionSpec.Builder builder =
+  public static StatefulFunctionSpec.Builder builder =
       StatefulFunctionSpec.builder(TYPE_NAME)
           .withSupplier(VertexStorageFn::new)
           .withValueSpecs(VERTEX_ACTIVITIES_LIST, VERTEX_ACTIVITIES_PQ, VERTEX_ACTIVITIES_BRBT);
@@ -536,5 +535,4 @@ public class VertexStorageFn implements StatefulFunction {
             .withCustomType(Types.PAGERANK_TASK_WITH_STATE_TYPE, taskWithState)
             .build());
   }
-
 }

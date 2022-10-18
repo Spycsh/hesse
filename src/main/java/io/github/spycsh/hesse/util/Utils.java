@@ -1,10 +1,10 @@
 package io.github.spycsh.hesse.util;
 
+import io.github.spycsh.hesse.storage.VertexStorageFn;
+import io.github.spycsh.hesse.types.Types;
 import io.github.spycsh.hesse.types.VertexActivity;
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import org.apache.flink.statefun.sdk.java.ValueSpec;
 
 public class Utils {
   // recover direct neighbours without weight of a vertex by using its filtered activity log
@@ -53,5 +53,33 @@ public class Utils {
       sb.append(s).append(" ");
     }
     return sb.toString().hashCode();
+  }
+
+  // experimental
+  // add a bucket with the name to the iTM data structure that VertexStorageFn holds
+  public static void addBucket(String bucketName) {
+    VertexStorageFn.bucketMap.put(
+        bucketName, ValueSpec.named("bucket" + bucketName).withCustomType(Types.BUCKET_TYPE));
+
+    if (VertexStorageFn.SPEC.knownValues().get("bucket" + bucketName) == null) {
+      VertexStorageFn.builder.withValueSpec(VertexStorageFn.bucketMap.get(bucketName));
+      VertexStorageFn.SPEC = VertexStorageFn.builder.build();
+    } else {
+      throw new IllegalArgumentException(
+          "Attempted to add a bucket that is already existed: " + bucketName);
+    }
+  }
+
+  // experimental
+  // delete a bucket with the name from the iTM data structure that VertexStorageFn holds
+  public static void deleteBucket(String bucketName) {
+    VertexStorageFn.bucketMap.remove(bucketName);
+
+    if (VertexStorageFn.SPEC.knownValues().get("bucket" + bucketName) != null) {
+      VertexStorageFn.SPEC.knownValues().remove("bucket" + bucketName);
+      VertexStorageFn.SPEC = VertexStorageFn.builder.build();
+    } else {
+      throw new IllegalArgumentException("Attempted to remove a non-existed bucket: " + bucketName);
+    }
   }
 }
