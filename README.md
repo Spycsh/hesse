@@ -149,7 +149,6 @@ Here are the exposed topics:
 |query-results|results of queries|egress|
 |storage-time|time of storage used for benchmarking|egress|
 |filter-time|time of filtering edge activities at arbitrary time windows|egress|
-|indexing-time|time of indexing (only used for storage paradigm iTM)|egress|
 
 * delete corrupted topics
 

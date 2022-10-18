@@ -49,14 +49,13 @@ public class VertexStorageFn implements StatefulFunction {
    * 5 then it will have two batches [0, 5), [5, 10) 0 will be in the first batch while 5 and 7 will
    * be in the second one
    *
-   * <p>This is specifically used for BRBT storage paradigm 3 and 4
+   * This is specifically used for TM & iTM storage paradigm 3 and 4
    */
   private static int eventTimeInterval = 5;
 
   private static int bucketSize = 10;
   private static int T0 = 0;
   private static int Tt = 2000000000;
-  private static long IndexTime = 0L;
 
   static Properties prop;
 
@@ -106,16 +105,13 @@ public class VertexStorageFn implements StatefulFunction {
   static {
     // if using storage paradigm 4, create the index
     if (VertexStorageFn.storageParadigm == 4) {
-      VertexStorageFn.IndexTime = System.nanoTime();
       for (Map.Entry<String, ValueSpec<List<VertexActivity>>> e : bucketMap.entrySet()) {
         builder.withValueSpec(e.getValue());
       }
-
-      VertexStorageFn.IndexTime = System.nanoTime() - VertexStorageFn.IndexTime;
     }
   }
 
-  public static final StatefulFunctionSpec SPEC = builder.build();
+  public static StatefulFunctionSpec SPEC = builder.build();
 
   private static final TypeName KAFKA_INDEXING_EGRESS =
       TypeName.typeNameOf("hesse.io", "indexing-time");
@@ -128,13 +124,6 @@ public class VertexStorageFn implements StatefulFunction {
     // read streaming temporal edges and convert them to adjacent list form
     if (message.is(Types.TEMPORAL_EDGE_TYPE)) {
       TemporalEdge temporalEdge = message.as(Types.TEMPORAL_EDGE_TYPE);
-
-      if (VertexStorageFn.storageParadigm == 4 && VertexStorageFn.IndexTime != 0L) {
-        // egress indexing time
-        // static field has no atomic control, so this can produce several same index time
-        // but it is just a benchmark metric for one storage paradigm so it does not matter
-        egressIndexTime(context, VertexStorageFn.IndexTime);
-      }
 
       // store the new activity of into specified batch one single vertex in its context
       // here the default activity type is add
@@ -548,12 +537,4 @@ public class VertexStorageFn implements StatefulFunction {
             .build());
   }
 
-  private void egressIndexTime(Context context, long indexTime) {
-    context.send(
-        KafkaEgressMessage.forEgress(KAFKA_INDEXING_EGRESS)
-            .withTopic("indexing-time")
-            .withUtf8Key("indexing")
-            .withUtf8Value(String.valueOf(indexTime))
-            .build());
-  }
 }
