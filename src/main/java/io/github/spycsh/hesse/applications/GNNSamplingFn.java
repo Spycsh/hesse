@@ -129,6 +129,8 @@ public class GNNSamplingFn implements StatefulFunction {
       int H = q.getH();
 
       ArrayDeque<String> stack = q.getStack();
+      // filter out all the neighbours that have been visited
+      neighbourIds.removeAll(stack);
 
       if (K == 0 || neighbourIds.size() == 0) {
         // if already is the last hop or the vertex has no more neighbours
