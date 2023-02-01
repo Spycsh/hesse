@@ -178,6 +178,10 @@ After changing code in hesse (for example, add an application algorithm), you ca
 docker-compose up -d --build hesse
 ```
 
+## Benchmark
+
+Please refer to [https://github.com/Spycsh/hesse-benchmarks](https://github.com/Spycsh/hesse-benchmarks).
+
 ## Already Done
 
 - [x] Architecture design and Docker environment
@@ -196,10 +200,10 @@ docker-compose up -d --build hesse
 - [x] Query Concurrency investigation on different concurrent applications
 - [x] Support of Single-Source-Shortest-Path algorithm and PageRank
 - [x] Micro-benchmarking and Macro-benchmarking on different datasets
+- [x] Deployment on serverless platforms such as AWS lambda 
 
 ## TODO
 
-- [ ] Deployment on serverless platforms such as AWS lambda 
 - [ ] Add more graph algorithms
 
 [comment]: <> (- [ ] Efficient storage and retrievals of properties on edges and vertices)
