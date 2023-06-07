@@ -72,6 +72,19 @@ docker-compose up -d hesse-query-producer
 Apart from the graph datasets and query stream that users can configure by editing the `docker-compose.yml`,
 users can configure other system parameters by editing `hesse.properties` and `log4j2.properties` in the `resources` folder.
 
+> 2023/06/08
+
+Notice! If you do not want to use a streaming edge producer, you can replace it by using native Kafka producer:
+
+```shell
+docker-compose up -d kafka
+docker-compose exec -T kafka kafka-console-producer --broker-list kafka:9092 --topic temporal-graph --property "parse.key=true" --property "key.separator=:"  < $path_to_your_graph_dataset
+```
+
+This will extremely boost the ingestion speed that help you ingest a huge existing graph dataset into hesse in only a few seconds. The original `hesse-graph-producer` image is not suitable for large graph dataset cold start. It is recommended to directly use the native producer.
+
+Please remember that in this way, you must make sure your dataset contains edges with the format like `53: {"src_id": "53", "dst_id": "28", "timestamp": "9986248"}`, which can be obtained by running `scripts/convert_to_json_kv.py`.
+
 ## Demo
 
 This [demo](doc/demo.md) gives an example demo to start with the project.
